@@ -2,29 +2,16 @@
 #define CUSTOMEXCEPTION_HPP
 
 #include <exception>
+#include <iostream>
 
-class socket_create_error : public std::exception {
- private:
- public:
-  const char* what() const throw();
-};
-
-class port_range_error : public std::exception {
- private:
- public:
-  const char* what() const throw();
-};
-
-class socket_bind_error : public std::exception {
- private:
- public:
-  const char* what() const throw();
-};
-
-class socket_listening_error : public std::exception {
- private:
- public:
-  const char* what() const throw();
+class Error : public std::exception
+{
+  private:
+    const char* err_msg;
+  public:
+    Error(std::string str);
+    virtual ~Error() throw();
+    const char* what() const throw();
 };
 
 #endif
