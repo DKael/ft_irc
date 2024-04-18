@@ -2,6 +2,7 @@
 #define SERVER_HPP
 
 #include <arpa/inet.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 

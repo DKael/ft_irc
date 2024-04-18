@@ -1,6 +1,6 @@
 SRCS =	main.cpp \
 		Server.cpp \
-		cutsom_exception.cpp\
+		custom_exception.cpp
 
 OBJS = 	${SRCS:.cpp=.o}
 
@@ -8,7 +8,7 @@ TOTAL_OBJS = ${OBJS}
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+CXXFLAGS = -std=c++98 #-Wall -Wextra -Werror
 
 NAME = ircserv
 

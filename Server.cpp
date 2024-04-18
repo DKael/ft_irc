@@ -31,4 +31,4 @@ Server::Server(const char* _port, const char* _password)
 
 // Server::Server(const std::string& _port, const std::string& _password) {}
 
-Server::~Server() { close(serv_socket); }
+Server::~Server() { ::close(serv_socket); }
