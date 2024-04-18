@@ -2,6 +2,7 @@
 #define SERVER_HPP
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -22,6 +23,8 @@ class Server {
   std::string password;
   int serv_socket;
   sockaddr_in serv_addr;
+  int user_cnt;
+  std::map<int, std::string> fd_to_nickname;
   std::map<std::string, User> user_list;  // key is user's nickname
 
   // not use
@@ -33,6 +36,13 @@ class Server {
   Server(const char* _port, const char* _password);
   // Server(const std::string& _port, const std::string& _password);
   ~Server();
+  const int get_port(void);
+  const std::string& get_s_port(void);
+  const std::string& get_password(void);
+  const int get_serv_socket(void);
+  const int get_user_cnt(void);
+  std::string& operator[](int socket_fd);
+  User& operator[](const std::string& nickname);
 };
 
 #endif
