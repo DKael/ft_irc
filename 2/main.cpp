@@ -120,9 +120,9 @@ int main(int argc, char** argv) {
 }
 
 /*
-socket에서 수신받은 것들을 읽어서 \r\n 단위로 쪼개서 msg_list에 담는다
-\r\n으로 안 끝나는 메세지가 있을 경우 이전 \r\n까지만 메세지로 만들고
-남는 것은 내부에서 가지고 있는다
+  socket에서 수신받은 것들을 읽어서 \r\n 단위로 쪼개서 msg_list에 담는다
+  \r\n으로 안 끝나는 메세지가 있을 경우 이전 \r\n까지만 메세지로 만들고
+  남는 것은 내부에서 가지고 있는다
 */
 void read_msg_from_socket(const int socket_fd,
                           std::vector<std::string>& msg_list) {
