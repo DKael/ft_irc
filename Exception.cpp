@@ -1,4 +1,4 @@
-#include "custom_exception.hpp"
+#include "Exception.hpp"
 #include <iostream>
 
 const char* Error::what() const throw() {

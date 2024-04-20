@@ -8,7 +8,7 @@ OBJDIR=obj
 # List of source files
 SRCS =	main.cpp \
 		Server.cpp \
-		custom_exception.cpp
+		Exception.cpp
 # Generate a list of object files with the obj/ prefix
 OBJS=$(addprefix $(OBJDIR)/,$(SRCS:.cpp=.o))
 

@@ -10,8 +10,8 @@
 #include <map>
 #include <string>
 
-#include "User.hpp"
-#include "custom_exception.hpp"
+#include "Client.hpp"
+#include "Exception.hpp"
 
 #define MAX_USER 1024
 
