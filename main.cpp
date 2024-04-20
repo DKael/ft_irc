@@ -94,8 +94,16 @@ int main(int argc, char** argv) {
             // check PASS, NICK, USER
             // after registration done, make user object
             // and add it to serv's data
+            std::cerr << "printed at socket creation part\n";
             for (int i = 0; i < msg_list.size(); i++) {
               std::cerr << msg_list[i] << '\n';
+            }
+            for (int i = 1; i < MAX_USER; i++) {
+              if (observe_fd[i].fd == -1) {
+                observe_fd[i].fd = user_socket;
+                observe_fd[i].events = POLLIN;
+                break;
+              }
             }
 
             event_cnt--;
@@ -105,8 +113,14 @@ int main(int argc, char** argv) {
         for (int i = 1; i < MAX_USER && event_cnt > 0; i++) {
           if (observe_fd[i].fd > 0 && observe_fd[i].revents & POLLIN) {
             read_msg_from_socket(observe_fd[i].fd, msg_list);
-            for (int i = 0; i < msg_list.size(); i++) {
-              std::cerr << msg_list[i] << '\n';
+            event_cnt--;
+            if (msg_list.size() >= 1 && msg_list[0] == "connection finish") {
+              observe_fd[i].fd = -1;
+            } else {
+              std::cerr << "printed at socket read part\n";
+              for (int i = 0; i < msg_list.size(); i++) {
+                std::cerr << msg_list[i] << '\n';
+              }
             }
           }
         }
@@ -126,19 +140,21 @@ socket에서 수신받은 것들을 읽어서 \r\n 단위로 쪼개서 msg_list�
 */
 void read_msg_from_socket(const int socket_fd,
                           std::vector<std::string>& msg_list) {
-  static char read_block[BLOCK_SIZE] = {
-      0,
-  };
   static std::string remains = "";
   static bool incomplete = false;
 
+  char read_block[BLOCK_SIZE] = {
+      0,
+  };
   int read_cnt = 0;
   int idx;
   std::vector<std::string> box;
 
+  msg_list.clear();
   while (true) {
     read_cnt = ::recv(socket_fd, read_block, BLOCK_SIZE - 1, MSG_DONTWAIT);
     if (0 < read_cnt && read_cnt <= BLOCK_SIZE - 1) {
+      read_block[read_cnt] = '\0';
       box.clear();
       ft_split(std::string(read_block), "\r\n", box);
       idx = 0;
