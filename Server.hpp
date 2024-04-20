@@ -23,6 +23,7 @@ class Server {
   std::string password;
   int serv_socket;
   sockaddr_in serv_addr;
+  std::string serv_name;
   int user_cnt;
   std::map<int, std::string> fd_to_nickname;
   std::map<std::string, User> user_list;  // key is user's nickname

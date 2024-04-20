@@ -12,12 +12,6 @@ Server::Server(const char* _port, const char* _password)
     throw socket_create_error();
   }
 
-  int flag;
-  flag = ::fcntl(serv_socket, F_GETFL, 0);
-  if (::fcntl(serv_socket, F_SETFL, flag | O_NONBLOCK) == -1) {
-    throw std::exception();
-  }
-
   std::memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
