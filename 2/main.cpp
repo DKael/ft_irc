@@ -2,7 +2,8 @@
 
 #include "Server.hpp"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
   if (argc != 3) {
     std::cerr << "Usage : " << argv[0] << "s <port> <password to connect>\n";
     return 1;
