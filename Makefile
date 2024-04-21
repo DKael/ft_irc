@@ -1,6 +1,7 @@
 SRCS =	main.cpp \
 		Server.cpp \
-		custom_exception.cpp
+		custom_exception.cpp \
+		User.cpp
 
 OBJS = 	${SRCS:.cpp=.o}
 

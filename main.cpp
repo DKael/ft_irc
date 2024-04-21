@@ -18,9 +18,26 @@ std::vector<std::string>& ft_split(const std::string& str,
                                    const std::string& del,
                                    std::vector<std::string>& box);
 
+bool port_chk(const char* input_port) {
+  std::stringstream port_chk;
+  int port;
+
+  port_chk << std::string(input_port);
+  port_chk >> port;
+  if (port_chk.fail()) {
+    return false;
+  } else if (port < 0 || 65335 < port) {
+    return false;
+  }
+  return true;
+}
+
 int main(int argc, char** argv) {
   if (argc != 3) {
-    std::cerr << "Usage : " << argv[0] << "s <port> <password to connect>\n";
+    std::cerr << "Usage : " << argv[0] << " <port> <password to connect>\n";
+    return 1;
+  } else if (port_chk(argv[1]) == false) {
+    std::cerr << "Port range error!\n";
     return 1;
   }
 
@@ -32,9 +49,6 @@ int main(int argc, char** argv) {
     socklen_t user_addr_len;
     sockaddr_in user_addr;
     int user_socket;
-    char buf[BUFFER_SIZE] = {
-        0,
-    };
     int read_cnt = 0;
     int flag;
 
@@ -74,30 +88,7 @@ int main(int argc, char** argv) {
               // accept 함수 에러나는 경우 찾아보자
               std::cerr << "accept() error\n";
             }
-            try {
-              read_msg_from_socket(user_socket, msg_list);
-            } catch (const std::bad_alloc& e) {
-              std::cerr << e.what() << '\n';
-              std::cerr << "Not enough memory so can't excute vector.push_back "
-                           "or another things require additional memory\n";
-            } catch (const std::length_error& e) {
-              std::cerr << e.what() << '\n';
-              std::cerr
-                  << "Maybe index out of range error or std::string is too "
-                     "long to store\n";
-            } catch (const std::exception& e) {
-              // error handling
-              std::cerr << e.what() << '\n';
-              std::cerr << "unexpected exception occur! Program terminated!\n";
-              exit(1);
-            }
-            // check PASS, NICK, USER
-            // after registration done, make user object
-            // and add it to serv's data
-            std::cerr << "printed at socket creation part\n";
-            for (int i = 0; i < msg_list.size(); i++) {
-              std::cerr << msg_list[i] << '\n';
-            }
+            serv.add_tmp_user(user_socket, user_addr);
             for (int i = 1; i < MAX_USER; i++) {
               if (observe_fd[i].fd == -1) {
                 observe_fd[i].fd = user_socket;
@@ -105,22 +96,56 @@ int main(int argc, char** argv) {
                 break;
               }
             }
-
             event_cnt--;
           }
         }
 
         for (int i = 1; i < MAX_USER && event_cnt > 0; i++) {
-          if (observe_fd[i].fd > 0 && observe_fd[i].revents & POLLIN) {
-            read_msg_from_socket(observe_fd[i].fd, msg_list);
-            event_cnt--;
-            if (msg_list.size() >= 1 && msg_list[0] == "connection finish") {
-              observe_fd[i].fd = -1;
-            } else {
-              std::cerr << "printed at socket read part\n";
-              for (int i = 0; i < msg_list.size(); i++) {
-                std::cerr << msg_list[i] << '\n';
+          if (observe_fd[i].fd > 0) {
+            if (observe_fd[i].revents & POLLIN) {
+              try {
+                read_msg_from_socket(observe_fd[i].fd, msg_list);
+
+                // print msg_list to check message read is ok
+                // this part will be removed
+                std::cerr << "printed at socket read part\n";
+                for (int i = 0; i < msg_list.size(); i++) {
+                  std::cerr << msg_list[i] << '\n';
+                }
+
+                User& event_user = serv[observe_fd[i].fd];
+
+                if (event_user.get_is_authenticated() == true) {
+                } else {
+                  /*
+                  code for not authenticated user
+                  only PASS, NICK, USER command accepted
+                  */
+                }
+
+              } catch (const std::bad_alloc& e) {
+                std::cerr << e.what() << '\n';
+                std::cerr
+                    << "Not enough memory so can't excute vector.push_back "
+                       "or another things require additional memory\n";
+              } catch (const std::length_error& e) {
+                std::cerr << e.what() << '\n';
+                std::cerr
+                    << "Maybe index out of range error or std::string is too "
+                       "long to store\n";
+              } catch (const std::exception& e) {
+                // error handling
+                std::cerr << e.what() << '\n';
+                std::cerr
+                    << "unexpected exception occur! Program terminated!\n";
+                exit(1);
               }
+            }
+            if (observe_fd[i].revents & POLLHUP) {
+              observe_fd[i].fd = -1;
+            }
+            if (observe_fd[i].revents) {
+              event_cnt--;
             }
           }
         }
@@ -183,7 +208,7 @@ void read_msg_from_socket(const int socket_fd,
         break;
       }
     } else if (read_cnt == -1) {
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      if (errno == EWOULDBLOCK) {
         // * non-blocking case *
         break;
       } else {
@@ -195,10 +220,21 @@ void read_msg_from_socket(const int socket_fd,
       // socket connection finish
       // 이 함수는 소켓으로부터 메세지만 읽어들이는 함수이니 여기서 close()
       // 함수를 부르지 말고 외부에서 부를 수 있게 메세지를 남기자
-      msg_list.push_back(std::string("connection finish"));
+      msg_list.push_back(std::string("connection finish at socket ") +
+                         ft_itos(socket_fd));
       break;
     }
   }
+}
+
+std::string ft_itos(const int input) {
+  std::stringstream ss_tmp;
+  std::string ret;
+
+  ss_tmp << input;
+  ss_tmp >> ret;
+
+  return ret;
 }
 
 std::vector<std::string>& ft_split(const std::string& str,
