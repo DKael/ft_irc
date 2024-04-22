@@ -74,9 +74,9 @@ void Server::add_user(const User& input) {
 
 User& Server::operator[](const int socket_fd) {
   if (user_list.find(socket_fd) != user_list.end()) {
-    return user_list[socket_fd];
+    return user_list.at(socket_fd);
   } else if (tmp_user_list.find(socket_fd) != tmp_user_list.end()) {
-    return tmp_user_list[socket_fd];
+    return tmp_user_list.at(socket_fd);
   } else {
     throw std::invalid_argument("Subsription error!");
   }

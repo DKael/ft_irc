@@ -1,7 +1,9 @@
 SRCS =	main.cpp \
 		Server.cpp \
 		custom_exception.cpp \
-		User.cpp
+		User.cpp \
+		Message.cpp \
+		string_func.cpp
 
 OBJS = 	${SRCS:.cpp=.o}
 
