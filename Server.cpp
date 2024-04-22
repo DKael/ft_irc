@@ -14,6 +14,9 @@ Server::Server(const char* _port, const char* _password)
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   serv_addr.sin_port = htons(port);
+  if (::fcntl(serv_socket, F_SETFL, O_NONBLOCK) == -1) {
+    throw std::exception();
+  }
 
   if (::bind(serv_socket, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
     throw socket_bind_error();
