@@ -71,12 +71,18 @@ int main(int argc, char** argv) {
         perror("poll() error!");
         return 1;
       } else {
-        if (observe_fd[0].revents & POLLIN) {
-          while (true) {
+        // 새로운 클라이언트를 받을때
+        // std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
+        if (observe_fd[0].revents & POLLIN)
+        {
+          std::cout << "###########################################" << std:: endl;
+          while (true)
+          {
             user_addr_len = sizeof(user_addr);
             std::memset(&user_addr, 0, user_addr_len);
-            user_socket = ::accept(serv.get_serv_socket(),
-                                   (sockaddr*)&user_addr, &user_addr_len);
+            user_socket = ::accept(serv.get_serv_socket(), (sockaddr*)&user_addr, &user_addr_len);
+            // std::cout << "[" << user_socket << "]" << std::endl;
+            std::cout << user_socket << std::endl;
             if (user_socket == -1) {
               if (errno == EWOULDBLOCK) {
                 break;
@@ -87,7 +93,6 @@ int main(int argc, char** argv) {
                 exit(1);
               }
             }
-
             if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
               // error_handling
               std::cerr << "fcntl() error\n";
@@ -115,7 +120,6 @@ int main(int argc, char** argv) {
               }
             }
           }
-
           event_cnt--;
         }
 
@@ -124,12 +128,12 @@ int main(int argc, char** argv) {
             if (observe_fd[i].revents & POLLIN) {
               try {
                 read_msg_from_socket(observe_fd[i].fd, msg_list);
-
+ 
                 // print msg_list to check message read is ok
                 // this part will be removed
                 std::cerr << "printed at socket read part\n";
                 for (int i = 0; i < msg_list.size(); i++) {
-                  std::cerr << msg_list[i] << '\n';
+                  std::cerr << msg_list[i] << std::endl;
                 }
 
                 User& event_user = serv[observe_fd[i].fd];
@@ -170,8 +174,9 @@ int main(int argc, char** argv) {
         }
       }
     }
-
-  } catch (std::exception& e) {
+  }
+  catch (std::exception& e)
+  {
     std::cerr << e.what() << '\n';
     return 1;
   }
