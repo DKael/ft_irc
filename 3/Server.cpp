@@ -1,11 +1,10 @@
 #include "Server.hpp"
 
 Server::Server(const char* _port, const char* _password)
-    :  port(std::atoi(_port))
-    ,  str_port(_port)
-    ,  serv_name("ft_irc")
-    ,  password(_password) 
-{
+    : port(std::atoi(_port)),
+      str_port(_port),
+      serv_name("ft_irc"),
+      password(_password) {
   serv_socket = ::socket(PF_INET, SOCK_STREAM, 0);
   if (serv_socket == -1) {
     throw socket_create_error();
@@ -31,8 +30,7 @@ Server::Server(const char* _port, const char* _password)
             << port << '\n';
 }
 
-Server::~Server()
-{
+Server::~Server() {
   ::close(serv_socket);
   std::map<int, User>::iterator head = user_list.begin();
   std::map<int, User>::iterator tail = user_list.end();
@@ -76,9 +74,9 @@ void Server::add_user(const User& input) {
 
 User& Server::operator[](const int socket_fd) {
   if (user_list.find(socket_fd) != user_list.end()) {
-    return user_list[socket_fd];
+    return user_list.at(socket_fd);
   } else if (tmp_user_list.find(socket_fd) != tmp_user_list.end()) {
-    return tmp_user_list[socket_fd];
+    return tmp_user_list.at(socket_fd);
   } else {
     throw std::invalid_argument("Subsription error!");
   }

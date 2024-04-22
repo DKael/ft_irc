@@ -1,35 +1,42 @@
+
+CXX=c++
+CFLAGS=-std=c++98 #-Wall -Wextra -Werror
+NAME=ircserv
+
+# Create a variable for the object directory
+OBJDIR=obj
+
+# List of source files
 SRCS =	main.cpp \
 		Server.cpp \
 		custom_exception.cpp \
-		User.cpp
+		User.cpp \
+		message.cpp \
+		string_func.cpp
 
-OBJS = 	${SRCS:.cpp=.o}
+# Generate a list of object files with the obj/ prefix
+OBJS=$(addprefix $(OBJDIR)/,$(SRCS:.cpp=.o))
 
-TOTAL_OBJS = ${OBJS}
+all: $(NAME)
 
-CXX = c++
+$(NAME): $(OBJS)
+	$(CXX) $(CFLAGS) $(OBJS) -o $(NAME)
 
-CXXFLAGS = -std=c++98 #-Wall -Wextra -Werror
+# Create the obj/ directory if it doesn't exist
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
 
-NAME = ircserv
-
-${NAME} : ${TOTAL_OBJS}
-	${CXX} ${CXXFLAGS} ${TOTAL_OBJS} -o $@
-
-%.o :%.cpp
-	${CXX} ${CXXFLAGS} -c -I. $< -o $@
-
-all : ${NAME}
+# Update the pattern rule to place .o files in the obj/ directory
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f ${OBJS}
+	rm -f $(OBJS)
 
-fclean:
-	make clean
-	rm -rf ${NAME}
+fclean: clean
+	rm -rf $(OBJDIR)
+	rm -f $(NAME)
 
-re: 
-	make fclean
-	make all
+re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: clean fclean re

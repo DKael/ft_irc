@@ -8,9 +8,8 @@
 #include <ctime>
 #include <string>
 
-class User 
-{
-private:
+class User {
+ private:
   const int user_socket;
   const sockaddr_in user_addr;
   std::time_t created_time;
@@ -25,7 +24,7 @@ private:
   User();
   User& operator=(const User& origin);
 
-public:
+ public:
   User(const int _user_socket, const sockaddr_in& _user_addr);
   User(const User& origin);
   ~User();

@@ -1,5 +1,44 @@
 #include "message.hpp"
 
+std::map<Command, std::string> Message::etos;
+std::map<std::string, Command> Message::stoe;
+
+void Message::map_init(void) {
+  static bool flag = false;
+  if (flag == false) {
+    flag = true;
+    etos[CAP] = "CAP", etos[AUTHENTICATE] = "AUTHENTICATE", etos[PASS] = "PASS",
+    etos[NICK] = "NICK", etos[USER] = "USER", etos[PING] = "PING",
+    etos[PONG] = "PONG", etos[OPER] = "OPER", etos[QUIT] = "QUIT",
+    etos[ERROR] = "ERROR", etos[JOIN] = "JOIN", etos[PART] = "PART",
+    etos[TOPIC] = "TOPIC", etos[NAMES] = "NAMES", etos[LIST] = "LIST",
+    etos[INVITE] = "INVITE", etos[KICK] = "KICK", etos[MOTD] = "MOTD",
+    etos[VERSION] = "VERSION", etos[ADMIN] = "ADMIN", etos[CONNECT] = "CONNECT",
+    etos[LUSERS] = "LUSERS", etos[TIME] = "TIME", etos[STATS] = "STATS",
+    etos[HELP] = "HELP", etos[INFO] = "INFO", etos[MODE] = "MODE",
+    etos[PRIVMSG] = "PRIVMSG", etos[NOTICE] = "NOTICE", etos[WHO] = "WHO",
+    etos[WHOIS] = "WHOIS", etos[WHOWAS] = "WHOWAS", etos[KILL] = "KILL",
+    etos[REHASH] = "REHASH", etos[RESTART] = "RESTART", etos[SQUIT] = "SQUIT",
+    etos[AWAY] = "AWAY", etos[LINKS] = "LINKS", etos[USERHOST] = "USERHOST",
+    etos[WALLOPS] = "WALLOPS", etos[NONE] = "NONE";
+
+    stoe["CAP"] = CAP, stoe["AUTHENTICATE"] = AUTHENTICATE, stoe["PASS"] = PASS,
+    stoe["NICK"] = NICK, stoe["USER"] = USER, stoe["PING"] = PING,
+    stoe["PONG"] = PONG, stoe["OPER"] = OPER, stoe["QUIT"] = QUIT,
+    stoe["ERROR"] = ERROR, stoe["JOIN"] = JOIN, stoe["PART"] = PART,
+    stoe["TOPIC"] = TOPIC, stoe["NAMES"] = NAMES, stoe["LIST"] = LIST,
+    stoe["INVITE"] = INVITE, stoe["KICK"] = KICK, stoe["MOTD"] = MOTD,
+    stoe["VERSION"] = VERSION, stoe["ADMIN"] = ADMIN, stoe["CONNECT"] = CONNECT,
+    stoe["LUSERS"] = LUSERS, stoe["TIME"] = TIME, stoe["STATS"] = STATS,
+    stoe["HELP"] = HELP, stoe["INFO"] = INFO, stoe["MODE"] = MODE,
+    stoe["PRIVMSG"] = PRIVMSG, stoe["NOTICE"] = NOTICE, stoe["WHO"] = WHO,
+    stoe["WHOIS"] = WHOIS, stoe["WHOWAS"] = WHOWAS, stoe["KILL"] = KILL,
+    stoe["REHASH"] = REHASH, stoe["RESTART"] = RESTART, stoe["SQUIT"] = SQUIT,
+    stoe["AWAY"] = AWAY, stoe["LINKS"] = LINKS, stoe["USERHOST"] = USERHOST,
+    stoe["WALLOPS"] = WALLOPS, stoe["NONE"] = NONE;
+  }
+}
+
 Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
   if (raw_msg.length() == 0) {
     cmd_type = NONE;
@@ -8,13 +47,14 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
     return;
   }
   std::size_t idx1 = 0;
-  std::size_t idx2 = raw_msg.length() - 1;
+  std::size_t idx2 = 0;
   std::size_t pos = 0;
   std::string tmp_trailing;
 
+  // check source
   if (raw_msg[0] == ':') {
     // source exist
-    pos = raw_msg.find_first_of(" ");
+    pos = raw_msg.find_first_of(' ');
     if (pos == std::string::npos) {
       cmd_type = NONE;
       numeric = "ERROR";
@@ -22,10 +62,16 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
       return;
     }
     source = raw_msg.substr(1, pos - 1);
+    if (source.find_first_of("\0\r\n# ") != std::string::npos) {
+      cmd_type = NONE;
+      numeric = "ERROR";
+      ret_msg = std::string("Invalid prefix \"") + source + std::string("\"");
+      return;
+    }
   }
 
   // get command
-  pos = raw_msg.find_first_not_of(" ", pos);
+  pos = raw_msg.find_first_not_of(' ', pos);
   if (pos == std::string::npos) {
     cmd_type = NONE;
     numeric = "ERROR";
@@ -33,15 +79,95 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
     return;
   }
   idx1 = pos;
-  pos = raw_msg.find_first_of(" ", pos);
+  pos = raw_msg.find_first_of(' ', pos);
+  if (pos == std::string::npos) {
+    cmd = raw_msg.substr(idx1);
+  } else {
+    cmd = raw_msg.substr(idx1, pos - idx1);
+  }
+  std::map<std::string, Command>::const_iterator it = stoe.find(cmd);
+  if (it != stoe.end()) {
+    cmd_type = stoe.at(cmd);
+    if (pos == std::string::npos) {
+      return;
+    }
+  } else {
+    cmd_type = NONE;
+    numeric = "421";
+    ret_msg = "Unknown command";
+    return;
+  }
 
-  pos = raw_msg.rfind(" :");
-  if (pos != std::string::npos) {
+  // check trailing before get parameters
+  idx2 = raw_msg.rfind(" :");
+  if (idx2 != std::string::npos) {
     // trailing exist
-    tmp_trailing = raw_msg.substr(pos + 2);
-    idx2 = pos;
+    trailing = raw_msg.substr(idx2 + 2);
+  } else {
+    idx2 = raw_msg.length();
+  }
+
+  // get parameters
+  idx1 = pos;
+  std::string params_str = raw_msg.substr(idx1, idx2 - idx1);
+  ft_split_no_blank(params_str, " ", params);
+  for (int i = 0; i < params.size(); i++) {
+    if (params[i].find_first_of("\0\r\n ") != std::string::npos) {
+      cmd_type = NONE;
+      numeric = "ERROR";
+      ret_msg = "Invalid parameter";
+      return;
+    }
+  }
+  return;
+}
+
+const std::string& Message::get_raw_msg(void) const { return raw_msg; }
+
+const std::string& Message::get_source(void) const { return source; }
+
+const std::string& Message::get_cmd(void) const { return cmd; }
+
+const Command Message::get_cmd_type(void) const { return cmd_type; }
+
+const std::vector<std::string>& Message::get_params(void) const {
+  return params;
+}
+
+const int Message::get_params_size(void) const { return params.size(); }
+
+const std::string& Message::operator[](const int idx) const {
+  if (0 <= idx && idx < params.size()) {
+    return params[idx];
+  } else {
+    throw std::out_of_range("params vector out of range");
   }
 }
 
-// 01234567
-// :abcde
+const std::string& Message::get_trailing(void) const { return trailing; }
+
+const std::string& Message::get_numeric(void) const { return numeric; }
+
+const std::string& Message::get_ret_msg(void) const { return ret_msg; }
+
+std::ostream& operator<<(std::ostream& out, Message msg) {
+  int i = 0;
+
+  out << "< Message contents > \n"
+      << "source\t\t: " << msg.get_source() << '\n'
+      << "command\t\t: " << msg.get_cmd() << '\n'
+      << "params\t\t: ";
+  if (msg.get_params_size() > 0) {
+    for (i = 0; i < msg.get_params_size() - 1; i++) {
+    out << msg[i] << ", ";
+  }
+  out << msg[i] << "\n";
+  } else {
+    out << '\n';
+  }
+  out << "trailing\t: " << msg.get_trailing() << '\n'
+      << "numeric\t\t: " << msg.get_numeric() << '\n'
+      << "ret_msg\t\t: " << msg.get_ret_msg() << '\n';
+    
+  return out;
+}

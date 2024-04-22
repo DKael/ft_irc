@@ -1,12 +1,6 @@
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
 
-class Channel 
-{
-private:
+class Channel {};
 
-public:
-
-};
-
-#endif 
+#endif

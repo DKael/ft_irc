@@ -18,9 +18,8 @@
 #define MAX_USER 1024
 #define AUTHENTICATE_TIMEOUT 20
 
-class Server
-{
-private:
+class Server {
+ private:
   const int port;
   const std::string str_port;
   const std::string serv_name;
@@ -37,7 +36,7 @@ private:
   Server(const Server& origin);
   Server& operator=(const Server& origin);
 
-public:
+ public:
   Server(const char* _port, const char* _password);
   ~Server();
   const int get_port(void) const;
