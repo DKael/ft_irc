@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "Message.hpp"
 #include "Server.hpp"
 #include "string_func.hpp"
 
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
     Server serv(argv[1], argv[2]);
     pollfd observe_fd[MAX_USER];
     int event_cnt = 0;
+    Message::map_init();
 
     socklen_t user_addr_len;
     sockaddr_in user_addr;

@@ -10,25 +10,6 @@ std::string ft_itos(const int input) {
   return ret;
 }
 
-std::vector<std::string>& ft_split(const std::string& str,
-                                   const std::string& del,
-                                   std::vector<std::string>& box) {
-  size_t idx1 = 0;
-  size_t idx2 = 0;
-  while (idx1 < str.length()) {
-    idx2 = str.find(del, idx1);
-    if (idx2 != std::string::npos) {
-      box.push_back(str.substr(idx1, idx2 - idx1));
-      idx2 += del.length();
-      idx1 = idx2;
-    } else {
-      box.push_back(str.substr(idx1));
-      break;
-    }
-  }
-  return box;
-}
-
 std::string ft_strip(const std::string& origin) {
   std::size_t front_pos;
   std::size_t back_pos;

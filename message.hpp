@@ -104,59 +104,63 @@ enum Command {
   NONE
 };
 
-const std::map<Command, std::string> etos = {
-    {CAP, "CAP"},           {AUTHENTICATE, "AUTHENTICATE"},
-    {PASS, "PASS"},         {NICK, "NICK"},
-    {USER, "USER"},         {PING, "PING"},
-    {PONG, "PONG"},         {OPER, "OPER"},
-    {QUIT, "QUIT"},         {ERROR, "ERROR"},
-    {JOIN, "JOIN"},         {PART, "PART"},
-    {TOPIC, "TOPIC"},       {NAMES, "NAMES"},
-    {LIST, "LIST"},         {INVITE, "INVITE"},
-    {KICK, "KICK"},         {MOTD, "MOTD"},
-    {VERSION, "VERSION"},   {ADMIN, "ADMIN"},
-    {CONNECT, "CONNECT"},   {LUSERS, "LUSERS"},
-    {TIME, "TIME"},         {STATS, "STATS"},
-    {HELP, "HELP"},         {INFO, "INFO"},
-    {MODE, "MODE"},         {PRIVMSG, "PRIVMSG"},
-    {NOTICE, "NOTICE"},     {WHO, "WHO"},
-    {WHOIS, "WHOIS"},       {WHOWAS, "WHOWAS"},
-    {KILL, "KILL"},         {REHASH, "REHASH"},
-    {RESTART, "RESTART"},   {SQUIT, "SQUIT"},
-    {AWAY, "AWAY"},         {LINKS, "LINKS"},
-    {USERHOST, "USERHOST"}, {WALLOPS, "WALLOPS"},
-    {NONE, "NONE"}};
+// std::map<Command, std::string> etos = {
+//     {CAP, "CAP"},           {AUTHENTICATE, "AUTHENTICATE"},
+//     {PASS, "PASS"},         {NICK, "NICK"},
+//     {USER, "USER"},         {PING, "PING"},
+//     {PONG, "PONG"},         {OPER, "OPER"},
+//     {QUIT, "QUIT"},         {ERROR, "ERROR"},
+//     {JOIN, "JOIN"},         {PART, "PART"},
+//     {TOPIC, "TOPIC"},       {NAMES, "NAMES"},
+//     {LIST, "LIST"},         {INVITE, "INVITE"},
+//     {KICK, "KICK"},         {MOTD, "MOTD"},
+//     {VERSION, "VERSION"},   {ADMIN, "ADMIN"},
+//     {CONNECT, "CONNECT"},   {LUSERS, "LUSERS"},
+//     {TIME, "TIME"},         {STATS, "STATS"},
+//     {HELP, "HELP"},         {INFO, "INFO"},
+//     {MODE, "MODE"},         {PRIVMSG, "PRIVMSG"},
+//     {NOTICE, "NOTICE"},     {WHO, "WHO"},
+//     {WHOIS, "WHOIS"},       {WHOWAS, "WHOWAS"},
+//     {KILL, "KILL"},         {REHASH, "REHASH"},
+//     {RESTART, "RESTART"},   {SQUIT, "SQUIT"},
+//     {AWAY, "AWAY"},         {LINKS, "LINKS"},
+//     {USERHOST, "USERHOST"}, {WALLOPS, "WALLOPS"},
+//     {NONE, "NONE"}};
 
-const std::map<std::string, Command> stoe = {
-    {"CAP", CAP},           {"AUTHENTICATE", AUTHENTICATE},
-    {"PASS", PASS},         {"NICK", NICK},
-    {"USER", USER},         {"PING", PING},
-    {"PONG", PONG},         {"OPER", OPER},
-    {"QUIT", QUIT},         {"ERROR", ERROR},
-    {"JOIN", JOIN},         {"PART", PART},
-    {"TOPIC", TOPIC},       {"NAMES", NAMES},
-    {"LIST", LIST},         {"INVITE", INVITE},
-    {"KICK", KICK},         {"MOTD", MOTD},
-    {"VERSION", VERSION},   {"ADMIN", ADMIN},
-    {"CONNECT", CONNECT},   {"LUSERS", LUSERS},
-    {"TIME", TIME},         {"STATS", STATS},
-    {"HELP", HELP},         {"INFO", INFO},
-    {"MODE", MODE},         {"PRIVMSG", PRIVMSG},
-    {"NOTICE", NOTICE},     {"WHO", WHO},
-    {"WHOIS", WHOIS},       {"WHOWAS", WHOWAS},
-    {"KILL", KILL},         {"REHASH", REHASH},
-    {"RESTART", RESTART},   {"SQUIT", SQUIT},
-    {"AWAY", AWAY},         {"LINKS", LINKS},
-    {"USERHOST", USERHOST}, {"WALLOPS", WALLOPS},
-    {"NONE", NONE}};
+// std::map<std::string, Command> stoe = {
+//     {"CAP", CAP},           {"AUTHENTICATE", AUTHENTICATE},
+//     {"PASS", PASS},         {"NICK", NICK},
+//     {"USER", USER},         {"PING", PING},
+//     {"PONG", PONG},         {"OPER", OPER},
+//     {"QUIT", QUIT},         {"ERROR", ERROR},
+//     {"JOIN", JOIN},         {"PART", PART},
+//     {"TOPIC", TOPIC},       {"NAMES", NAMES},
+//     {"LIST", LIST},         {"INVITE", INVITE},
+//     {"KICK", KICK},         {"MOTD", MOTD},
+//     {"VERSION", VERSION},   {"ADMIN", ADMIN},
+//     {"CONNECT", CONNECT},   {"LUSERS", LUSERS},
+//     {"TIME", TIME},         {"STATS", STATS},
+//     {"HELP", HELP},         {"INFO", INFO},
+//     {"MODE", MODE},         {"PRIVMSG", PRIVMSG},
+//     {"NOTICE", NOTICE},     {"WHO", WHO},
+//     {"WHOIS", WHOIS},       {"WHOWAS", WHOWAS},
+//     {"KILL", KILL},         {"REHASH", REHASH},
+//     {"RESTART", RESTART},   {"SQUIT", SQUIT},
+//     {"AWAY", AWAY},         {"LINKS", LINKS},
+//     {"USERHOST", USERHOST}, {"WALLOPS", WALLOPS},
+//     {"NONE", NONE}};
 
 class Message {
  private:
+  static std::map<Command, std::string> etos;
+  static std::map<std::string, Command> stoe;
+
   std::string raw_msg;
   std::string source;
   std::string cmd;
   Command cmd_type;
   std::vector<std::string> params;
+  std::string trailing;
 
   std::string numeric;
   std::string ret_msg;
@@ -165,17 +169,20 @@ class Message {
   Message();
 
  public:
+  static void map_init(void);
   Message(const std::string& _raw_msg);
+  const std::string& get_raw_msg(void) const;
+  const std::string& get_source(void) const;
+  const std::string& get_cmd(void) const;
+  const Command get_cmd_type(void) const;
+  const std::vector<std::string>& get_params(void) const;
+  const int get_params_size(void) const;
+  const std::string& operator[](const int idx) const;
+  const std::string& get_trailing(void) const;
+  const std::string& get_numeric(void) const;
+  const std::string& get_ret_msg(void) const;
 };
 
-class SendMessage : public Message {
- private:
- public:
-};
-
-class RecvMessage : public Message {
- private:
- public:
-};
+std::ostream& operator<<(std::ostream& out, Message msg);
 
 #endif
