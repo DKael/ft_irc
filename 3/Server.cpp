@@ -1,10 +1,11 @@
 #include "Server.hpp"
 
 Server::Server(const char* _port, const char* _password)
-    : port(std::atoi(_port)),
-      str_port(_port),
-      serv_name("ft_irc"),
-      password(_password) {
+    :  port(std::atoi(_port))
+    ,  str_port(_port)
+    ,  serv_name("ft_irc")
+    ,  password(_password) 
+{
   serv_socket = ::socket(PF_INET, SOCK_STREAM, 0);
   if (serv_socket == -1) {
     throw socket_create_error();
@@ -30,7 +31,8 @@ Server::Server(const char* _port, const char* _password)
             << port << '\n';
 }
 
-Server::~Server() {
+Server::~Server()
+{
   ::close(serv_socket);
   std::map<int, User>::iterator head = user_list.begin();
   std::map<int, User>::iterator tail = user_list.end();
