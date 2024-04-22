@@ -1,12 +1,10 @@
 #include "Server.hpp"
 
 Server::Server(const char* _port, const char* _password)
-    : s_port(_port), password(_password), user_cnt(0) {
-  port = std::atoi(_port);
-  if (port < 0 || port > 65535) {
-    throw port_range_error();
-  }
-
+    : port(std::atoi(_port)),
+      str_port(_port),
+      serv_name("ft_irc"),
+      password(_password) {
   serv_socket = ::socket(PF_INET, SOCK_STREAM, 0);
   if (serv_socket == -1) {
     throw socket_create_error();
@@ -29,39 +27,53 @@ Server::Server(const char* _port, const char* _password)
             << port << '\n';
 }
 
-// Server::Server(const std::string& _port, const std::string& _password) {}
-
 Server::~Server() {
   ::close(serv_socket);
-  std::map<int, std::string>::iterator head = fd_to_nickname.begin();
-  std::map<int, std::string>::iterator tail = fd_to_nickname.end();
+  std::map<int, User>::iterator head = user_list.begin();
+  std::map<int, User>::iterator tail = user_list.end();
+
+  for (; head != tail; head++) {
+    ::close(head->first);
+  }
+
+  head = tmp_user_list.begin();
+  tail = tmp_user_list.end();
 
   for (; head != tail; head++) {
     ::close(head->first);
   }
 }
 
-const int Server::get_port(void) { return port; }
+const int Server::get_port(void) const { return port; }
 
-const std::string& Server::get_s_port(void) { return s_port; }
+const std::string& Server::get_str_port(void) const { return str_port; }
 
-const std::string& Server::get_password(void) { return password; }
+const std::string& Server::get_serv_name(void) const { return serv_name; }
 
-const int Server::get_serv_socket(void) { return serv_socket; }
+const std::string& Server::get_password(void) const { return password; }
 
-const int Server::get_user_cnt(void) { return user_cnt; }
+const int Server::get_serv_socket(void) const { return serv_socket; }
 
-std::string& Server::operator[](int socket_fd) {
-  if (fd_to_nickname.find(socket_fd) != fd_to_nickname.end()) {
-    return fd_to_nickname[socket_fd];
-  } else {
-    throw std::invalid_argument("Subsription error!");
-  }
+const sockaddr_in& Server::get_serv_addr(void) const { return serv_addr; }
+
+const int Server::get_tmp_user_cnt(void) const { return tmp_user_list.size(); }
+
+const int Server::get_user_cnt(void) const { return user_list.size(); }
+
+void Server::add_tmp_user(const int user_socker, const sockaddr_in& user_addr) {
+  User tmp(user_socker, user_addr);
+  tmp_user_list.insert(std::make_pair(user_socker, tmp));
 }
 
-User& Server::operator[](const std::string& nickname) {
-  if (user_list.find(nickname) != user_list.end()) {
-    return user_list[nickname];
+void Server::add_user(const User& input) {
+  user_list.insert(std::make_pair(input.get_user_socket(), input));
+}
+
+User& Server::operator[](const int socket_fd) {
+  if (user_list.find(socket_fd) != user_list.end()) {
+    return user_list[socket_fd];
+  } else if (tmp_user_list.find(socket_fd) != tmp_user_list.end()) {
+    return tmp_user_list[socket_fd];
   } else {
     throw std::invalid_argument("Subsription error!");
   }
