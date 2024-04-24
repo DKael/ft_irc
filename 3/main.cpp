@@ -61,7 +61,8 @@ int main(int argc, char** argv) {
       observe_fd[i].fd = -1;
     }
 
-    while (1) {
+    while (1) 
+    {
       event_cnt = poll(observe_fd, MAX_USER, POLL_TIMEOUT * 1000);
 
       if (event_cnt == 0) {
@@ -72,17 +73,15 @@ int main(int argc, char** argv) {
         return 1;
       } else {
         // 새로운 클라이언트를 받을때
-        // std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
         if (observe_fd[0].revents & POLLIN)
         {
-          std::cout << "###########################################" << std:: endl;
           while (true)
           {
             user_addr_len = sizeof(user_addr);
             std::memset(&user_addr, 0, user_addr_len);
             user_socket = ::accept(serv.get_serv_socket(), (sockaddr*)&user_addr, &user_addr_len);
             // std::cout << "[" << user_socket << "]" << std::endl;
-            std::cout << user_socket << std::endl;
+            // std::cout << user_socket << std::endl;
             if (user_socket == -1) {
               if (errno == EWOULDBLOCK) {
                 break;
@@ -141,8 +140,8 @@ int main(int argc, char** argv) {
                 if (event_user.get_is_authenticated() == true) {
                 } else {
                   /*
-                  code for not authenticated user
-                  only PASS, NICK, USER command accepted
+                    code for not authenticated user
+                    only PASS, NICK, USER command accepted
                   */
                 }
 

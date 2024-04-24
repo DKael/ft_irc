@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "../Message.hpp"
+#include "../message.hpp"
 
 int main() {
   Message::map_init();
