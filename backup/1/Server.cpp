@@ -65,11 +65,13 @@ Server::Server(const char* _port, const char* _password)
         if (fds[i].revents & POLLIN) {
             memset(buffer, 0, 1024);
             int bytes_received = recv(fds[i].fd, buffer, 1024 - 1, 0);
-            if (bytes_received <= 0) {
+            if (bytes_received == 0) {
                 close(fds[i].fd);
                 fds[i].fd = -1;
                 continue;
             }
+            if (bytes_received == -1) {
+                continue;
             std::cout << "수신 데이터: " << buffer;
             send(fds[i].fd, buffer, bytes_received, 0);
         }
