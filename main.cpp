@@ -38,6 +38,9 @@ int main(int argc, char** argv) {
   } else if (port_chk(argv[1]) == false) {
     std::cerr << "Port range error!\n";
     return 1;
+  } else if (ft_strip(std::string(argv[2])).length() == 0) {
+    std::cerr << "Empty password!";
+    return 1;
   }
 
   try {

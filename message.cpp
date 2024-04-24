@@ -110,7 +110,7 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
   // get parameters
   idx1 = pos;
   std::string params_str = raw_msg.substr(idx1, idx2 - idx1);
-  ft_split_no_blank(params_str, " ", params);
+  ft_split(params_str, " ", params);
   for (int i = 0; i < params.size(); i++) {
     if (params[i].find_first_of("\0\r\n ") != std::string::npos) {
       cmd_type = NONE;
@@ -159,15 +159,15 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
       << "params\t\t: ";
   if (msg.get_params_size() > 0) {
     for (i = 0; i < msg.get_params_size() - 1; i++) {
-    out << msg[i] << ", ";
-  }
-  out << msg[i] << "\n";
+      out << msg[i] << ", ";
+    }
+    out << msg[i] << "\n";
   } else {
     out << '\n';
   }
   out << "trailing\t: " << msg.get_trailing() << '\n'
       << "numeric\t\t: " << msg.get_numeric() << '\n'
       << "ret_msg\t\t: " << msg.get_ret_msg() << '\n';
-    
+
   return out;
 }

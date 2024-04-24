@@ -49,7 +49,7 @@ int main() {
 
   std::cout << "------------------------------------------------\n\n";
   box.clear();
-  ft_split_no_blank(split_test, "\r\n", box);
+  ft_split(split_test, "\r\n", box, M_BLANK);
   for (int i = 0; i < box.size(); i++) {
     std::cout << "box[" << i << "] : " << box[i] << '\n';
   }

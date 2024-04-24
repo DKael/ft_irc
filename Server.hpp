@@ -29,7 +29,9 @@ class Server {
   sockaddr_in serv_addr;
 
   std::map<int, User> tmp_user_list;
+  std::map<std::string, int> tmp_nick_to_soc;
   std::map<int, User> user_list;
+  std::map<std::string, int> nick_to_soc;
 
   // not use
   Server();
