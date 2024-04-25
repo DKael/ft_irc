@@ -1,0 +1,4 @@
+ngircd를 킴
+socat -v tcp-l:42420,fork,reuseaddr tcp:127.0.0.1:6667
+nc 127.0.0.1 42420
+irssi => /connect localhost 42420

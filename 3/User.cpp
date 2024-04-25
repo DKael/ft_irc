@@ -1,5 +1,7 @@
 #include "User.hpp"
 
+#include <iostream>
+
 User::User(const int _user_socket, const sockaddr_in& _user_addr)
     : user_socket(_user_socket),
       user_addr(_user_addr),
@@ -8,7 +10,9 @@ User::User(const int _user_socket, const sockaddr_in& _user_addr)
       user_name(""),
       real_name(""),
       password_chk(false),
-      is_authenticated(false) {}
+      is_authenticated(false) {
+        std::cout << "Client BORN!!!!!!" << std::endl;
+      }
 
 User::User(const User& origin)
     : user_socket(origin.user_socket),
@@ -20,7 +24,7 @@ User::User(const User& origin)
       password_chk(origin.password_chk),
       is_authenticated(origin.is_authenticated) {}
 
-User::~User() { ::close(user_socket); }
+User::~User() {}
 
 void User::set_nick_name(const std::string& input) { nick_name = input; }
 

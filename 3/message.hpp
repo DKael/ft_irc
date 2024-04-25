@@ -161,7 +161,6 @@ class Message {
   Command cmd_type;
   std::vector<std::string> params;
   std::string trailing;
-
   std::string numeric;
   std::string ret_msg;
 
