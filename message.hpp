@@ -131,6 +131,7 @@ void set_source(const std::string& input);
 void set_cmd(const std::string& input);
 void set_cmd_type(const Command input);
 void push_back(const std::string& input);
+void clear(void);
 void set_trailing(const std::string& input);
 void set_numeric(const std::string& input);
 

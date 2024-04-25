@@ -34,11 +34,11 @@ int main(int argc, char *argv[]) {
   else
     puts("Connected...........");
 
-  write(sock, "PASS secretpasswordhere\r\n",
-        strlen("PASS secretpasswordhere\r\n"));
-  write(sock, "NICK Wiz\r\n", strlen("NICK Wiz\r\n"));
-  write(sock, "USER guest 0 * :Ronnie Reagan\r\n",
-        strlen("USER guest 0 * :Ronnie Reagan\r\n"));
+  // write(sock, "PASS secretpasswordhere\r\n",
+  //       strlen("PASS secretpasswordhere\r\n"));
+  // write(sock, "NICK Wiz\r\n", strlen("NICK Wiz\r\n"));
+  // write(sock, "USER guest 0 * :Ronnie Reagan\r\n",
+  //       strlen("USER guest 0 * :Ronnie Reagan\r\n"));
 
   while (1) {
     fputs("Input message(Q to quit): ", stdout);
@@ -53,9 +53,14 @@ int main(int argc, char *argv[]) {
     // message[str_len + 1] = '\n';
 
     send(sock, message, strlen(message), MSG_DONTWAIT);
-    // str_len = recv(sock, message, BUF_SIZE - 1, MSG_DONTWAIT);
-    // message[str_len] = 0;
-    // printf("Message from server: %s", message);
+    while (true) {
+      str_len = recv(sock, message, BUF_SIZE - 1, MSG_DONTWAIT);
+      if (str_len == -1 && errno == EWOULDBLOCK) {
+        break;
+      }
+      message[str_len] = 0;
+      printf("Message from server: %s", message);
+    }
   }
 
   // while (1) {

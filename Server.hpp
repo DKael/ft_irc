@@ -34,6 +34,8 @@ class Server {
   std::map<int, User> user_list;
   std::map<std::string, int> nick_to_soc;
 
+  bool enable_ident_protocol;
+
   // not use
   Server();
   Server(const Server& origin);
@@ -50,12 +52,19 @@ class Server {
   const sockaddr_in& get_serv_addr(void) const;
   const int get_tmp_user_cnt(void) const;
   const int get_user_cnt(void) const;
+  const bool get_enable_ident_protocol(void) const;
 
   void add_tmp_user(const int socket_fd, const sockaddr_in& addr);
   void add_user(const User& input);
+  void move_tmp_user_to_user_list(int socket_fd);
   void remove_user(const int socket_fd);
   void remove_user(const std::string& nickname);
+  void change_nickname(const std::string& old_nick,
+                       const std::string& new_nick);
   void tmp_user_timeout_chk(void);
+
+  int send_msg(int socket_fd);
+
   User& operator[](const int socket_fd);
   int operator[](const std::string& nickname);
 };

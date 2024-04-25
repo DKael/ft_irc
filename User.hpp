@@ -30,6 +30,7 @@ class User {
   chk_status user_init_chk;
   chk_status password_chk;
   chk_status is_authenticated;
+  bool have_to_disconnect;
 
   std::queue<std::string> to_send;
 
@@ -49,6 +50,7 @@ class User {
   void set_user_init_chk(const chk_status input);
   void set_password_chk(const chk_status input);
   void set_is_authenticated(const chk_status input);
+  void set_have_to_disconnect(const bool input);
 
   const int get_user_socket(void) const;
   const sockaddr_in& get_user_addr(void) const;
@@ -60,9 +62,11 @@ class User {
   const chk_status get_user_init_chk(void) const;
   const chk_status get_password_chk(void) const;
   const chk_status get_is_authenticated(void) const;
+  const bool get_have_to_disconnect(void) const;
 
   void push_msg(const std::string& msg);
-  std::string pop_msg(void);
+  const std::string& front_msg(void);
+  void pop_msg(void);
   std::size_t number_of_to_send(void);
 };
 

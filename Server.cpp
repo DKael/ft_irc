@@ -4,7 +4,8 @@ Server::Server(const char* _port, const char* _password)
     : port(std::atoi(_port)),
       str_port(_port),
       serv_name("ft_irc"),
-      password(_password) {
+      password(_password),
+      enable_ident_protocol(false) {
   serv_socket = ::socket(PF_INET, SOCK_STREAM, 0);
   if (serv_socket == -1) {
     throw socket_create_error();
@@ -45,6 +46,7 @@ Server::~Server() {
   for (; head != tail; head++) {
     ::close(head->first);
   }
+  ::close(serv_socket);
 }
 
 const int Server::get_port(void) const { return port; }
@@ -63,14 +65,27 @@ const int Server::get_tmp_user_cnt(void) const { return tmp_user_list.size(); }
 
 const int Server::get_user_cnt(void) const { return user_list.size(); }
 
+const bool Server::get_enable_ident_protocol(void) const {
+  return enable_ident_protocol;
+}
+
 void Server::add_tmp_user(const int user_socker, const sockaddr_in& user_addr) {
   User tmp(user_socker, user_addr);
 
-  while (tmp_nick_to_soc.find(tmp.get_nick_name()) == tmp_nick_to_soc.end()) {
+  while (tmp_nick_to_soc.find(tmp.get_nick_name()) != tmp_nick_to_soc.end()) {
     tmp.set_nick_name(make_random_string(20));
   }
   tmp_nick_to_soc.insert(std::make_pair(tmp.get_nick_name(), user_socker));
   tmp_user_list.insert(std::make_pair(user_socker, tmp));
+}
+
+void Server::move_tmp_user_to_user_list(int socket_fd) {
+  User& user_tmp = (*this)[socket_fd];
+
+  nick_to_soc.insert(std::make_pair(user_tmp.get_nick_name(), socket_fd));
+  user_list.insert(std::make_pair(socket_fd, user_tmp));
+  tmp_nick_to_soc.erase(user_tmp.get_nick_name());
+  tmp_user_list.erase(socket_fd);
 }
 
 void Server::add_user(const User& input) {
@@ -135,6 +150,31 @@ void Server::remove_user(const std::string& nickname) {
   }
 }
 
+void Server::change_nickname(const std::string& old_nick,
+                             const std::string& new_nick) {
+  std::map<std::string, int>::iterator it;
+  int tmp;
+
+  it = nick_to_soc.find(old_nick);
+  if (it != nick_to_soc.end()) {
+    tmp = it->second;
+    nick_to_soc.erase(it);
+    nick_to_soc.insert(std::make_pair(new_nick, tmp));
+    (*this)[tmp].set_nick_name(new_nick);
+    return;
+  }
+  it = tmp_nick_to_soc.find(old_nick);
+  if (it != tmp_nick_to_soc.end()) {
+    tmp = it->second;
+    tmp_nick_to_soc.erase(it);
+    tmp_nick_to_soc.insert(std::make_pair(new_nick, tmp));
+    (*this)[tmp].set_nick_name(new_nick);
+    return;
+  } else {
+    throw std::invalid_argument("Subsription error!");
+  }
+}
+
 void Server::tmp_user_timeout_chk(void) {
   time_t current_time = time(NULL);
   std::map<int, User>::iterator it1 = tmp_user_list.begin();
@@ -151,6 +191,30 @@ void Server::tmp_user_timeout_chk(void) {
       it1++;
     }
   }
+}
+
+int Server::send_msg(int socket_fd) {
+  User& user_tmp = (*this)[socket_fd];
+  int send_result;
+  std::size_t to_send_num = user_tmp.number_of_to_send();
+
+  while (to_send_num > 0) {
+    const std::string& msg_tmp = user_tmp.front_msg();
+    std::cout << "send : " << socket_fd << ", " << msg_tmp << '\n';
+    send_result =
+        send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
+    if (send_result == -1) {
+      if (errno == EWOULDBLOCK) {
+        return -1;
+      } else {
+        std::cerr << "send() error\n";
+        return -1;
+      }
+    }
+    user_tmp.pop_msg();
+    to_send_num--;
+  }
+  return 0;
 }
 
 User& Server::operator[](const int socket_fd) {

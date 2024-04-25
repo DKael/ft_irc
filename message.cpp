@@ -64,7 +64,7 @@ Message::Message(const std::string& _raw_msg, int _socket_fd)
       return;
     }
     source = raw_msg.substr(1, pos - 1);
-    if (source.find_first_of("\0\r\n# ") != std::string::npos) {
+    if (source.find_first_of("\0\r\n ") != std::string::npos) {
       set_cmd_type(ERROR);
       trailing = std::string("Invalid prefix \"") + source + std::string("\"");
       return;
@@ -135,6 +135,8 @@ void Message::set_cmd_type(const Command input) {
 }
 
 void Message::push_back(const std::string& input) { params.push_back(input); }
+
+void Message::clear(void) { params.clear(); }
 
 void Message::set_trailing(const std::string& input) { trailing = input; }
 

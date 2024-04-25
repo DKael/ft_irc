@@ -10,7 +10,8 @@ User::User(const int _user_socket, const sockaddr_in& _user_addr)
       real_name(""),
       user_init_chk(NOT_YET),
       password_chk(NOT_YET),
-      is_authenticated(NOT_YET) {}
+      is_authenticated(NOT_YET),
+      have_to_disconnect(false) {}
 
 User::User(const User& origin)
     : user_socket(origin.user_socket),
@@ -22,7 +23,9 @@ User::User(const User& origin)
       real_name(origin.real_name),
       user_init_chk(origin.user_init_chk),
       password_chk(origin.password_chk),
-      is_authenticated(origin.is_authenticated) {}
+      is_authenticated(origin.is_authenticated),
+      have_to_disconnect(origin.have_to_disconnect),
+      to_send(origin.to_send) {}
 
 User::~User() {}
 
@@ -40,6 +43,10 @@ void User::set_password_chk(const chk_status input) { password_chk = input; }
 
 void User::set_is_authenticated(const chk_status input) {
   is_authenticated = input;
+}
+
+void User::set_have_to_disconnect(const bool input) {
+  have_to_disconnect = input;
 }
 
 const std::string& User::get_nick_name(void) const { return nick_name; }
@@ -62,14 +69,16 @@ const chk_status User::get_is_authenticated(void) const {
   return is_authenticated;
 }
 
+const bool User::get_have_to_disconnect(void) const {
+  return have_to_disconnect;
+}
+
 const time_t User::get_created_time(void) const { return created_time; }
 
 void User::push_msg(const std::string& msg) { to_send.push(msg); }
 
-std::string User::pop_msg(void) {
-  std::string ret = to_send.front();
-  to_send.pop();
-  return ret;
-}
+const std::string& User::front_msg(void) { return to_send.front(); }
+
+void User::pop_msg(void) { to_send.pop(); }
 
 std::size_t User::number_of_to_send(void) { return to_send.size(); }
