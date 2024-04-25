@@ -138,13 +138,37 @@ int main(int argc, char** argv) {
                 User& event_user = serv[observe_fd[i].fd];
 
                 if (event_user.get_is_authenticated() == true) {
+                  ;
                 } else {
                   /*
                   code for not authenticated user
                   only PASS, NICK, USER command accepted
                   */
-                }
+                  Message rpl(event_user.get_user_socket());
+                  for (int i = 0; i < msg_list.size(); i++) {
+                    Message msg(msg_list[i], event_user.get_user_socket());
 
+                    int cmd_type = msg.get_cmd_type();
+                    if (cmd_type == PASS) {
+                      if (event_user.get_password_chk() == NOT_YET) {
+                        if (serv.get_password() == msg[0]) {
+                          event_user.set_password_chk(OK);
+                        } else {
+                          event_user.set_password_chk(FAIL);
+                        }
+                      } else {
+                        rpl.set_numeric("451");
+                        rpl.push_back("*");
+                        rpl.set_trailing("Connection not registered");
+                        serv.send_msg(event_user.get_user_socket(), rpl);
+                      }
+                    } else if (cmd_type == NICK) {
+                    } else if (cmd_type == USER) {
+                    } else if (cmd_type == NONE) {
+                    } else {
+                    }
+                  }
+                }
               } catch (const std::bad_alloc& e) {
                 std::cerr << e.what() << '\n';
                 std::cerr

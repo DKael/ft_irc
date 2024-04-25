@@ -1,6 +1,9 @@
 #ifndef STRING_FUNC_HPP
 #define STRING_FUNC_HPP
 
+#include <sys/time.h>
+
+#include <cstdlib>
 #include <sstream>
 #include <string>
 
@@ -9,8 +12,14 @@
 #define M_BLANK 1
 #endif
 
+#define STR_COMP \
+  "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 std::string ft_itos(const int input);
 std::string ft_strip(const std::string& origin);
+std::string make_random_string(std::size_t len,
+                               const std::string comp = STR_COMP);
+std::string& ft_upper(std::string& origin);
 
 template <typename T>
 T& ft_split(const std::string& str, const std::string& del, T& box,

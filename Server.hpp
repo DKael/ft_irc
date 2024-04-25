@@ -12,6 +12,7 @@
 #include <map>
 #include <string>
 
+#include "Message.hpp"
 #include "User.hpp"
 #include "custom_exception.hpp"
 
@@ -52,7 +53,11 @@ class Server {
 
   void add_tmp_user(const int socket_fd, const sockaddr_in& addr);
   void add_user(const User& input);
+  void remove_user(const int socket_fd);
+  void remove_user(const std::string& nickname);
+  void tmp_user_timeout_chk(void);
   User& operator[](const int socket_fd);
+  int operator[](const std::string& nickname);
 };
 
 #endif

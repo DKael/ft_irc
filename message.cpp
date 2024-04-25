@@ -39,11 +39,14 @@ void Message::map_init(void) {
   }
 }
 
-Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
+Message::Message(int _socket_fd) : raw_msg(""), socket_fd(_socket_fd) {}
+
+Message::Message(const std::string& _raw_msg, int _socket_fd)
+    : raw_msg(ft_strip(_raw_msg)), socket_fd(_socket_fd) {
   if (raw_msg.length() == 0) {
-    cmd_type = NONE;
+    set_cmd_type(NONE);
     numeric = "421";
-    ret_msg = "Unknown command";
+    trailing = "Unknown command";
     return;
   }
   std::size_t idx1 = 0;
@@ -56,16 +59,14 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
     // source exist
     pos = raw_msg.find_first_of(' ');
     if (pos == std::string::npos) {
-      cmd_type = NONE;
-      numeric = "ERROR";
-      ret_msg = "Prefix without command";
+      set_cmd_type(ERROR);
+      trailing = "Prefix without command";
       return;
     }
     source = raw_msg.substr(1, pos - 1);
     if (source.find_first_of("\0\r\n# ") != std::string::npos) {
-      cmd_type = NONE;
-      numeric = "ERROR";
-      ret_msg = std::string("Invalid prefix \"") + source + std::string("\"");
+      set_cmd_type(ERROR);
+      trailing = std::string("Invalid prefix \"") + source + std::string("\"");
       return;
     }
   }
@@ -73,9 +74,8 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
   // get command
   pos = raw_msg.find_first_not_of(' ', pos);
   if (pos == std::string::npos) {
-    cmd_type = NONE;
-    numeric = "ERROR";
-    ret_msg = "Prefix without command";
+    set_cmd_type(ERROR);
+    trailing = "Prefix without command";
     return;
   }
   idx1 = pos;
@@ -85,6 +85,7 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
   } else {
     cmd = raw_msg.substr(idx1, pos - idx1);
   }
+  ft_upper(cmd);
   std::map<std::string, Command>::const_iterator it = stoe.find(cmd);
   if (it != stoe.end()) {
     cmd_type = stoe.at(cmd);
@@ -92,9 +93,9 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
       return;
     }
   } else {
-    cmd_type = NONE;
+    set_cmd_type(NONE);
     numeric = "421";
-    ret_msg = "Unknown command";
+    trailing = "Unknown command";
     return;
   }
 
@@ -113,16 +114,35 @@ Message::Message(const std::string& _raw_msg) : raw_msg(ft_strip(_raw_msg)) {
   ft_split(params_str, " ", params);
   for (int i = 0; i < params.size(); i++) {
     if (params[i].find_first_of("\0\r\n ") != std::string::npos) {
-      cmd_type = NONE;
-      numeric = "ERROR";
-      ret_msg = "Invalid parameter";
+      set_cmd_type(ERROR);
+      trailing = "Invalid parameter";
       return;
     }
   }
   return;
 }
 
+void Message::set_source(const std::string& input) { source = input; }
+
+void Message::set_cmd(const std::string& input) {
+  cmd = input;
+  cmd_type = stoe[cmd];
+}
+
+void Message::set_cmd_type(const Command input) {
+  cmd_type = input;
+  cmd = etos[cmd_type];
+}
+
+void Message::push_back(const std::string& input) { params.push_back(input); }
+
+void Message::set_trailing(const std::string& input) { trailing = input; }
+
+void Message::set_numeric(const std::string& input) { numeric = input; }
+
 const std::string& Message::get_raw_msg(void) const { return raw_msg; }
+
+const int Message::get_socket_fd(void) const { return socket_fd; }
 
 const std::string& Message::get_source(void) const { return source; }
 
@@ -134,7 +154,7 @@ const std::vector<std::string>& Message::get_params(void) const {
   return params;
 }
 
-const int Message::get_params_size(void) const { return params.size(); }
+const std::size_t Message::get_params_size(void) const { return params.size(); }
 
 const std::string& Message::operator[](const int idx) const {
   if (0 <= idx && idx < params.size()) {
@@ -148,12 +168,40 @@ const std::string& Message::get_trailing(void) const { return trailing; }
 
 const std::string& Message::get_numeric(void) const { return numeric; }
 
-const std::string& Message::get_ret_msg(void) const { return ret_msg; }
+std::string Message::to_raw_msg(void) {
+  std::string raw_msg = "";
+  std::size_t param_cnt = params.size();
+  std::size_t idx = 0;
+
+  if (source.length() != 0) {
+    raw_msg += ":";
+    raw_msg += source;
+  }
+  raw_msg += " ";
+  if (numeric.length() != 0) {
+    raw_msg += numeric;
+  } else {
+    raw_msg += cmd;
+  }
+  while (idx < param_cnt) {
+    raw_msg += " ";
+    raw_msg += params[idx];
+    idx++;
+  }
+  if (trailing.length() != 0) {
+    raw_msg += " :";
+    raw_msg += trailing;
+  }
+  raw_msg += "\r\n";
+
+  return raw_msg;
+}
 
 std::ostream& operator<<(std::ostream& out, Message msg) {
   int i = 0;
 
   out << "< Message contents > \n"
+      << "fd \t\t: " << msg.get_socket_fd() << '\n'
       << "source\t\t: " << msg.get_source() << '\n'
       << "command\t\t: " << msg.get_cmd() << '\n'
       << "params\t\t: ";
@@ -166,8 +214,7 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
     out << '\n';
   }
   out << "trailing\t: " << msg.get_trailing() << '\n'
-      << "numeric\t\t: " << msg.get_numeric() << '\n'
-      << "ret_msg\t\t: " << msg.get_ret_msg() << '\n';
+      << "numeric\t\t: " << msg.get_numeric() << '\n';
 
   return out;
 }

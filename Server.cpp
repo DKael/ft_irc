@@ -65,11 +65,92 @@ const int Server::get_user_cnt(void) const { return user_list.size(); }
 
 void Server::add_tmp_user(const int user_socker, const sockaddr_in& user_addr) {
   User tmp(user_socker, user_addr);
+
+  while (tmp_nick_to_soc.find(tmp.get_nick_name()) == tmp_nick_to_soc.end()) {
+    tmp.set_nick_name(make_random_string(20));
+  }
+  tmp_nick_to_soc.insert(std::make_pair(tmp.get_nick_name(), user_socker));
   tmp_user_list.insert(std::make_pair(user_socker, tmp));
 }
 
 void Server::add_user(const User& input) {
+  nick_to_soc.insert(
+      std::make_pair(input.get_nick_name(), input.get_user_socket()));
   user_list.insert(std::make_pair(input.get_user_socket(), input));
+}
+
+void Server::remove_user(const int socket_fd) {
+  std::map<int, User>::iterator it1;
+  std::map<std::string, int>::iterator it2;
+  std::string tmp;
+
+  it1 = user_list.find(socket_fd);
+  if (it1 != user_list.end()) {
+    tmp = (it1->second).get_nick_name();
+    user_list.erase(it1);
+    it2 = nick_to_soc.find(tmp);
+    nick_to_soc.erase(it2);
+    ::close(socket_fd);
+    return;
+  }
+
+  it1 = tmp_user_list.find(socket_fd);
+  if (it1 != tmp_user_list.end()) {
+    tmp = (it1->second).get_nick_name();
+    tmp_user_list.erase(it1);
+    it2 = tmp_nick_to_soc.find(tmp);
+    tmp_nick_to_soc.erase(it2);
+    ::close(socket_fd);
+    return;
+  } else {
+    throw std::invalid_argument("Subsription error!");
+  }
+}
+
+void Server::remove_user(const std::string& nickname) {
+  std::map<std::string, int>::iterator it1;
+  std::map<int, User>::iterator it2;
+  int tmp;
+
+  it1 = nick_to_soc.find(nickname);
+  if (it1 != nick_to_soc.end()) {
+    tmp = it1->second;
+    nick_to_soc.erase(it1);
+    it2 = user_list.find(tmp);
+    user_list.erase(it2);
+    ::close(tmp);
+    return;
+  }
+
+  it1 = tmp_nick_to_soc.find(nickname);
+  if (it1 != tmp_nick_to_soc.end()) {
+    tmp = it1->second;
+    tmp_nick_to_soc.erase(it1);
+    it2 = tmp_user_list.find(tmp);
+    tmp_user_list.erase(it2);
+    ::close(tmp);
+    return;
+  } else {
+    throw std::invalid_argument("Subsription error!");
+  }
+}
+
+void Server::tmp_user_timeout_chk(void) {
+  time_t current_time = time(NULL);
+  std::map<int, User>::iterator it1 = tmp_user_list.begin();
+  std::map<int, User>::iterator it2 = tmp_user_list.end();
+  std::string tmp_nick;
+
+  while (it1 != it2) {
+    if (current_time >
+        (it1->second).get_created_time() + AUTHENTICATE_TIMEOUT) {
+      tmp_nick = (it1->second).get_nick_name();
+      it1++;
+      remove_user(tmp_nick);
+    } else {
+      it1++;
+    }
+  }
 }
 
 User& Server::operator[](const int socket_fd) {
@@ -77,6 +158,16 @@ User& Server::operator[](const int socket_fd) {
     return user_list.at(socket_fd);
   } else if (tmp_user_list.find(socket_fd) != tmp_user_list.end()) {
     return tmp_user_list.at(socket_fd);
+  } else {
+    throw std::invalid_argument("Subsription error!");
+  }
+}
+
+int Server::operator[](const std::string& nickname) {
+  if (nick_to_soc.find(nickname) != nick_to_soc.end()) {
+    return nick_to_soc.at(nickname);
+  } else if (tmp_nick_to_soc.find(nickname) != tmp_nick_to_soc.end()) {
+    return tmp_nick_to_soc.at(nickname);
   } else {
     throw std::invalid_argument("Subsription error!");
   }

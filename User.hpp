@@ -6,7 +6,16 @@
 #include <unistd.h>
 
 #include <ctime>
+#include <queue>
 #include <string>
+
+#include "string_func.hpp"
+
+enum chk_status {
+  NOT_YET = 0,
+  FAIL,
+  OK,
+};
 
 class User {
  private:
@@ -15,10 +24,14 @@ class User {
   std::time_t created_time;
 
   std::string nick_name;
+  chk_status nick_init_chk;
   std::string user_name;
   std::string real_name;
-  bool password_chk;
-  bool is_authenticated;
+  chk_status user_init_chk;
+  chk_status password_chk;
+  chk_status is_authenticated;
+
+  std::queue<std::string> to_send;
 
   // not use
   User();
@@ -30,19 +43,27 @@ class User {
   ~User();
 
   void set_nick_name(const std::string& input);
+  void set_nick_init_chk(const chk_status input);
   void set_user_name(const std::string& input);
   void set_real_name(const std::string& input);
-  void set_password_chk(const bool input);
-  void set_is_authenticated(const bool input);
+  void set_user_init_chk(const chk_status input);
+  void set_password_chk(const chk_status input);
+  void set_is_authenticated(const chk_status input);
 
   const int get_user_socket(void) const;
   const sockaddr_in& get_user_addr(void) const;
   const time_t get_created_time(void) const;
   const std::string& get_nick_name(void) const;
+  const chk_status get_nick_init_chk(void) const;
   const std::string& get_user_name(void) const;
   const std::string& get_real_name(void) const;
-  const bool get_password_chk(void) const;
-  const bool get_is_authenticated(void) const;
+  const chk_status get_user_init_chk(void) const;
+  const chk_status get_password_chk(void) const;
+  const chk_status get_is_authenticated(void) const;
+
+  void push_msg(const std::string& msg);
+  std::string pop_msg(void);
+  std::size_t number_of_to_send(void);
 };
 
 #endif
