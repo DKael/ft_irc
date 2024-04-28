@@ -1,0 +1,18 @@
+Here is some information about common IRC server commands and channel modes:
+/MODE - Used to change a channel's mode. Some common modes:
+i: Invite-only mode. When set (+i), users can only join the channel if invited by an operator. When removed (-i), anyone can join.
+t: Topic lock. When set (+t), only channel operators can change the channel topic using the /TOPIC command. When removed (-t), anyone can change the topic.
+k: Channel key (password). When set (+k <key>), users must provide the specified key to join the channel. Remove with -k.
+o: Channel operator status. Used as +o <nick> to grant operator privileges to a user, and -o <nick> to remove. Operators can kick/ban users, change modes, etc.
+l: User limit. Set a max number of users allowed in the channel with +l <number>. Remove the limit with -l.
+Some other useful commands:
+/JOIN <#channel> - Join the specified channel
+/PART <#channel> - Leave a channel
+/TOPIC <#channel> <topic> - Set the channel topic
+/KICK <#channel> <nick> - Kick a user from the channel
+/BAN <#channel> <nick!user@host> - Ban a user from the channel
+The syntax is /MODE <#channel> <+/-mode> <parameters>. For example:
+/MODE #channel +i  (makes the channel invite-only)
+/MODE #channel +k secret  (sets the key to "secret")
+/MODE #channel +o nick  (makes "nick" a channel operator)
+Let me know if you have any other questions! I tried to cover the key points concisely but thoroughly. IRC has many more modes and commands but those are some of the most important ones related to your query.

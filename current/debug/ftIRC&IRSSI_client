@@ -1,0 +1,27 @@
+Server listening at 0.0.0.0:8081
+printed at socket read part
+CAP LS 302
+JOIN :
+send : 4, :ft_irc 451 * :Connection not registered
+
+printed at socket read part
+PASS 1234
+printed at socket read part
+NICK dong-kim
+printed at socket read part
+USER dong-kim dong-kim localhost :Dong Young Kim
+send : 4, :ft_irc 001 dong-kim :Welcome to the Internet Relay Network
+
+send : 4, :ft_irc 002 dong-kim :Your host is ft_irc
+
+send : 4, :ft_irc 003 dong-kim :This server has been started ~
+
+send : 4, :ft_irc 004 dong-kim :ft_irc
+
+send : 4, :ft_irc 005 dong-kim RFC2812 IRCD=ngIRCd CHARSET=UTF-8 CASEMAPPING=ascii PREFIX=(qaohv)~&@%+ CHANTYPES=#&+ CHANMODES=beI,k,l,imMnOPQRstVz CHANLIMIT=#&+:10 :are supported on this server
+
+send : 4, :ft_irc 005 dong-kim CHANNELLEN=50 NICKLEN=9 TOPICLEN=490 AWAYLEN=127 KICKLEN=400 MODES=5 MAXLIST=beI:50 EXCEPTS=e PENALTY FNC :are supported on this server
+
+printed at socket read part
+MODE dong-kim +i
+send : 4, :dong-kim!~dong-kim@localhost MODE dong-kim :dong-kim
