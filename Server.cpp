@@ -98,11 +98,8 @@ void Server::listen(void) {
           if (observe_fd[i].revents & POLLOUT) {
             revent_pollout(observe_fd[i]);
           }
-          if (observe_fd[i].revents & POLLIN) {
+          if (observe_fd[i].revents & (POLLIN | POLLHUP)) {
             revent_pollin(observe_fd[i]);
-          }
-          if (observe_fd[i].revents & POLLHUP) {
-            observe_fd[i].fd = -1;
           }
           if (observe_fd[i].revents) {
             event_cnt--;
