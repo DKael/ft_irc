@@ -39,12 +39,14 @@ void Message::map_init(void) {
   }
 }
 
+Message::Message() : raw_msg(""), socket_fd(-1) {}
+
 Message::Message(int _socket_fd, const std::string& _raw_msg)
     : socket_fd(_socket_fd), raw_msg(ft_strip(_raw_msg)) {
   if (raw_msg.length() == 0) {
     set_cmd_type(NONE);
     numeric = "421";
-    trailing = "Unknown command";
+    params.push_back(":Unknown command");
     return;
   }
   std::size_t idx1 = 0;
@@ -58,13 +60,14 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
     pos = raw_msg.find_first_of(' ');
     if (pos == std::string::npos) {
       set_cmd_type(ERROR);
-      trailing = "Prefix without command";
+      params.push_back(":Prefix without command");
       return;
     }
     source = raw_msg.substr(1, pos - 1);
-    if (source.find_first_of("\0\r\n ") != std::string::npos) {
+    if (source.find_first_of("\0\n\t\v\f\r") != std::string::npos) {
       set_cmd_type(ERROR);
-      trailing = std::string("Invalid prefix \"") + source + std::string("\"");
+      params.push_back(std::string(":Invalid prefix \"") + source +
+                       std::string("\""));
       return;
     }
   }
@@ -73,7 +76,7 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   pos = raw_msg.find_first_not_of(' ', pos);
   if (pos == std::string::npos) {
     set_cmd_type(ERROR);
-    trailing = "Prefix without command";
+    params.push_back(":Prefix without command");
     return;
   }
   idx1 = pos;
@@ -94,7 +97,7 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   } else {
     set_cmd_type(NONE);
     numeric = "421";
-    trailing = "Unknown command";
+    params.push_back(":Unknown command");
     return;
   }
 
@@ -102,7 +105,7 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   idx2 = raw_msg.rfind(" :");
   if (idx2 != std::string::npos) {
     // trailing exist
-    trailing = raw_msg.substr(idx2 + 2);
+    tmp_trailing = raw_msg.substr(idx2 + 2);
   } else {
     idx2 = raw_msg.length();
   }
@@ -112,11 +115,15 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   std::string params_str = raw_msg.substr(idx1, idx2 - idx1);
   ft_split(params_str, " ", params);
   for (int i = 0; i < params.size(); i++) {
-    if (params[i].find_first_of("\0\r\n ") != std::string::npos) {
+    if (params[i].find_first_of("\0\n\t\v\f\r") != std::string::npos) {
       set_cmd_type(ERROR);
-      trailing = "Invalid parameter";
+      params.push_back(":Invalid parameter");
       return;
     }
+  }
+
+  if (tmp_trailing.length() != 0) {
+    params.push_back(tmp_trailing);
   }
   return;
 }
@@ -136,8 +143,6 @@ void Message::set_cmd_type(const Command input) {
 void Message::push_back(const std::string& input) { params.push_back(input); }
 
 void Message::clear(void) { params.clear(); }
-
-void Message::set_trailing(const std::string& input) { trailing = input; }
 
 void Message::set_numeric(const std::string& input) { numeric = input; }
 
@@ -167,8 +172,6 @@ const std::string& Message::operator[](const int idx) const {
   }
 }
 
-const std::string& Message::get_trailing(void) const { return trailing; }
-
 const std::string& Message::get_numeric(void) const { return numeric; }
 
 std::string Message::to_raw_msg(void) {
@@ -179,8 +182,8 @@ std::string Message::to_raw_msg(void) {
   if (source.length() != 0) {
     raw_msg += ":";
     raw_msg += source;
+    raw_msg += " ";
   }
-  raw_msg += " ";
   if (numeric.length() != 0) {
     raw_msg += numeric;
   } else {
@@ -190,10 +193,6 @@ std::string Message::to_raw_msg(void) {
     raw_msg += " ";
     raw_msg += params[idx];
     idx++;
-  }
-  if (trailing.length() != 0) {
-    raw_msg += " :";
-    raw_msg += trailing;
   }
   raw_msg += "\r\n";
 
@@ -216,10 +215,43 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
   } else {
     out << '\n';
   }
-  out << "trailing\t: " << msg.get_trailing() << '\n'
-      << "numeric\t\t: " << msg.get_numeric() << '\n';
+  out << "numeric\t\t: " << msg.get_numeric() << '\n';
 
   return out;
+}
+
+Message Message::rpl_432(const std::string& source, const std::string& client,
+                         const std::string& nick) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("432");
+  rpl.push_back(client);
+  rpl.push_back(nick);
+  rpl.push_back(":Erroneous nickname");
+  return rpl;
+}
+
+Message Message::rpl_433(const std::string& source, const std::string& client,
+                         const std::string& nick) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("433");
+  rpl.push_back(client);
+  rpl.push_back(nick);
+  rpl.push_back(":Nickname is already in use");
+  return rpl;
+}
+
+Message Message::rpl_451(const std::string& source, const std::string& client) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("451");
+  rpl.push_back(client);
+  rpl.push_back(":Connection not registered");
+  return rpl;
 }
 
 Message Message::rpl_461(const std::string& source, const std::string& client,
@@ -230,7 +262,7 @@ Message Message::rpl_461(const std::string& source, const std::string& client,
   rpl.set_numeric("461");
   rpl.push_back(client);
   rpl.push_back(cmd);
-  rpl.set_trailing("Not enough parameters");
+  rpl.push_back(":Not enough parameters");
   return rpl;
 }
 
@@ -240,7 +272,7 @@ Message Message::rpl_462(const std::string& source, const std::string& client) {
   rpl.source = source;
   rpl.set_numeric("462");
   rpl.push_back(client);
-  rpl.set_trailing("You may not reregister");
+  rpl.push_back(":Connection already registered");
   return rpl;
 }
 
@@ -250,6 +282,6 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
   rpl.source = source;
   rpl.set_numeric("464");
   rpl.push_back(client);
-  rpl.set_trailing("Password incorrect");
+  rpl.push_back(":Password incorrect");
   return rpl;
 }

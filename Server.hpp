@@ -16,8 +16,13 @@
 #include "User.hpp"
 #include "custom_exception.hpp"
 
-#define MAX_USER 1024
+#define MAX_USER 256
 #define AUTHENTICATE_TIMEOUT 20
+
+#define SERVER_NAME "ft_irc"
+#define CHAN_TYPE "#&"
+#define MAX_NICK_LEN 9
+#define MAX_USER_NAME_LEN 12
 
 class Server {
  private:
@@ -36,6 +41,7 @@ class Server {
   std::map<std::string, int> nick_to_soc;
 
   bool enable_ident_protocol;
+  std::size_t max_nick_len;
 
   // not use
   Server();
@@ -71,6 +77,8 @@ class Server {
 
   void cmd_pass(int recv_fd, const Message& msg);
   void cmd_nick(int recv_fd, const Message& msg);
+  void cmd_user(int recv_fd, const Message& msg);
+  void cmd_quit(int recv_fd, const Message& msg);
 };
 
 #endif

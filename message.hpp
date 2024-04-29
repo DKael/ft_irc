@@ -117,7 +117,6 @@ class Message {
   std::string cmd;
   Command cmd_type;
   std::vector<std::string> params;
-  std::string trailing;
 
   std::string numeric;
 
@@ -131,7 +130,6 @@ class Message {
   void set_cmd_type(const Command input);
   void push_back(const std::string& input);
   void clear(void);
-  void set_trailing(const std::string& input);
   void set_numeric(const std::string& input);
 
   const std::string& get_raw_msg(void) const;
@@ -143,11 +141,15 @@ class Message {
   const std::vector<std::string>& get_params(void) const;
   const std::size_t get_params_size(void) const;
   const std::string& operator[](const int idx) const;
-  const std::string& get_trailing(void) const;
   const std::string& get_numeric(void) const;
 
   std::string to_raw_msg(void);
 
+  static Message rpl_432(const std::string& source, const std::string& client,
+                         const std::string& nick);
+  static Message rpl_433(const std::string& source, const std::string& client,
+                         const std::string& nick);
+  static Message rpl_451(const std::string& source, const std::string& client);
   static Message rpl_461(const std::string& source, const std::string& client,
                          const std::string& cmd);
   static Message rpl_462(const std::string& source, const std::string& client);

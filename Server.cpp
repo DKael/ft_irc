@@ -3,10 +3,11 @@
 Server::Server(const char* _port, const char* _password)
     : port(std::atoi(_port)),
       str_port(_port),
-      serv_name("ft_irc"),
-      chantype("#&"),
+      serv_name(SERVER_NAME),
+      chantype(CHAN_TYPE),
       password(_password),
-      enable_ident_protocol(false) {
+      enable_ident_protocol(false),
+      max_nick_len(9) {
   serv_socket = ::socket(PF_INET, SOCK_STREAM, 0);
   if (serv_socket == -1) {
     throw socket_create_error();
@@ -201,7 +202,6 @@ int Server::send_msg(int socket_fd) {
 
   while (to_send_num > 0) {
     const std::string& msg_tmp = user_tmp.front_msg();
-    std::cout << "send : " << socket_fd << ", " << msg_tmp << '\n';
     send_result =
         send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
     if (send_result == -1) {
@@ -209,7 +209,7 @@ int Server::send_msg(int socket_fd) {
         return -1;
       } else {
         std::cerr << "send() error\n";
-        return -1;
+        return -2;
       }
     }
     user_tmp.pop_msg();
@@ -240,48 +240,110 @@ int Server::operator[](const std::string& nickname) {
 
 void Server::cmd_pass(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
+  std::string pass_tmp;
 
   if (event_user.get_password_chk() == NOT_YET) {
     if (msg.get_params_size() < 1) {
-      Message rpl = Message::rpl_461(serv_name, event_user.get_nick_name(),
-                                     msg.get_raw_cmd());
-      event_user.push_msg(rpl.to_raw_msg());
-    } else {
-      if (password == msg[0]) {
-        event_user.set_password_chk(OK);
-      } else {
-        event_user.set_password_chk(FAIL);
-      }
+      event_user.push_msg(Message::rpl_461(serv_name,
+                                           event_user.get_nick_name(),
+                                           msg.get_raw_cmd())
+                              .to_raw_msg());
+      return;
     }
+    if (msg[0].at(0) == ':') {
+      pass_tmp = msg[0].substr(1);
+    } else {
+      pass_tmp = msg[0];
+    }
+    if (password == pass_tmp) {
+      event_user.set_password_chk(OK);
+    } else {
+      event_user.set_password_chk(FAIL);
+    }
+    return;
   } else {
-    Message rpl = Message::rpl_462(serv_name, event_user.get_nick_name());
-    event_user.push_msg(rpl.to_raw_msg());
+    event_user.push_msg(
+        Message::rpl_462(serv_name, event_user.get_nick_name()).to_raw_msg());
+    return;
   }
 }
 
 void Server::cmd_nick(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
+  std::string nick_tmp;
 
   if (msg.get_params_size() == 0) {
-    Message rpl = Message::rpl_461(serv_name, event_user.get_nick_name(),
-                                   msg.get_raw_cmd());
-    event_user.push_msg(rpl.to_raw_msg());
+    event_user.push_msg(Message::rpl_461(serv_name, event_user.get_nick_name(),
+                                         msg.get_raw_cmd())
+                            .to_raw_msg());
+    return;
   } else {
+    if (msg[0].at(0) == ':') {
+      nick_tmp = msg[0].substr(1);
+    } else {
+      nick_tmp = msg[0];
+    }
+    if (('0' <= nick_tmp[0] && nick_tmp[0] <= '9') ||
+        nick_tmp.find_first_of(chantype + std::string(": \n\t\v\f\r")) !=
+            std::string::npos ||
+        nick_tmp.length() > MAX_NICK_LEN) {
+      event_user.push_msg(
+          Message::rpl_432(serv_name, event_user.get_nick_name(), nick_tmp)
+              .to_raw_msg());
+      return;
+    }
     try {
-      serv[msg[0]];
-      rpl.set_source(serv.get_serv_name());
-      rpl.set_numeric("433");
-      if (event_user.get_nick_init_chk() == NOT_YET) {
-        rpl.push_back("*");
-      } else {
-        rpl.push_back(event_user.get_nick_name());
-      }
-      rpl.push_back(msg[0]);
-      rpl.set_trailing("Nickname already in use");
-      event_user.push_msg(rpl.to_raw_msg());
+      (*this)[nick_tmp];
+      event_user.push_msg(
+          Message::rpl_433(serv_name, event_user.get_nick_name(), nick_tmp)
+              .to_raw_msg());
+      return;
     } catch (std::invalid_argument& e) {
-      serv.change_nickname(event_user.get_nick_name(), msg[0]);
+      if (event_user.get_is_authenticated() == OK) {
+        Message rpl;
+
+        rpl.set_source(event_user.get_nick_name() + "!" +
+                       event_user.get_user_name() + "@localhost");
+        rpl.set_cmd_type(NICK);
+        rpl.push_back(":" + nick_tmp);
+        event_user.push_msg(rpl.to_raw_msg());
+      }
+      (*this).change_nickname(event_user.get_nick_name(), nick_tmp);
       event_user.set_nick_init_chk(OK);
+    }
+  }
+}
+
+void Server::cmd_user(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+  std::string user_tmp;
+
+  if (msg.get_params_size() < 4) {
+    event_user.push_msg(Message::rpl_461(serv_name, event_user.get_nick_name(),
+                                         msg.get_raw_cmd())
+                            .to_raw_msg());
+    return;
+  }
+  if (event_user.get_user_init_chk() == NOT_YET) {
+    if (enable_ident_protocol == true) {
+      user_tmp = msg[0];
+    } else {
+      user_tmp = "~" + msg[0];
+    }
+    if (user_tmp.length() > MAX_USER_NAME_LEN) {
+      user_tmp = user_tmp.substr(0, MAX_USER_NAME_LEN);
+    }
+    event_user.set_real_name(msg[3]);
+    event_user.set_user_init_chk(OK);
+  } else {
+    if (event_user.get_is_authenticated() == OK) {
+      Message rpl = Message::rpl_462(serv_name, event_user.get_nick_name());
+      event_user.push_msg(rpl.to_raw_msg());
+      return;
+    } else {
+      Message rpl = Message::rpl_451(serv_name, event_user.get_nick_name());
+      event_user.push_msg(rpl.to_raw_msg());
+      return;
     }
   }
 }

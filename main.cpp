@@ -52,8 +52,6 @@ int main(int argc, char** argv) {
     socklen_t user_addr_len;
     sockaddr_in user_addr;
     int user_socket;
-    int read_cnt = 0;
-    int flag;
 
     std::vector<std::string> msg_list;
 
@@ -71,6 +69,7 @@ int main(int argc, char** argv) {
         continue;
       } else if (event_cnt < 0) {
         // std::cerr << "poll() error!\n";
+        std::cerr << errno << '\n';
         perror("poll() error!");
         return 1;
       } else {
@@ -118,7 +117,6 @@ int main(int argc, char** argv) {
               }
             }
           }
-
           event_cnt--;
         }
 
@@ -134,6 +132,7 @@ int main(int argc, char** argv) {
               } else {
                 if (serv.send_msg(observe_fd[i].fd) != -1) {
                   serv.remove_user(observe_fd[i].fd);
+                  observe_fd[i].fd = -1;
                 }
               }
             }
@@ -145,7 +144,18 @@ int main(int argc, char** argv) {
 
                 if (event_user.get_is_authenticated() == OK) {
                   for (int j = 0; j < msg_list.size(); j++) {
+                    if (msg_list[j] == std::string("connection finish")) {
+                      serv.remove_user(observe_fd[i].fd);
+                      std::cerr << "Connection close at " << observe_fd[i].fd
+                                << '\n';
+                      observe_fd[i].fd = -1;
+                      msg_list.clear();
+
+                      break;
+                    }
+
                     Message msg(observe_fd[i].fd, msg_list[j]);
+                    Message rpl;
                     int cmd_type = msg.get_cmd_type();
                     if (cmd_type == MODE) {
                       rpl.set_source(event_user.get_nick_name() +
@@ -154,14 +164,30 @@ int main(int argc, char** argv) {
                                      std::string("@localhost"));
                       rpl.set_cmd_type(MODE);
                       rpl.push_back(event_user.get_nick_name());
-                      rpl.set_trailing(msg[0]);
+                      rpl.push_back(":" + msg[0]);
                       event_user.push_msg(rpl.to_raw_msg());
                     } else if (cmd_type == PING) {
                       rpl.set_source(serv.get_serv_name());
                       rpl.set_cmd_type(PONG);
                       rpl.push_back(serv.get_serv_name());
-                      rpl.set_trailing(serv.get_serv_name());
+                      rpl.push_back(":" + serv.get_serv_name());
                       event_user.push_msg(rpl.to_raw_msg());
+                    } else if (cmd_type == QUIT) {
+                      rpl.set_cmd_type(ERROR);
+                      rpl.push_back(":Closing connection");
+                      event_user.push_msg(rpl.to_raw_msg());
+                      event_user.set_have_to_disconnect(true);
+                      std::cerr << "Connection close at " << observe_fd[i].fd
+                                << '\n';
+                      if (serv.send_msg(event_user.get_user_socket()) == -1) {
+                        observe_fd[i].events = POLLOUT;
+                      } else {
+                        serv.remove_user(observe_fd[i].fd);
+                        observe_fd[i].fd = -1;
+                      }
+                      msg_list.clear();
+
+                      break;
                     }
                     if (serv.send_msg(event_user.get_user_socket()) == -1) {
                       observe_fd[i].events = POLLIN | POLLOUT;
@@ -171,109 +197,60 @@ int main(int argc, char** argv) {
                   }
 
                 } else {
-                  /*
-                  code for not authenticated user
-                  only PASS, NICK, USER command accepted
-                  */
-
                   for (int j = 0; j < msg_list.size(); j++) {
-                    Message msg(observe_fd[i].fd, msg_list[j]);
+                    if (msg_list[j] == std::string("connection finish")) {
+                      serv.remove_user(observe_fd[i].fd);
+                      std::cerr << "Connection close at " << observe_fd[i].fd
+                                << '\n';
+                      observe_fd[i].fd = -1;
+                      msg_list.clear();
 
+                      break;
+                    }
+
+                    Message msg(observe_fd[i].fd, msg_list[j]);
                     int cmd_type = msg.get_cmd_type();
+
                     if (cmd_type == PASS) {
                       serv.cmd_pass(observe_fd[i].fd, msg);
                     } else if (cmd_type == NICK) {
                       if (event_user.get_password_chk() == NOT_YET) {
                         event_user.set_password_chk(FAIL);
                       }
-                      if (msg.get_params_size() == 0) {
-                        rpl.set_source(serv.get_serv_name());
-                        rpl.set_numeric("461");
-                        if (event_user.get_nick_init_chk() == NOT_YET) {
-                          rpl.push_back("*");
-                        } else {
-                          rpl.push_back(event_user.get_nick_name());
-                        }
-                        rpl.push_back(msg.get_cmd());
-                        rpl.set_trailing("Syntax error");
-                        event_user.push_msg(rpl.to_raw_msg());
-                      } else {
-                        try {
-                          serv[msg[0]];
-                          rpl.set_source(serv.get_serv_name());
-                          rpl.set_numeric("433");
-                          if (event_user.get_nick_init_chk() == NOT_YET) {
-                            rpl.push_back("*");
-                          } else {
-                            rpl.push_back(event_user.get_nick_name());
-                          }
-                          rpl.push_back(msg[0]);
-                          rpl.set_trailing("Nickname already in use");
-                          event_user.push_msg(rpl.to_raw_msg());
-                        } catch (std::invalid_argument& e) {
-                          serv.change_nickname(event_user.get_nick_name(),
-                                               msg[0]);
-                          event_user.set_nick_init_chk(OK);
-                        }
-                      }
+                      serv.cmd_nick(observe_fd[i].fd, msg);
                     } else if (cmd_type == USER) {
                       if (event_user.get_password_chk() == NOT_YET) {
                         event_user.set_password_chk(FAIL);
                       }
-                      if (!((msg.get_params_size() == 4 &&
-                             msg.get_trailing().length() == 0) ||
-                            (msg.get_params_size() == 3 &&
-                             msg.get_trailing().length() != 0))) {
-                        rpl.set_source(serv.get_serv_name());
-                        rpl.set_numeric("461");
-                        if (event_user.get_nick_init_chk() == NOT_YET) {
-                          rpl.push_back("*");
-                        } else {
-                          rpl.push_back(event_user.get_nick_name());
-                        }
-                        rpl.push_back(msg.get_cmd());
-                        rpl.set_trailing("Syntax error");
-                        event_user.push_msg(rpl.to_raw_msg());
-                      } else {
-                        if (event_user.get_user_init_chk() == NOT_YET) {
-                          if (serv.get_enable_ident_protocol() == true) {
-                            event_user.set_user_name(msg[0]);
-                          } else {
-                            event_user.set_user_name(std::string("~") + msg[0]);
-                          }
-                          if (msg.get_params_size() == 4) {
-                            event_user.set_real_name(msg[3]);
-                          } else {
-                            event_user.set_real_name(msg.get_trailing());
-                          }
-                          event_user.set_user_init_chk(OK);
-                        } else {
-                          rpl.set_source(serv.get_serv_name());
-                          rpl.set_numeric("451");
-                          if (event_user.get_nick_init_chk() == NOT_YET) {
-                            rpl.push_back("*");
-                          } else {
-                            rpl.push_back(event_user.get_nick_name());
-                          }
-                          rpl.set_trailing("Connection not registered");
-                          event_user.push_msg(rpl.to_raw_msg());
-                        }
-                      }
+                      serv.cmd_user(observe_fd[i].fd, msg);
                     } else if (cmd_type == CAP) {
                       continue;
                     } else if (cmd_type == ERROR) {
                       event_user.push_msg(msg.to_raw_msg());
-                    } else {
-                      rpl.set_source(serv.get_serv_name());
-                      rpl.set_numeric("451");
-                      if (event_user.get_nick_init_chk() == NOT_YET) {
-                        rpl.push_back("*");
+                    } else if (cmd_type == QUIT) {
+                      Message rpl;
+
+                      rpl.set_cmd_type(ERROR);
+                      rpl.push_back(":Closing connection");
+                      event_user.push_msg(rpl.to_raw_msg());
+                      event_user.set_have_to_disconnect(true);
+                      std::cerr << "Connection close at " << observe_fd[i].fd
+                                << '\n';
+                      if (serv.send_msg(event_user.get_user_socket()) == -1) {
+                        observe_fd[i].events = POLLOUT;
                       } else {
-                        rpl.push_back(event_user.get_nick_name());
+                        serv.remove_user(observe_fd[i].fd);
+                        observe_fd[i].fd = -1;
                       }
-                      rpl.set_trailing("Connection not registered");
+                      msg_list.clear();
+
+                      break;
+                    } else {
+                      Message rpl = Message::rpl_451(
+                          serv.get_serv_name(), event_user.get_nick_name());
                       event_user.push_msg(rpl.to_raw_msg());
                     }
+
                     if (serv.send_msg(event_user.get_user_socket()) == -1) {
                       observe_fd[i].events = POLLIN | POLLOUT;
                     } else {
@@ -283,13 +260,16 @@ int main(int argc, char** argv) {
                         event_user.get_user_init_chk() == OK) {
                       if (event_user.get_password_chk() != OK) {
                         event_user.set_have_to_disconnect(true);
-                        rpl.set_cmd_type(ERROR);
-                        rpl.set_trailing("Access denied: Bad password?");
-                        event_user.push_msg(rpl.to_raw_msg());
+
+                        event_user.push_msg(
+                            Message::rpl_464(serv.get_serv_name(),
+                                             event_user.get_nick_name())
+                                .to_raw_msg());
                         if (serv.send_msg(event_user.get_user_socket()) == -1) {
                           observe_fd[i].events = POLLOUT;
                         } else {
-                          serv.remove_user(event_user.get_user_socket());
+                          serv.remove_user(observe_fd[i].fd);
+                          observe_fd[i].fd = -1;
                         }
                       } else {
                         // authenticate complete
@@ -297,27 +277,32 @@ int main(int argc, char** argv) {
                         serv.move_tmp_user_to_user_list(
                             event_user.get_user_socket());
                         User& event_user1 = serv[tmp_fd];
+
+                        Message rpl;
                         rpl.set_source(serv.get_serv_name());
                         rpl.push_back(event_user.get_nick_name());
 
                         rpl.set_numeric("001");
-                        rpl.set_trailing(
-                            "Welcome to the Internet Relay Network");
+                        rpl.push_back(":Welcome to the Internet Relay Network");
                         event_user1.push_msg(rpl.to_raw_msg());
 
+                        rpl.clear();
                         rpl.set_numeric("002");
-                        rpl.set_trailing(std::string("Your host is ") +
-                                         serv.get_serv_name());
+                        rpl.push_back(std::string(":Your host is ") +
+                                      serv.get_serv_name());
                         event_user1.push_msg(rpl.to_raw_msg());
 
+                        rpl.clear();
                         rpl.set_numeric("003");
-                        rpl.set_trailing("This server has been started ~");
+                        rpl.push_back(":This server has been started ~");
                         event_user1.push_msg(rpl.to_raw_msg());
 
+                        rpl.clear();
                         rpl.set_numeric("004");
-                        rpl.set_trailing(serv.get_serv_name());
+                        rpl.push_back(":" + serv.get_serv_name());
                         event_user1.push_msg(rpl.to_raw_msg());
 
+                        rpl.clear();
                         rpl.set_numeric("005");
                         rpl.push_back("RFC2812");
                         rpl.push_back("IRCD=ngIRCd");
@@ -327,7 +312,7 @@ int main(int argc, char** argv) {
                         rpl.push_back("CHANTYPES=#&+");
                         rpl.push_back("CHANMODES=beI,k,l,imMnOPQRstVz");
                         rpl.push_back("CHANLIMIT=#&+:10");
-                        rpl.set_trailing("are supported on this server");
+                        rpl.push_back(":are supported on this server");
                         event_user1.push_msg(rpl.to_raw_msg());
 
                         rpl.clear();
@@ -342,6 +327,7 @@ int main(int argc, char** argv) {
                         rpl.push_back("EXCEPTS=e");
                         rpl.push_back("PENALTY");
                         rpl.push_back("FNC");
+                        rpl.push_back(":are supported on this server");
                         event_user1.push_msg(rpl.to_raw_msg());
                         event_user1.set_is_authenticated(OK);
 
@@ -455,8 +441,7 @@ void read_msg_from_socket(const int socket_fd,
       // socket connection finish
       // 이 함수는 소켓으로부터 메세지만 읽어들이는 함수이니 여기서 close()
       // 함수를 부르지 말고 외부에서 부를 수 있게 메세지를 남기자
-      msg_list.push_back(std::string("connection finish at socket ") +
-                         ft_itos(socket_fd));
+      msg_list.push_back(std::string("connection finish"));
       break;
     }
   }
