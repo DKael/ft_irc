@@ -4,6 +4,7 @@ Server::Server(const char* _port, const char* _password)
     : port(std::atoi(_port)),
       str_port(_port),
       serv_name("ft_irc"),
+      chantype("#&"),
       password(_password),
       enable_ident_protocol(false) {
   serv_socket = ::socket(PF_INET, SOCK_STREAM, 0);
@@ -234,5 +235,53 @@ int Server::operator[](const std::string& nickname) {
     return tmp_nick_to_soc.at(nickname);
   } else {
     throw std::invalid_argument("Subsription error!");
+  }
+}
+
+void Server::cmd_pass(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+
+  if (event_user.get_password_chk() == NOT_YET) {
+    if (msg.get_params_size() < 1) {
+      Message rpl = Message::rpl_461(serv_name, event_user.get_nick_name(),
+                                     msg.get_raw_cmd());
+      event_user.push_msg(rpl.to_raw_msg());
+    } else {
+      if (password == msg[0]) {
+        event_user.set_password_chk(OK);
+      } else {
+        event_user.set_password_chk(FAIL);
+      }
+    }
+  } else {
+    Message rpl = Message::rpl_462(serv_name, event_user.get_nick_name());
+    event_user.push_msg(rpl.to_raw_msg());
+  }
+}
+
+void Server::cmd_nick(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+
+  if (msg.get_params_size() == 0) {
+    Message rpl = Message::rpl_461(serv_name, event_user.get_nick_name(),
+                                   msg.get_raw_cmd());
+    event_user.push_msg(rpl.to_raw_msg());
+  } else {
+    try {
+      serv[msg[0]];
+      rpl.set_source(serv.get_serv_name());
+      rpl.set_numeric("433");
+      if (event_user.get_nick_init_chk() == NOT_YET) {
+        rpl.push_back("*");
+      } else {
+        rpl.push_back(event_user.get_nick_name());
+      }
+      rpl.push_back(msg[0]);
+      rpl.set_trailing("Nickname already in use");
+      event_user.push_msg(rpl.to_raw_msg());
+    } catch (std::invalid_argument& e) {
+      serv.change_nickname(event_user.get_nick_name(), msg[0]);
+      event_user.set_nick_init_chk(OK);
+    }
   }
 }

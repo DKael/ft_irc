@@ -24,6 +24,7 @@ class Server {
   const int port;
   const std::string str_port;
   const std::string serv_name;
+  const std::string chantype;
 
   std::string password;
   int serv_socket;
@@ -67,6 +68,9 @@ class Server {
 
   User& operator[](const int socket_fd);
   int operator[](const std::string& nickname);
+
+  void cmd_pass(int recv_fd, const Message& msg);
+  void cmd_nick(int recv_fd, const Message& msg);
 };
 
 #endif

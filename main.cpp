@@ -141,19 +141,11 @@ int main(int argc, char** argv) {
               try {
                 read_msg_from_socket(observe_fd[i].fd, msg_list);
 
-                // print msg_list to check message read is ok
-                // this part will be removed
-                std::cerr << "printed at socket read part\n";
-                for (int i = 0; i < msg_list.size(); i++) {
-                  std::cerr << msg_list[i] << '\n';
-                }
-
                 User& event_user = serv[observe_fd[i].fd];
 
                 if (event_user.get_is_authenticated() == OK) {
-                  for (int i = 0; i < msg_list.size(); i++) {
-                    Message rpl(event_user.get_user_socket());
-                    Message msg(msg_list[i], event_user.get_user_socket());
+                  for (int j = 0; j < msg_list.size(); j++) {
+                    Message msg(observe_fd[i].fd, msg_list[j]);
                     int cmd_type = msg.get_cmd_type();
                     if (cmd_type == MODE) {
                       rpl.set_source(event_user.get_nick_name() +
@@ -184,29 +176,12 @@ int main(int argc, char** argv) {
                   only PASS, NICK, USER command accepted
                   */
 
-                  for (int i = 0; i < msg_list.size(); i++) {
-                    Message rpl(event_user.get_user_socket());
-                    Message msg(msg_list[i], event_user.get_user_socket());
+                  for (int j = 0; j < msg_list.size(); j++) {
+                    Message msg(observe_fd[i].fd, msg_list[j]);
 
                     int cmd_type = msg.get_cmd_type();
                     if (cmd_type == PASS) {
-                      if (event_user.get_password_chk() == NOT_YET) {
-                        if (serv.get_password() == msg[0]) {
-                          event_user.set_password_chk(OK);
-                        } else {
-                          event_user.set_password_chk(FAIL);
-                        }
-                      } else {
-                        rpl.set_source(serv.get_serv_name());
-                        rpl.set_numeric("462");
-                        if (event_user.get_nick_init_chk() == NOT_YET) {
-                          rpl.push_back("*");
-                        } else {
-                          rpl.push_back(event_user.get_nick_name());
-                        }
-                        rpl.set_trailing("Connection already registered");
-                        event_user.push_msg(rpl.to_raw_msg());
-                      }
+                      serv.cmd_pass(observe_fd[i].fd, msg);
                     } else if (cmd_type == NICK) {
                       if (event_user.get_password_chk() == NOT_YET) {
                         event_user.set_password_chk(FAIL);

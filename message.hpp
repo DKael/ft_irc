@@ -101,7 +101,8 @@ enum Command {
   LINKS,
   USERHOST,
   WALLOPS,
-  NONE
+  NONE,
+  NORPL,
 };
 
 class Message {
@@ -112,6 +113,7 @@ class Message {
   const std::string raw_msg;
   const int socket_fd;
   std::string source;
+  std::string raw_cmd;
   std::string cmd;
   Command cmd_type;
   std::vector<std::string> params;
@@ -119,25 +121,23 @@ class Message {
 
   std::string numeric;
 
-  //not use
-  Message();
-
  public:
   static void map_init(void);
-  Message(int socket_fd);
-  Message(const std::string& _raw_msg, int socket_fd);
+  Message();
+  Message(int socket_fd, const std::string& _raw_msg);
 
-void set_source(const std::string& input);
-void set_cmd(const std::string& input);
-void set_cmd_type(const Command input);
-void push_back(const std::string& input);
-void clear(void);
-void set_trailing(const std::string& input);
-void set_numeric(const std::string& input);
+  void set_source(const std::string& input);
+  void set_cmd(const std::string& input);
+  void set_cmd_type(const Command input);
+  void push_back(const std::string& input);
+  void clear(void);
+  void set_trailing(const std::string& input);
+  void set_numeric(const std::string& input);
 
   const std::string& get_raw_msg(void) const;
   const int get_socket_fd(void) const;
   const std::string& get_source(void) const;
+  const std::string& get_raw_cmd(void) const;
   const std::string& get_cmd(void) const;
   const Command get_cmd_type(void) const;
   const std::vector<std::string>& get_params(void) const;
@@ -147,6 +147,11 @@ void set_numeric(const std::string& input);
   const std::string& get_numeric(void) const;
 
   std::string to_raw_msg(void);
+
+  static Message rpl_461(const std::string& source, const std::string& client,
+                         const std::string& cmd);
+  static Message rpl_462(const std::string& source, const std::string& client);
+  static Message rpl_464(const std::string& source, const std::string& client);
 };
 
 std::ostream& operator<<(std::ostream& out, Message msg);

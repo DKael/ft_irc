@@ -49,7 +49,13 @@ void User::set_have_to_disconnect(const bool input) {
   have_to_disconnect = input;
 }
 
-const std::string& User::get_nick_name(void) const { return nick_name; }
+const std::string User::get_nick_name(void) const {
+  if (nick_init_chk != NOT_YET) {
+    return nick_name;
+  } else {
+    return "*";
+  }
+}
 
 const chk_status User::get_nick_init_chk(void) const { return nick_init_chk; }
 

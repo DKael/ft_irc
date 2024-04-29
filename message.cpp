@@ -20,7 +20,7 @@ void Message::map_init(void) {
     etos[WHOIS] = "WHOIS", etos[WHOWAS] = "WHOWAS", etos[KILL] = "KILL",
     etos[REHASH] = "REHASH", etos[RESTART] = "RESTART", etos[SQUIT] = "SQUIT",
     etos[AWAY] = "AWAY", etos[LINKS] = "LINKS", etos[USERHOST] = "USERHOST",
-    etos[WALLOPS] = "WALLOPS", etos[NONE] = "NONE";
+    etos[WALLOPS] = "WALLOPS", etos[NONE] = "NONE", etos[NORPL] = "NORPL";
 
     stoe["CAP"] = CAP, stoe["AUTHENTICATE"] = AUTHENTICATE, stoe["PASS"] = PASS,
     stoe["NICK"] = NICK, stoe["USER"] = USER, stoe["PING"] = PING,
@@ -35,14 +35,12 @@ void Message::map_init(void) {
     stoe["WHOIS"] = WHOIS, stoe["WHOWAS"] = WHOWAS, stoe["KILL"] = KILL,
     stoe["REHASH"] = REHASH, stoe["RESTART"] = RESTART, stoe["SQUIT"] = SQUIT,
     stoe["AWAY"] = AWAY, stoe["LINKS"] = LINKS, stoe["USERHOST"] = USERHOST,
-    stoe["WALLOPS"] = WALLOPS, stoe["NONE"] = NONE;
+    stoe["WALLOPS"] = WALLOPS, stoe["NONE"] = NONE, stoe["NORPL"] = NORPL;
   }
 }
 
-Message::Message(int _socket_fd) : raw_msg(""), socket_fd(_socket_fd) {}
-
-Message::Message(const std::string& _raw_msg, int _socket_fd)
-    : raw_msg(ft_strip(_raw_msg)), socket_fd(_socket_fd) {
+Message::Message(int _socket_fd, const std::string& _raw_msg)
+    : socket_fd(_socket_fd), raw_msg(ft_strip(_raw_msg)) {
   if (raw_msg.length() == 0) {
     set_cmd_type(NONE);
     numeric = "421";
@@ -85,6 +83,7 @@ Message::Message(const std::string& _raw_msg, int _socket_fd)
   } else {
     cmd = raw_msg.substr(idx1, pos - idx1);
   }
+  raw_cmd = cmd;
   ft_upper(cmd);
   std::map<std::string, Command>::const_iterator it = stoe.find(cmd);
   if (it != stoe.end()) {
@@ -147,6 +146,8 @@ const std::string& Message::get_raw_msg(void) const { return raw_msg; }
 const int Message::get_socket_fd(void) const { return socket_fd; }
 
 const std::string& Message::get_source(void) const { return source; }
+
+const std::string& Message::get_raw_cmd(void) const { return raw_cmd; }
 
 const std::string& Message::get_cmd(void) const { return cmd; }
 
@@ -219,4 +220,36 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
       << "numeric\t\t: " << msg.get_numeric() << '\n';
 
   return out;
+}
+
+Message Message::rpl_461(const std::string& source, const std::string& client,
+                         const std::string& cmd) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("461");
+  rpl.push_back(client);
+  rpl.push_back(cmd);
+  rpl.set_trailing("Not enough parameters");
+  return rpl;
+}
+
+Message Message::rpl_462(const std::string& source, const std::string& client) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("462");
+  rpl.push_back(client);
+  rpl.set_trailing("You may not reregister");
+  return rpl;
+}
+
+Message Message::rpl_464(const std::string& source, const std::string& client) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("464");
+  rpl.push_back(client);
+  rpl.set_trailing("Password incorrect");
+  return rpl;
 }
