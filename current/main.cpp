@@ -14,8 +14,7 @@
 #define BUFFER_SIZE 65536
 #define POLL_TIMEOUT 5
 
-void read_msg_from_socket(const int socket_fd,
-                          std::vector<std::string>& msg_list);
+void read_msg_from_socket(const int socket_fd, std::vector<std::string>& msg_list);
 
 bool port_chk(const char* input_port) {
   std::stringstream port_chk;
@@ -31,7 +30,8 @@ bool port_chk(const char* input_port) {
   return true;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   if (argc != 3) {
     std::cerr << "Usage : " << argv[0] << " <port> <password to connect>\n";
     return 1;
@@ -43,7 +43,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  try {
+  try
+  {
+    // POLL 아키텍쳐 설계
     Server serv(argv[1], argv[2]);
     pollfd observe_fd[MAX_USER];
     int event_cnt = 0;
@@ -69,10 +71,10 @@ int main(int argc, char** argv) {
 
       if (event_cnt == 0) {
         continue;
-      } else if (event_cnt < 0) {
-        // std::cerr << "poll() error!\n";
+      }
+      else if (event_cnt < 0) {
         perror("poll() error!");
-        return 1;
+        return (1);
       } 
       else
       {
@@ -96,7 +98,7 @@ int main(int argc, char** argv) {
               }
             }
 
-            if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) 
+            if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1)
             {
               // error_handling
               std::cerr << "fcntl() error\n";
@@ -116,8 +118,7 @@ int main(int argc, char** argv) {
             }
 
             serv.add_tmp_user(user_socket, user_addr);
-            for (int i = 1; i < MAX_USER; i++)
-            {
+            for (int i = 1; i < MAX_USER; i++) {
               if (observe_fd[i].fd == -1) {
                 observe_fd[i].fd = user_socket;
                 observe_fd[i].events = POLLIN;
@@ -125,12 +126,12 @@ int main(int argc, char** argv) {
               }
             }
           }
-
-          event_cnt--;
+          event_cnt--; // @@@??? [1]
         }
 
         for (int i = 1; i < MAX_USER && event_cnt > 0; i++)
         {
+          /// @@@???[2]
           if (observe_fd[i].fd > 0) 
           {
             if (observe_fd[i].revents & POLLOUT) {
@@ -146,7 +147,7 @@ int main(int argc, char** argv) {
                 }
               }
             }
-            // IRSSI CLIENT로 부터 읽어올 데이터가 있는 OBSERVE
+            // IRSSI(CLIENT) -> SERVER REQUEST
             if (observe_fd[i].revents & POLLIN)
             {
               try
@@ -156,11 +157,13 @@ int main(int argc, char** argv) {
                 // print msg_list to check message read is ok
                 // this part will be removed
                 // std::cerr << "printed at socket read part :: " << std::endl;
-                for (int i = 0; i < msg_list.size(); i++)
-                {
-                  std::cerr << YELLOW << msg_list[i] << '\n' << WHITE;
+                for (int i = 0; i < msg_list.size(); i++) {
+                  std::cerr << YELLOW << msg_list[i] << std::endl << WHITE;
                 }
 
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 // SHOW THE LIST OF CLIENTS
                 if (msg_list[0] == "lusers")
                 {
@@ -176,32 +179,108 @@ int main(int argc, char** argv) {
 
                 if (event_user.get_is_authenticated() == OK)
                 {
+                  // 여기서 부터는 AUTHENTICATION이 된 CLIENT만 들어옴으로 CMD를 잘 수행해 주면 됨
                   for (int i = 0; i < msg_list.size(); i++)
                   {
                     Message rpl(event_user.get_user_socket());
                     Message msg(msg_list[i], event_user.get_user_socket());
                     int cmd_type = msg.get_cmd_type();
-                    if (cmd_type == MODE) {
+
+                    // MODE에 대한 요청 RESONPSE
+                    if (cmd_type == MODE)
+                    {
                       rpl.set_source(event_user.get_nick_name() + std::string("!") + event_user.get_user_name() + std::string("@localhost"));
                       rpl.set_cmd_type(MODE);
                       rpl.push_back(event_user.get_nick_name());
                       rpl.set_trailing(msg[0]);
                       event_user.push_msg(rpl.to_raw_msg());
-                    } else if (cmd_type == PING) {
+                    }
+
+                    // 주기적으로 들어오는 PING 요청 처리
+                    else if (cmd_type == PING)
+                    {
                       rpl.set_source(serv.get_serv_name());
                       rpl.set_cmd_type(PONG);
                       rpl.push_back(serv.get_serv_name());
                       rpl.set_trailing(serv.get_serv_name());
                       event_user.push_msg(rpl.to_raw_msg());
                     }
+
+                    // SET NICK
+                    else if (cmd_type == NICK)
+                    {
+                      std::cout << GREEN << msg << WHITE;
+                      std::cout << CYAN << event_user << WHITE;
+                      // 현재 할당되어있는 닉네임과 같다면 그냥 무시
+                      if (msg.get_params().front() == event_user.get_nick_name()) {
+                        std::cout << "닉네임이 같아요.\n";
+                        continue;
+                      }  else {
+                        event_user.set_nick_name(msg.get_params().front())
+                      }
+
+
+
+                      // 만약 현재 할당되어 있는 닉네임과 같지 않다면 RESPONSE를 보내줘야함
+                      // CLIENT의 user_name 을 새로 할당해주는 것은 당연히 해주는거
+
+
+
+
+                    }
+                    
+                    
+                    // SET USER_NAME
+                    
+                    
+                    
+                    
+                    
+                    // CLIENT COMMAND 구현
+                    else if (cmd_type == JOIN) {
+                      std::cout << "\t\t" << GREEN << "WEEEEEEE" << std::endl;
+                    }
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
                     if (serv.send_msg(event_user.get_user_socket()) == -1) {
                       observe_fd[i].events = POLLIN | POLLOUT;
                     } else {
                       observe_fd[i].events = POLLIN;
                     }
                   }
-
                 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                // 처음 연결이 수립되었을때 SERVER에서 보내는 RESPONSE
                 else {
                   std::cout << GREEN << "================" << WHITE << std::endl;
                   /*
@@ -209,7 +288,8 @@ int main(int argc, char** argv) {
                     only PASS, NICK, USER command accepted
                   */
 
-                  for (int i = 0; i < msg_list.size(); i++) {
+                  for (int i = 0; i < msg_list.size(); i++)
+                  {
                     Message rpl(event_user.get_user_socket());
                     Message msg(msg_list[i], event_user.get_user_socket());
 
@@ -267,8 +347,7 @@ int main(int argc, char** argv) {
                           rpl.set_trailing("Nickname already in use");
                           event_user.push_msg(rpl.to_raw_msg());
                         } catch (std::invalid_argument& e) {
-                          serv.change_nickname(event_user.get_nick_name(),
-                                               msg[0]);
+                          serv.change_nickname(event_user.get_nick_name(), msg[0]);
                           event_user.set_nick_init_chk(OK);
                         }
                       }

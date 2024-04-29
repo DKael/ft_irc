@@ -11,6 +11,7 @@ SRCS =	main.cpp \
 		custom_exception.cpp \
 		User.cpp \
 		message.cpp \
+		Channel.cpp \
 		string_func.cpp
 
 # Generate a list of object files with the obj/ prefix
