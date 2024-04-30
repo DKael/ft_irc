@@ -1,9 +1,26 @@
 [MANUAL]
 /nick						  =>    자신의 nick name을 확인할 수 있음
 
-
-
-
-
 /set nick example             =>    irssi config file을 직접 수정해서 기본 닉네임을 변경하는 행동
 /nick exmaple                 =>    과제에서 요구하는 user의 닉네임 변경하기
+
+
+[PROTOCOL]
+<case 1>
+
+
+<case 2>
+nick name 중복 							=> ERR_NICKNAMEINUSE(433)
+{
+	:ft_irc 433  oooooo :Nickname already in use\r
+}
+
+<case 3>
+nick name 중복은 아니지만 파씽에러 			 => ERR_ERRONEUSNICKNAME(432)
+
+<정상 케이스>
+{
+	:ssssssss!~memememe@localhost NICK :aaaaaa\r
+	:[PREVIOUS NICK_NAME] + ! + ~ + [USER_NAME] + @ + localhost + NICK :[UPDATED NICK_NAME]
+}
+:irc.example.net PONG irc.example.net :irc.example.net\r
