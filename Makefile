@@ -11,7 +11,7 @@ TOTAL_OBJS = ${OBJS}
 
 CXX = c++
 
-CXXFLAGS = -std=c++98 #-Wall -Wextra -Werror
+CXXFLAGS = -std=c++98 # -fsanitize=address -g3 #-Wall -Wextra -Werror
 
 NAME = ircserv
 

@@ -20,6 +20,7 @@ enum chk_status {
 
 class User {
  private:
+  const std::string dummy;
   const int user_socket;
   const sockaddr_in user_addr;
   std::time_t created_time;
@@ -56,7 +57,8 @@ class User {
   const int get_user_socket(void) const;
   const sockaddr_in& get_user_addr(void) const;
   const time_t get_created_time(void) const;
-  const std::string get_nick_name(void) const;
+  const std::string& get_nick_name(void) const;
+  const std::string& get_nick_name_no_chk(void) const;
   const chk_status get_nick_init_chk(void) const;
   const std::string& get_user_name(void) const;
   const std::string& get_real_name(void) const;

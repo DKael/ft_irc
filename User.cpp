@@ -11,7 +11,8 @@ User::User(const int _user_socket, const sockaddr_in& _user_addr)
       user_init_chk(NOT_YET),
       password_chk(NOT_YET),
       is_authenticated(NOT_YET),
-      have_to_disconnect(false) {}
+      have_to_disconnect(false),
+      dummy("*") {}
 
 User::User(const User& origin)
     : user_socket(origin.user_socket),
@@ -25,7 +26,8 @@ User::User(const User& origin)
       password_chk(origin.password_chk),
       is_authenticated(origin.is_authenticated),
       have_to_disconnect(origin.have_to_disconnect),
-      to_send(origin.to_send) {}
+      to_send(origin.to_send),
+      dummy("*") {}
 
 User::~User() {}
 
@@ -49,13 +51,15 @@ void User::set_have_to_disconnect(const bool input) {
   have_to_disconnect = input;
 }
 
-const std::string User::get_nick_name(void) const {
+const std::string& User::get_nick_name(void) const {
   if (nick_init_chk != NOT_YET) {
     return nick_name;
   } else {
-    return "*";
+    return dummy;
   }
 }
+
+const std::string& User::get_nick_name_no_chk(void) const { return nick_name; }
 
 const chk_status User::get_nick_init_chk(void) const { return nick_init_chk; }
 

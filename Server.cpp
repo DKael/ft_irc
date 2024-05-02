@@ -31,15 +31,15 @@ Server::Server(const char* _port, const char* _password)
     if (retry_cnt == 0) {
       throw std::exception();
     } else if (errno == EADDRINUSE) {
+      std::cerr << "Port " << port << " already in use.";
       port++;
       if (port > 65335) {
         port = 1024;
       }
       port_tmp << port;
       port_tmp >> str_port;
+      std::cerr << "Try port " << port << '\n';
       serv_addr.sin_port = htons(port);
-      std::cerr << "Port " << str_port << " already in use. Try port " << port
-                << '\n';
       retry_cnt--;
     } else {
       throw socket_bind_error();
@@ -468,11 +468,13 @@ const bool Server::get_enable_ident_protocol(void) const {
 
 void Server::add_tmp_user(const int user_socker, const sockaddr_in& user_addr) {
   User tmp(user_socker, user_addr);
+  std::string tmp_nick = tmp.get_nick_name_no_chk();
 
-  while (tmp_nick_to_soc.find(tmp.get_nick_name()) != tmp_nick_to_soc.end()) {
-    tmp.set_nick_name(make_random_string(20));
+  while (tmp_nick_to_soc.find(tmp_nick) != tmp_nick_to_soc.end()) {
+    tmp_nick = make_random_string(20);
+    tmp.set_nick_name(tmp_nick);
   }
-  tmp_nick_to_soc.insert(std::make_pair(tmp.get_nick_name(), user_socker));
+  tmp_nick_to_soc.insert(std::make_pair(tmp_nick, user_socker));
   tmp_user_list.insert(std::make_pair(user_socker, tmp));
 }
 
@@ -696,9 +698,11 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
         rpl.set_cmd_type(NICK);
         rpl.push_back(":" + nick_tmp);
         event_user.push_msg(rpl.to_raw_msg());
+        (*this).change_nickname(event_user.get_nick_name(), nick_tmp);
+      } else {
+        (*this).change_nickname(event_user.get_nick_name_no_chk(), nick_tmp);
+        event_user.set_nick_init_chk(OK);
       }
-      (*this).change_nickname(event_user.get_nick_name(), nick_tmp);
-      event_user.set_nick_init_chk(OK);
     }
   }
 }
