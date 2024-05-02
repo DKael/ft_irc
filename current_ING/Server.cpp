@@ -214,7 +214,8 @@ void Server::revent_pollin(pollfd& p_val) {
 void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
-  for (int j = 0; j < msg_list.size(); j++) {
+  for (int j = 0; j < msg_list.size(); j++)
+  {
     if (msg_list[j] == std::string("connection finish")) {
       (*this).remove_user(p_val.fd);
       std::cerr << "Connection close at " << p_val.fd << '\n';
@@ -229,8 +230,8 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     std::cout << RED << "\n[IRSSI REQUEST] :: " << YELLOW << msg_list[j] << WHITE << std::endl;
 
     // SHOW THE LIST OF CLIENTS
-    if (msg_list[0] == "lusers")
-    {
+    // [DEBUG]
+    if (msg_list[0] == "lusers") {
       std::vector<User> clientsVector = (*this).getUserList();
       for (std::vector<User>::const_iterator it = clientsVector.begin(); it != clientsVector.end(); ++it)
       {
@@ -256,14 +257,32 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       cmd_mode(p_val.fd, msg);
     } else if (cmd_type == PING) {
       cmd_pong(p_val.fd, msg);
-    } else if (cmd_type == ERROR) {
+    } 
+    else if (cmd_type == PRIVMSG)
+    {
+      cmd_privmsg(p_val.fd, msg);
+    } 
+    else if (cmd_type == ERROR)
+    {
       event_user.push_msg(msg.to_raw_msg());
-    } else if (cmd_type == CAP) {
+    } 
+    else if (cmd_type == CAP)
+    {
       continue;
-    } else if (cmd_type == QUIT) {
+    } 
+    else if (cmd_type == QUIT)
+    {
       cmd_quit(p_val, msg);
       msg_list.clear();
       break;
+      if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1)
+      {
+        p_val.events = POLLIN | POLLOUT;
+      }
+      else
+      {
+        p_val.events = POLLIN;
+      }
     }
     if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
       p_val.events = POLLIN | POLLOUT;
@@ -273,7 +292,8 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
   }
 }
 
-void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
+void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)
+{
   User& event_user = (*this)[p_val.fd];
 
   for (int j = 0; j < msg_list.size(); j++) {
@@ -343,6 +363,8 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
         // authenticate complete
         move_tmp_user_to_user_list(event_user.get_user_socket());
         User& event_user1 = (*this)[p_val.fd];
+
+//:irc.example.net 001 lfkn__ :Welcome to the Internet Relay Network lfkn__!~memememe@localhost\r
 
         Message rpl;
         rpl.set_source(serv_name);
@@ -784,8 +806,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
   Message rpl;
 
-  rpl.set_source(event_user.get_nick_name() + std::string("!") +
-                 event_user.get_user_name() + std::string("@localhost"));
+  rpl.set_source(event_user.get_nick_name() + std::string("!") + event_user.get_user_name() + std::string("@localhost"));
   rpl.set_cmd_type(MODE);
   rpl.push_back(event_user.get_nick_name());
   rpl.push_back(":" + msg[0]);
@@ -819,3 +840,70 @@ void Server::cmd_quit(pollfd& p_val, const Message& msg) {
     p_val.fd = -1;
   }
 }
+
+void Server::cmd_privmsg(int recv_fd, const Message& msg) {
+  User& source_user = (*this)[recv_fd];
+  std::cout << source_user.get_user_name();
+  // std::string user_tmp;
+
+/*
+  [IRSSI REQUEST] :: PRIVMSG lfkn_ :a
+
+  < Message contents > 
+  fd              : 4
+  source          : 
+  command         : PRIVMSG
+  params          : lfkn_, a
+  numeric         : 
+  ================================= 
+*/
+
+  // privmsg jwionfd  :nownoiw
+  std::string sourceNickName = source_user.get_nick_name();
+  std::string sourceUserName = source_user.get_user_name();
+  std::string targetNickName = msg.get_params().front();
+  int         targetFileDescriptor ;
+
+  try {
+    targetFileDescriptor  = (*this)[targetNickName];
+  } catch (const std::invalid_argument& e) {
+    // rpl ERR_NOSUCHNICK (401) 날리기
+    source_user.push_msg(Message::rpl_401(serv_name, source_user.get_nick_name(), targetNickName).to_raw_msg());
+    return;
+  }
+  
+
+  std::cout << "===>> " << targetNickName << std::endl;
+  std::cout << "===>> " << targetFileDescriptor << std::endl;
+
+  // 만약 찾았으면 거기다 적어주기
+  // 기본적인 1:1 대화 기능 구현 성공
+  User& target_user = (*this)[targetFileDescriptor];
+
+  Message rpl;
+  rpl.set_source(sourceNickName + std::string("!") + std::string("@localhost"));
+  rpl.set_cmd_type(PRIVMSG);
+
+
+  for (i = 0; i < msg.get_params_size() - 1; ++i) {
+      rpl.push_back(msg.get_params()[i]);
+  }
+  rpl.push_back(std::string(":") + msg[i]);
+  std::cout << YELLOW << rpl.to_raw_msg() << std::endl;
+  target_user.push_msg(rpl.to_raw_msg());
+  // (*this).send_msg_at_queue(target_user.get_user_socket());
+
+
+  pollfd tmp;
+  for(int i = 0; i < MAX_USER; i++) {
+    if (observe_fd[i].fd == target_user.get_user_socket()) {
+      tmp = observe_fd[i];
+    }
+  }
+
+  if ((*this).send_msg_at_queue(target_user.get_user_socket()) == -1) {
+    tmp.events = POLLIN | POLLOUT;
+  } else {
+    tmp.events = POLLIN;
+  }
+}  size_t i = 0;

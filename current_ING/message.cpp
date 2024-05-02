@@ -220,6 +220,25 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
   return out;
 }
 
+Message Message::rpl_401(const std::string& source, const std::string& client,
+                         const std::string& nick) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("401");
+  rpl.push_back(client);
+  rpl.push_back(nick);
+  rpl.push_back(":No such nick or channel name");
+
+  /////////////////
+  // [DEBUG]
+  std::cout << CYAN
+            << rpl
+            << std::endl
+            << rpl.to_raw_msg();
+  return rpl;
+}
+
 Message Message::rpl_432(const std::string& source, const std::string& client,
                          const std::string& nick) {
   Message rpl;

@@ -1,2 +1,9 @@
 [MANUAL]
 /set user_name [원하는 유저네임]
+
+ERRORNO
+
+ERR_ALREADYREGISTERED (462) 
+  "<client> :You may not reregister"
+Returned when a client tries to change a detail that can only be set during registration (such as resending the PASS or USER after registration). The text used in the last param of this message varies.
+=> 이건 처리 안해주기로 함 :: 클라이언트가 다시 보낼 경우는 없을거라 판단

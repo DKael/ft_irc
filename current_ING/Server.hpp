@@ -105,6 +105,8 @@ class Server
   void                         cmd_pong(int recv_fd, const Message& msg);
   void                         cmd_quit(pollfd& p_val, const Message& msg);
 
+  void                         cmd_privmsg(int recv_fd, const Message& msg);
+
   User& operator[](const int socket_fd);
   int operator[](const std::string& nickname);
 

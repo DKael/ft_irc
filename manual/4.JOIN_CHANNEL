@@ -1,0 +1,5 @@
+// 채널
+
+OPERATOR
+CHANNEL 에 다이렉트로도 보낼수있음
+	/msg #[channel name]
