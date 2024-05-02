@@ -1,4 +1,5 @@
 {
+    "version": "2.0.0",
     "configurations": [
         {
             "name": "C/C++: g++ 활성 파일 빌드 및 디버그",
@@ -11,8 +12,14 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb",
-            "preLaunchTask": "C/C++: g++ 활성 파일 빌드"
+            "preLaunchTask": "C/C++: g++ 활성 파일 빌드",
+            "setupCommands": [
+                {
+                    "description": "stop at c++ exception",
+                    "text": "breakpoint set -E c++",
+                    "ignoreFailures": true
+                }
+            ],
         }
-    ],
-    "version": "2.0.0"
+    ]
 }
