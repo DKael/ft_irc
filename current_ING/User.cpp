@@ -49,10 +49,14 @@ void User::set_have_to_disconnect(const bool input) {
   have_to_disconnect = input;
 }
 
+#include <iostream>
 const std::string User::get_nick_name(void) const {
+  std::cout << YELLOW << "\t\t\t\t" << (*this).nick_name << " ENTERED THE ZONE\n" << WHITE;
   if (nick_init_chk != NOT_YET) {
+    std::cout << "\t\t\t\t" << "returned nick_name\n";
     return nick_name;
   } else {
+    std::cout << "\t\t\t\t" << "*\n";
     return "*";
   }
 }

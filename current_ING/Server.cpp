@@ -121,10 +121,13 @@ int Server::client_socket_init(void) {
     user_addr_len = sizeof(user_addr);
     std::memset(&user_addr, 0, user_addr_len);
     user_socket = ::accept(serv_socket, (sockaddr*)&user_addr, &user_addr_len);
-    if (user_socket == -1) {
-      if (errno == EWOULDBLOCK) {
+    if (user_socket == -1)
+    {
+      if (errno == EWOULDBLOCK)
+      {
         return 0;
-      } else {
+      }
+      else {
         // error_handling
         // accept 함수 에러나는 경우 찾아보자
         perror("accept() error");
@@ -135,8 +138,7 @@ int Server::client_socket_init(void) {
     if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
       // error_handling
       perror("fcntl() error");
-      send(user_socket, "ERROR :socket setting error",
-           std::strlen("ERROR :socket setting error"), MSG_DONTWAIT);
+      send(user_socket, "ERROR :socket setting error", std::strlen("ERROR :socket setting error"), MSG_DONTWAIT);
       close(user_socket);
       return -1;
     }
@@ -148,8 +150,7 @@ int Server::client_socket_init(void) {
       // 아니면 예비소켓 하나 남겨두고 잠시 연결했다 바로 연결 종료하는
       // 용도로 사용하는 것도 방법일 듯
       std::cerr << "User connection limit exceed!\n";
-      send(user_socket, "ERROR :Too many users on server",
-           std::strlen("ERROR :Too many users on server"), MSG_DONTWAIT);
+      send(user_socket, "ERROR :Too many users on server", std::strlen("ERROR :Too many users on server"), MSG_DONTWAIT);
       close(user_socket);
       return 0;
     }
@@ -193,6 +194,7 @@ void Server::revent_pollin(pollfd& p_val) {
     if (event_user.get_is_authenticated() == OK) {
       auth_user(p_val, msg_list);
     } else {
+      std::cout << GREEN << "\t\t\tNOT AUTHENTICATED USER!!!!!!" << std::endl;
       not_auth_user(p_val, msg_list);
     }
   } catch (const std::bad_alloc& e) {
@@ -296,79 +298,98 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)
 {
   User& event_user = (*this)[p_val.fd];
 
-  for (int j = 0; j < msg_list.size(); j++) {
+  for (int j = 0; j < msg_list.size(); j++)
+  {
     // [DEBUG]
     std::cout << YELLOW << "msg :: " << msg_list[j] << WHITE << std::endl;
     //////////////////////////////////////////////////////////////////////
 
-    if (msg_list[j] == std::string("connection finish")) {
+    if (msg_list[j] == std::string("connection finish"))
+    {
       (*this).remove_user(p_val.fd);
       std::cerr << "Connection close at " << p_val.fd << '\n';
       p_val.fd = -1;
       msg_list.clear();
       break;
     }
+    
     Message msg(p_val.fd, msg_list[j]);
     int cmd_type = msg.get_cmd_type();
-
 
     // [DEBUG]
     std::cout << YELLOW << msg << WHITE << std::endl;
     //////////////////////////////////////////////////////////////////////
 
-    if (cmd_type == PASS) {
+    if (cmd_type == PASS)
+    {
       cmd_pass(p_val.fd, msg);
-    } else if (cmd_type == NICK) {
-      if (event_user.get_password_chk() == NOT_YET) {
+    } 
+    else if (cmd_type == NICK)
+    {
+      if (event_user.get_password_chk() == NOT_YET)
+      {
         event_user.set_password_chk(FAIL);
       }
       cmd_nick(p_val.fd, msg);
-    } else if (cmd_type == USER) {
-      if (event_user.get_password_chk() == NOT_YET) {
+    }
+    else if (cmd_type == USER)
+    {
+      if (event_user.get_password_chk() == NOT_YET)
+      {
         event_user.set_password_chk(FAIL);
       }
       cmd_user(p_val.fd, msg);
-    } else if (cmd_type == CAP) {
+    }
+    else if (cmd_type == CAP)
+    {
       continue;
-    } else if (cmd_type == ERROR) {
+    }
+    else if (cmd_type == ERROR)
+    {
       event_user.push_msg(msg.to_raw_msg());
-    } else if (cmd_type == QUIT) {
+    }
+    else if (cmd_type == QUIT)
+    {
       cmd_quit(p_val, msg);
       msg_list.clear();
       break;
-    } else {
+    }
+    else
+    {
       Message rpl = Message::rpl_451(serv_name, event_user.get_nick_name());
       event_user.push_msg(rpl.to_raw_msg());
     }
-    if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
+    if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1)
+    {
       p_val.events = POLLIN | POLLOUT;
-    } else {
+    }
+    else
+    {
       p_val.events = POLLIN;
     }
 
-    if (event_user.get_nick_init_chk() == OK &&
-        event_user.get_user_init_chk() == OK) {
-      if (event_user.get_password_chk() != OK) {
+    if (event_user.get_nick_init_chk() == OK && event_user.get_user_init_chk() == OK)
+    {
+      if (event_user.get_password_chk() != OK)
+      {
         event_user.set_have_to_disconnect(true);
-        event_user.push_msg(
-            Message::rpl_464(serv_name, event_user.get_nick_name())
-                .to_raw_msg());
+        event_user.push_msg(Message::rpl_464(serv_name, event_user.get_nick_name()).to_raw_msg());
         if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
           p_val.events = POLLOUT;
         } else {
           (*this).remove_user(p_val.fd);
           p_val.fd = -1;
         }
-      } else {
+      }
+      else {
+        std::cout << "--------------->> \t\tuser being deleted :: [" << event_user.get_nick_name() << "]" << std::endl;
         // authenticate complete
         move_tmp_user_to_user_list(event_user.get_user_socket());
         User& event_user1 = (*this)[p_val.fd];
 
-//:irc.example.net 001 lfkn__ :Welcome to the Internet Relay Network lfkn__!~memememe@localhost\r
-
         Message rpl;
         rpl.set_source(serv_name);
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
 
         rpl.set_numeric("001");
         rpl.push_back(":Welcome to the Internet Relay Network");
@@ -376,25 +397,25 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)
 
         rpl.clear();
         rpl.set_numeric("002");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back(std::string(":Your host is ") + serv_name);
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
         rpl.set_numeric("003");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back(":This server has been started ~");
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
         rpl.set_numeric("004");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back(":" + serv_name);
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
         rpl.set_numeric("005");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back("RFC2812");
         rpl.push_back("IRCD=ngIRCd");
         rpl.push_back("CHARSET=UTF-8");
@@ -407,7 +428,7 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back("CHANNELLEN=50");
         rpl.push_back("NICKLEN=9");
         rpl.push_back("TOPICLEN=490");
@@ -522,7 +543,9 @@ const bool Server::get_enable_ident_protocol(void) const {
 void Server::add_tmp_user(const int user_socker, const sockaddr_in& user_addr) {
   User tmp(user_socker, user_addr);
 
+  // DEBUG
   while (tmp_nick_to_soc.find(tmp.get_nick_name()) != tmp_nick_to_soc.end()) {
+    std::cout << "#\n" << std::endl;
     tmp.set_nick_name(make_random_string(20));
   }
   tmp_nick_to_soc.insert(std::make_pair(tmp.get_nick_name(), user_socker));
@@ -530,12 +553,25 @@ void Server::add_tmp_user(const int user_socker, const sockaddr_in& user_addr) {
 }
 
 void Server::move_tmp_user_to_user_list(int socket_fd) {
-  User& user_tmp = (*this)[socket_fd];
+    User& user_tmp = (*this)[socket_fd];
+    // User  authenticatedUser(user_tmp);
+    // std::cout << &user_tmp << "VS" << &authenticatedUser << std::endl;
+    // nick_to_soc.insert(std::make_pair(authenticatedUser.get_nick_name(), socket_fd));
+    // user_list.insert(std::make_pair(socket_fd, authenticatedUser));
+    nick_to_soc.insert(std::make_pair(user_tmp.get_nick_name(), socket_fd));
+    user_list.insert(std::make_pair(socket_fd, user_tmp));
+    tmp_nick_to_soc.erase(user_tmp.get_nick_name());
+    tmp_user_list.erase(socket_fd);
 
-  nick_to_soc.insert(std::make_pair(user_tmp.get_nick_name(), socket_fd));
-  user_list.insert(std::make_pair(socket_fd, user_tmp));
-  tmp_nick_to_soc.erase(user_tmp.get_nick_name());
-  tmp_user_list.erase(socket_fd);
+    // user_list 순회
+    std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << std::endl;
+    for (std::map<int, User>::iterator it = user_list.begin(); it != user_list.end(); ++it) {
+        int key = it->first;
+        User value = it->second;
+        // key와 value를 사용하여 필요한 작업 수행
+        std::cout << key << std::endl
+                  << value << std::endl;
+    }
 }
 
 void Server::remove_user(const int socket_fd) {
@@ -685,16 +721,17 @@ void Server::cmd_pass(int recv_fd, const Message& msg) {
   std::string pass_tmp;
 
   if (event_user.get_password_chk() == NOT_YET) {
-    if (msg.get_params_size() < 1) {
-      event_user.push_msg(Message::rpl_461(serv_name,
-                                           event_user.get_nick_name(),
-                                           msg.get_raw_cmd())
-                              .to_raw_msg());
+    if (msg.get_params_size() < 1)
+    {
+      event_user.push_msg(Message::rpl_461(serv_name, event_user.get_nick_name(), msg.get_raw_cmd()).to_raw_msg());
       return;
     }
-    if (msg[0].at(0) == ':') {
+    if (msg[0].at(0) == ':')
+    {
       pass_tmp = msg[0].substr(1);
-    } else {
+    }
+    else
+    {
       pass_tmp = msg[0];
     }
     if (password == pass_tmp) {
@@ -717,7 +754,8 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
   if (msg.get_params_size() == 0) {
     event_user.push_msg(Message::rpl_461(serv_name, event_user.get_nick_name(), msg.get_raw_cmd()).to_raw_msg());
     return;
-  } else 
+  }
+  else 
   {
     // if (msg[0].at(0) == ':') 
     // {
@@ -884,7 +922,7 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
   rpl.set_source(sourceNickName + std::string("!") + std::string("@localhost"));
   rpl.set_cmd_type(PRIVMSG);
 
-
+  int i = 0;
   for (i = 0; i < msg.get_params_size() - 1; ++i) {
       rpl.push_back(msg.get_params()[i]);
   }

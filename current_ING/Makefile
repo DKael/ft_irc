@@ -1,5 +1,5 @@
 CXX=c++
-CFLAGS=-std=c++98 #-Wall -Wextra -Werror
+CFLAGS=-std=c++98 -fsanitize=address -g3 #-Wall -Wextra -Werror
 NAME=ircserv
 
 # Create a variable for the object directory
