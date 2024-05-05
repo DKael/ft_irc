@@ -13,7 +13,7 @@ class Channel
 {
 private:
 	// CHANNEL NAME
-	std::string 				channel_name;
+	const std::string 			channel_name;
 
 	// USER LIMIT
 	int 						client_limit;
@@ -43,17 +43,17 @@ private:
 	*/
 
 	Channel();
+	Channel& operator=(const Channel& other);
 
 public:
 	// OCCF
 	Channel(std::string channelName);
 	Channel(const Channel& other);
-	Channel& operator=(const Channel& other);
 	~Channel();
 
 	// GETTER && SETTER
 	int						get_channel_capacity_limit(void);
-	std::string&			get_channel_name(void);
+	const std::string&		get_channel_name(void) const;
 
 	// METHOD FUNCTIONS
 	void					addClient(User user);

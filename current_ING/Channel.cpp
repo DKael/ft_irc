@@ -26,23 +26,23 @@ void	Channel::addClient(User newClient) {
 	channel_client_list.insert(std::make_pair(newClient.get_nick_name(), newClient));
 }
 
-Channel& Channel::operator=(const Channel& other) {
-	if (this != &other) {
-		this->channel_name = other.channel_name;
-		this->client_limit = other.client_limit;
-		this->invite_only = other.invite_only;
-		this->pwd = other.pwd;
-		this->channel_client_list = other.channel_client_list;
-		this->channel_banned_list = other.channel_banned_list;
-		this->ops = other.ops;
-		this->topic = other.topic;
-	}
-	return *this;
-}
+// Channel& Channel::operator=(const Channel& other) {
+// 	if (this != &other) {
+// 		this->channel_name = other.channel_name;
+// 		this->client_limit = other.client_limit;
+// 		this->invite_only = other.invite_only;
+// 		this->pwd = other.pwd;
+// 		this->channel_client_list = other.channel_client_list;
+// 		this->channel_banned_list = other.channel_banned_list;
+// 		this->ops = other.ops;
+// 		this->topic = other.topic;
+// 	}
+// 	return *this;
+// }
 
 int Channel::get_channel_capacity_limit(void) { return client_limit; }
 
-std::string& Channel::get_channel_name(void) { return channel_name; }
+const std::string& Channel::get_channel_name(void) const { return channel_name; }
 
 
 // [DEBUG]

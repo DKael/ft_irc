@@ -299,10 +299,10 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   if (pos != std::string::npos) {
       targetChannelStr.erase(pos, 1);
   }
-  std::map<std::string, Channel>::const_iterator targetChannelIterator = channel_list.find(msg.get_params().front());
-  Channel channel = targetChannelIterator->second;
-  std::cout << "############### ==>> !!!! " << channel.get_channel_name() << std::endl;
-  channel.visualizeClientList();
+  std::map<std::string, Channel>::iterator targetChannelIterator = channel_list.find(msg.get_params().front());
+  // Channel channel = targetChannelIterator->second;
+  std::cout << "############### ==>> !!!! " << targetChannelIterator->first << std::endl;
+  targetChannelIterator->second.visualizeClientList();
 }
 
 void Server::cmd_names(int recv_fd, const Message& msg) {
