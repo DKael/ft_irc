@@ -158,15 +158,16 @@ public:
   std::string to_raw_msg(void);
 
 
-static Message rpl_401(const std::string& source, const std::string& client,
-                         const std::string& nick);
+  static Message                                      rpl_401(const std::string& source, const std::string& client, const std::string& nick);
   static Message                                      rpl_432(const std::string& source, const std::string& client, const std::string& nick);
   static Message                                      rpl_433(const std::string& source, const std::string& client, const std::string& nick);
   static Message                                      rpl_461(const std::string& source, const std::string& client, const std::string& cmd);
   static Message                                      rpl_451(const std::string& source, const std::string& client);
   static Message                                      rpl_462(const std::string& source, const std::string& client);
   static Message                                      rpl_464(const std::string& source, const std::string& client);
-
+  static Message                                      rpl_353(const std::string& source, const std::string& client, const std::string& channelName);
+  static Message                                      rpl_366(const std::string& source, const std::string& client);
+  
   const std::string& operator[](const int idx) const;
 };
 

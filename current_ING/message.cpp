@@ -239,8 +239,7 @@ Message Message::rpl_401(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_432(const std::string& source, const std::string& client,
-                         const std::string& nick) {
+Message Message::rpl_432(const std::string& source, const std::string& client, const std::string& nick) {
   Message rpl;
 
   rpl.source = source;
@@ -345,3 +344,38 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
             << rpl.to_raw_msg();
   return rpl;
 }
+
+/* 
+
+  > 2024/05/05 14:52:02.000706851  length=9 from=503 to=511
+  JOIN #b\r
+
+  < 2024/05/05 14:52:02.000707138  length=124 from=2769 to=2892
+  :[lfkn]!~[memememe]@localhost JOIN :#b\r
+  :irc.example.net 353 lfkn = #b :@lfkn\r
+  :irc.example.net 366 lfkn #b :End of NAMES list\r
+
+*/
+Message Message::rpl_353(const std::string& source, const std::string& client, const std::string& channelName) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("353");
+  rpl.push_back(client);
+  rpl.push_back("=");
+  rpl.push_back(channelName);
+  rpl.push_back(":@" + client);
+  
+  return rpl;
+}
+
+Message Message::rpl_366(const std::string& source, const std::string& client) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("366");
+  rpl.push_back(client);
+  return rpl;
+}
+
+

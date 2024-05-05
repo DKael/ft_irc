@@ -1,7 +1,6 @@
 #include "Server.hpp"
 
-void read_msg_from_socket(const int socket_fd,
-                          std::vector<std::string>& msg_list);
+void read_msg_from_socket(const int socket_fd, std::vector<std::string>& msg_list);
 
 Server::Server(const char* _port, const char* _password)
     : port(std::atoi(_port)),
@@ -11,7 +10,9 @@ Server::Server(const char* _port, const char* _password)
       password(_password),
       enable_ident_protocol(false),
       max_nickname_len(INIT_MAX_NICKNAME_LEN),
-      max_username_len(INIT_MAX_USERNAME_LEN) {
+      max_username_len(INIT_MAX_USERNAME_LEN),
+      max_channel_num(INIT_MAX_CHANNEL_NUM)
+{
   serv_socket = ::socket(PF_INET, SOCK_STREAM, 0);
   if (serv_socket == -1) {
     throw socket_create_error();
@@ -57,8 +58,7 @@ Server::Server(const char* _port, const char* _password)
     observe_fd[i].fd = -1;
   }
 
-  std::cout << "Server listening at " << ::inet_ntoa(serv_addr.sin_addr) << ":"
-            << port << '\n';
+  std::cout << "Server listening at " << ::inet_ntoa(serv_addr.sin_addr) << ":" << port << std::endl;
 }
 
 Server::~Server() {
@@ -262,32 +262,25 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       cmd_mode(p_val.fd, msg);
     } else if (cmd_type == PING) {
       cmd_pong(p_val.fd, msg);
-    } 
-    else if (cmd_type == PRIVMSG)
-    {
+    } else if (cmd_type == PRIVMSG) {
       cmd_privmsg(p_val.fd, msg);
-    } 
-    else if (cmd_type == ERROR)
-    {
+    } else if (cmd_type == ERROR) {
       event_user.push_msg(msg.to_raw_msg());
-    } 
-    else if (cmd_type == CAP)
-    {
+    } else if (cmd_type == CAP) {
       continue;
-    } 
-    else if (cmd_type == QUIT)
-    {
+    } else if (cmd_type == QUIT) {
       cmd_quit(p_val, msg);
       msg_list.clear();
       break;
-      if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1)
-      {
+      if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
         p_val.events = POLLIN | POLLOUT;
-      }
-      else
-      {
+      } else {
         p_val.events = POLLIN;
       }
+    } else if (cmd_type == JOIN) {
+      cmd_join(p_val.fd, msg);
+    } else if (cmd_type == WHO) {
+      cmd_who(p_val.fd, msg);
     }
     if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
       p_val.events = POLLIN | POLLOUT;
@@ -295,6 +288,133 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       p_val.events = POLLIN;
     }
   }
+}
+
+// [DEBUG]
+void Server::cmd_who(int recv_fd, const Message& msg) {
+  // 채널 안의 클라이언트 목록을 보여주는 기능
+  std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
+  std::string targetChannelStr = msg.get_params()[0];
+  std::string::size_type pos = targetChannelStr.find('#');
+  if (pos != std::string::npos) {
+      targetChannelStr.erase(pos, 1);
+  }
+  std::map<std::string, Channel>::const_iterator targetChannelIterator = channel_list.find(msg.get_params().front());
+  Channel channel = targetChannelIterator->second;
+  std::cout << "############### ==>> !!!! " << channel.get_channel_name() << std::endl;
+  channel.visualizeClientList();
+}
+
+void Server::cmd_names(int recv_fd, const Message& msg) {
+  std::map<std::string, Channel>::const_iterator it;
+  std::cout << "[FT_IRC Server] <Channel Status> :: ";
+
+  for (it = channel_list.begin(); it != channel_list.end(); ++it) {
+    const std::string& channelName = it->first;
+    std::cout << channelName << "=> ";
+  }
+  std::cout << std::endl;
+}
+
+
+void Server::cmd_join(int recv_fd, const Message& msg)
+{
+  // [TO DO] :: channel 목록 capacity를 넘으면 더이상 받지 않기 => RFC 에서 어떻게 리스폰스를 주는지 확인해볼것
+  try {
+    if (get_current_channel_num() > get_max_channel_num()) // && channel이 새로운 채널인지 확인하고 맞다면 에러를 뱉어야함
+      throw (channel_list_capacity_error());
+    std::map<std::string, Channel>::iterator targetChannel = channel_list.find(msg.get_params()[0]);
+    std::string targetChannelStr = msg.get_params()[0];
+    std::string::size_type pos = targetChannelStr.find('#');
+    if (pos != std::string::npos) {
+        targetChannelStr.erase(pos, 1);
+    }
+
+    if (targetChannel != channel_list.end()) {
+        std::cout << "Found channel: " << targetChannel->first << std::endl;
+        targetChannel->second.addClient((*this)[recv_fd]);
+    } else {
+        std::cout << "Channel '" << targetChannelStr << "' not found." << std::endl;
+        Channel newChannel(targetChannelStr);
+        // 새로운 채널이 생성되면, 생성된 객체를 서버에 채널 저장소(map)에 기록(저장) 해둠
+        channel_list.insert(std::make_pair(newChannel.get_channel_name(), newChannel));
+        newChannel.addClient((*this)[recv_fd]);
+        std::cout << "*****************************************************" << std::endl;
+        newChannel.visualizeClientList();
+    }
+  } catch (std::exception& e) {
+    std::cerr << e.what() << std::endl;
+  }
+
+  // 서버에서 현재 채널
+  std::cout << msg;
+
+  /* 
+  
+    < Message contents > 
+    fd              : 5
+    source          : 
+    command         : JOIN
+    params          : #b
+    numeric         : 
+  
+  */
+
+  User& incomingClient = (*this)[recv_fd];
+  // [STEP 1] :: JOIN 요청을 수신 후 => 클라이언트와 닉네임 사용자 정보를 나타내줌
+  Message rpl1;
+  rpl1.set_source(incomingClient.get_nick_name() + std::string("!") + std::string("@localhost"));
+  rpl1.set_cmd_type(JOIN);
+  rpl1.push_back(msg.get_params()[0]);
+  std::cout << YELLOW << rpl1.to_raw_msg() << std::endl;
+  incomingClient.push_msg(rpl1.to_raw_msg());
+
+
+  // 여기까지 왔다면 client를 channel클래스에 속한 valid 요소로 넣어줘야함
+
+
+  // [STEP 2] :: 이 채널에 몇명의 어떤 클라이언트들이 있는지 반응을 보내줌
+  // example => :irc.example.net 353 lfkn___ = #b :lfkn___ lfkn__ lfkn_ @lfkn\r
+  // for 문으로 map을 순회하면서 닉네임을 만들어줄것
+  incomingClient.push_msg(Message::rpl_353(serv_name, incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg());
+  std::cout << YELLOW << Message::rpl_353(serv_name, incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg() << std::endl;
+  
+  // [STEP 3] :: 
+  // :irc.example.net 366 lfkn___ #b :End of NAMES list\r
+  incomingClient.push_msg(Message::rpl_366(serv_name, incomingClient.get_nick_name()).to_raw_msg());
+  std::cout << YELLOW << Message::rpl_366(serv_name, incomingClient.get_nick_name()).to_raw_msg() << std::endl;
+
+
+  /* 
+  
+    > 2024/05/05 14:52:02.000706851  length=9 from=503 to=511
+    JOIN #b\r
+
+    < 2024/05/05 14:52:02.000707138  length=124 from=2769 to=2892
+    :[lfkn]!~[memememe]@localhost JOIN :#b\r
+    :irc.example.net 353 lfkn = #b :@lfkn\r
+    :irc.example.net 366 lfkn #b :End of NAMES list\r
+  */
+  // :irc.example.net 366 lfkn #b :End of NAMES list\r
+
+  // 여기에 클라이언트를 채널 목록
+  // channelClientLst.insert(std::make_pair("john", User()));
+
+
+  // > 2024/05/05 14:52:05.000217218  length=9 from=512 to=520
+  // MODE #b\r
+  // < 2024/05/05 14:52:05.000217639  length=73 from=2893 to=2965
+  // :irc.example.net 324 lfkn #b +\r
+  // :irc.example.net 329 lfkn #b 1714888322\r
+  // > 2024/05/05 14:52:07.000734771  length=8 from=521 to=528
+  // WHO #b\r
+  // < 2024/05/05 14:52:07.000735215  length=139 from=2966 to=3104
+  // :irc.example.net 352 lfkn #b ~memememe localhost irc.example.net lfkn H@ :0 Dong Young Kim\r
+  // :irc.example.net 315 lfkn #b :End of WHO list\r
+  // > 2024/05/05 14:52:10.000244274  length=11 from=529 to=539
+  // MODE #b b\r
+  // < 2024/05/05 14:52:10.000244511  length=55 from=3105 to=3159
+  // :irc.example.net 368 lfkn #b :End of channel ban list\r
 }
 
 void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)
@@ -307,8 +427,7 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)
     std::cout << YELLOW << "msg :: " << msg_list[j] << WHITE << std::endl;
     //////////////////////////////////////////////////////////////////////
 
-    if (msg_list[j] == std::string("connection finish"))
-    {
+    if (msg_list[j] == std::string("connection finish")) {
       (*this).remove_user(p_val.fd);
       std::cerr << "Connection close at " << p_val.fd << '\n';
       p_val.fd = -1;
@@ -323,56 +442,38 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)
     std::cout << YELLOW << msg << WHITE << std::endl;
     //////////////////////////////////////////////////////////////////////
 
-    if (cmd_type == PASS)
-    {
+    if (cmd_type == PASS) {
       cmd_pass(p_val.fd, msg);
-    } 
-    else if (cmd_type == NICK)
-    {
-      if (event_user.get_password_chk() == NOT_YET)
-      {
+    } else if (cmd_type == NICK) {
+      if (event_user.get_password_chk() == NOT_YET) {
         event_user.set_password_chk(FAIL);
       }
       cmd_nick(p_val.fd, msg);
-    }
-    else if (cmd_type == USER)
-    {
+    } else if (cmd_type == USER) {
       if (event_user.get_password_chk() == NOT_YET)
       {
         event_user.set_password_chk(FAIL);
       }
       cmd_user(p_val.fd, msg);
-    }
-    else if (cmd_type == CAP)
-    {
+    } else if (cmd_type == CAP) {
       continue;
-    }
-    else if (cmd_type == ERROR)
-    {
+    } else if (cmd_type == ERROR) {
       event_user.push_msg(msg.to_raw_msg());
-    }
-    else if (cmd_type == QUIT)
-    {
+    } else if (cmd_type == QUIT) {
       cmd_quit(p_val, msg);
       msg_list.clear();
       break;
-    }
-    else
-    {
+    } else {
       Message rpl = Message::rpl_451(serv_name, event_user.get_nick_name());
       event_user.push_msg(rpl.to_raw_msg());
     }
-    if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1)
-    {
+    if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
       p_val.events = POLLIN | POLLOUT;
-    }
-    else
-    {
+    } else {
       p_val.events = POLLIN;
     }
 
-    if (event_user.get_nick_init_chk() == OK && event_user.get_user_init_chk() == OK)
-    {
+    if (event_user.get_nick_init_chk() == OK && event_user.get_user_init_chk() == OK) {
       if (event_user.get_password_chk() != OK)
       {
         event_user.set_have_to_disconnect(true);
@@ -543,31 +644,46 @@ const bool Server::get_enable_ident_protocol(void) const {
   return enable_ident_protocol;
 }
 
+
+
+
+
+// CHANNEL
+const int Server::get_max_channel_num(void) const { return max_channel_num; };
+
+int Server::get_current_channel_num(void) { return channel_list.size(); };
+
+
+
+
+
+
+
 void Server::add_tmp_user(const int user_socket, const sockaddr_in& user_addr) {
   User tmp(user_socket, user_addr);
   std::cout << "---------------ㅁ-----------------" << std::endl;
   std::cout << tmp.get_user_socket() << " :: " << tmp.get_nick_name() << std::endl;
 
-  // tmp_user_list 순회 및 출력
-  std::cout << "tmp_user_list contents:" << std::endl;
-  for (const auto& pair : tmp_user_list) {
-      int key = pair.first;
-      const User& user = pair.second;
-      std::cout << "Key: " << key << ", User: " << user << std::endl;
-  }
+  // // tmp_user_list 순회 및 출력
+  // std::cout << "tmp_user_list contents:" << std::endl;
+  // for (const auto& pair : tmp_user_list) {
+  //     int key = pair.first;
+  //     const User& user = pair.second;
+  //     std::cout << "Key: " << key << ", User: " << user << std::endl;
+  // }
 
-  // tmp_nick_to_soc 순회 및 출력
-  std::cout << "tmp_nick_to_soc contents:" << std::endl;
-  for (const auto& pair : tmp_nick_to_soc) {
-      const std::string& nick = pair.first;
-      int soc = pair.second;
-      std::cout << "Nick: " << nick << ", Socket: " << soc << std::endl;
-  }
+  // // tmp_nick_to_soc 순회 및 출력
+  // std::cout << "tmp_nick_to_soc contents:" << std::endl;
+  // for (const auto& pair : tmp_nick_to_soc) {
+  //     const std::string& nick = pair.first;
+  //     int soc = pair.second;
+  //     std::cout << "Nick: " << nick << ", Socket: " << soc << std::endl;
+  // }
 
   while (tmp_nick_to_soc.find(tmp.get_nick_name()) != tmp_nick_to_soc.end()) // 찾아진다면
   {
     std::cout << std::boolalpha
-              << (tmp_nick_to_soc.find(tmp.get_nick_name()) != tmp_nick_to_soc.end())
+            << (tmp_nick_to_soc.find(tmp.get_nick_name()) != tmp_nick_to_soc.end())
               << std::endl;
     tmp.set_nick_name(make_random_string(20));
   }
@@ -802,17 +918,12 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
       event_user.push_msg(Message::rpl_432(serv_name, event_user.get_nick_name(), nick_tmp).to_raw_msg());
       return;
     }
-    try
-    {
+    try {
       (*this)[nick_tmp];
       event_user.push_msg(Message::rpl_433(serv_name, event_user.get_nick_name(), nick_tmp).to_raw_msg());
       return;
-    }
-    catch (std::invalid_argument& e)
-    {
-      std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@==========#####>>\n";
-      if (event_user.get_is_authenticated() == OK) 
-      {
+    } catch (std::invalid_argument& e) {
+      if (event_user.get_is_authenticated() == OK) {
         Message rpl;
 
         rpl.set_source(event_user.get_nick_name() + "!" + event_user.get_user_name() + "@localhost");
@@ -968,3 +1079,13 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
     tmp.events = POLLIN;
   }
 }  size_t i = 0;
+
+
+
+
+void  Server::addChannel(Channel& newChannel) {
+  channel_list.insert(std::make_pair(newChannel.get_channel_name(), newChannel));
+}
+
+// remove 도 추가할것.
+
