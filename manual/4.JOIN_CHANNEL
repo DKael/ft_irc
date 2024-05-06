@@ -6,10 +6,12 @@ CHANNEL 에 다이렉트로도 보낼수있음
 
 > 2024/05/05 14:52:02.000706851  length=9 from=503 to=511
 JOIN #b\r
+
 < 2024/05/05 14:52:02.000707138  length=124 from=2769 to=2892
 :lfkn!~memememe@localhost JOIN :#b\r
 :irc.example.net 353 lfkn = #b :@lfkn\r
 :irc.example.net 366 lfkn #b :End of NAMES list\r
+
 > 2024/05/05 14:52:05.000217218  length=9 from=512 to=520
 MODE #b\r
 < 2024/05/05 14:52:05.000217639  length=73 from=2893 to=2965
@@ -24,3 +26,36 @@ WHO #b\r
 MODE #b b\r
 < 2024/05/05 14:52:10.000244511  length=55 from=3105 to=3159
 :irc.example.net 368 lfkn #b :End of channel ban list\r
+
+
+> 2024/05/06 21:07:46.000069343  length=16 from=658 to=673
+JOIN #zzzzzzzz\r
+
+< 2024/05/06 21:07:46.000069650  length=153 from=3905 to=4057
+:lfkn__!~memememe@localhost JOIN :#zzzzzzzz\r
+:irc.example.net 353 lfkn__ = #zzzzzzzz :@lfkn__\r
+:irc.example.net 366 lfkn__ #zzzzzzzz :End of NAMES list\r
+
+:lfkn!@localhost JOIN #zzzzzzzz
+
+:ft_irc 353 = #zzzzzzzz :@lfkn 
+
+:ft_irc 366 lfkn #zzzzzzzz :End of NAMES list
+
+> 2024/05/06 21:07:48.000587810  length=16 from=674 to=689
+MODE #zzzzzzzz\r
+< 2024/05/06 21:07:48.000588232  length=91 from=4058 to=4148
+:irc.example.net 324 lfkn__ #zzzzzzzz +\r
+:irc.example.net 329 lfkn__ #zzzzzzzz 1714997266\r
+> 2024/05/06 21:07:51.000100874  length=15 from=690 to=704
+WHO #zzzzzzzz\r
+< 2024/05/06 21:07:51.000101158  length=159 from=4149 to=4307
+:irc.example.net 352 lfkn__ #zzzzzzzz ~memememe localhost irc.example.net lfkn__ H@ :0 Dong Young Kim\r
+:irc.example.net 315 lfkn__ #zzzzzzzz :End of WHO list\r
+> 2024/05/06 21:07:53.000608867  length=18 from=705 to=722
+MODE #zzzzzzzz b\r
+< 2024/05/06 21:07:53.000609199  length=64 from=4308 to=4371
+:irc.example.net 368 lfkn__ #zzzzzzzz :End of channel ban list\r
+
+
+
