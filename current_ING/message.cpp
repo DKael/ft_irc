@@ -356,25 +356,54 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
   :irc.example.net 366 lfkn #b :End of NAMES list\r
 
 */
-Message Message::rpl_353(const std::string& source, const std::string& client, const std::string& channelName) {
+Message Message::rpl_353(const std::string& source, Channel& channel, const std::string& nickName, const std::string& channelName) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("353");
-  rpl.push_back(client);
+  rpl.push_back(nickName);
   rpl.push_back("=");
   rpl.push_back(channelName);
-  rpl.push_back(":@" + client);
+  // rpl.push_back(":");
   
+  const std::map<std::string, User>& clientMap = channel.get_channel_client_list();
+  const std::vector<User>& operatorVec = channel.get_channel_operator_list();
+
+  std::map<std::string, User>::const_reverse_iterator cit;
+
+  std::string user_list_str;
+
+  for (cit = clientMap.rbegin(); cit != clientMap.rend(); cit++) {
+    std::vector<User>::const_iterator citOp = operatorVec.begin();
+    const std::string& nickName = cit->first;
+    const User& user = cit->second;
+    for (; citOp != operatorVec.end(); ++citOp) {
+      if (citOp->get_nick_name() == nickName)
+        break ;
+    }
+    if (citOp != operatorVec.end()) {
+      std::string opNickName = "@" + nickName;
+      user_list_str += opNickName;
+    } else {
+      user_list_str += nickName;
+    }
+    user_list_str += std::string(" ");
+  }
+  rpl.push_back(std::string(":") + user_list_str);
+
   return rpl;
 }
 
-Message Message::rpl_366(const std::string& source, const std::string& client) {
+Message Message::rpl_366(const std::string& source, const std::string& client, const std::string& channelName) {
+  // :irc.example.net 366 lfkn__ #a :End of NAMES list\r
   Message rpl;
 
+  std::string str = std::string(":") + std::string("End of NAMES list");
   rpl.source = source;
   rpl.set_numeric("366");
   rpl.push_back(client);
+  rpl.push_back(channelName);
+  rpl.push_back(str);
   return rpl;
 }
 

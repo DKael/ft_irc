@@ -301,25 +301,34 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   if (server_channel_iterator == server_channel_list.end())
     return ;
   
-  get_server_channel(get_server_channel_iterator(targetChannelStr)).visualizeClientList();
+  std::cout << CYAN << "=>> Server Channel List :: [";
+  std::map<std::string, Channel>::const_iterator cit;
+  for (cit = server_channel_list.begin(); cit != server_channel_list.end(); cit++) {
+    std::string channelName = cit->first;
+    std::cout << channelName << ", ";
+  }
+  std::cout << "]" << std::endl << std::endl;
+
+  // get_server_channel(get_server_channel_iterator(targetChannelStr)).visualizeClientList();
   std::cout << get_server_channel(get_server_channel_iterator(targetChannelStr));
 }
 
 /////////////////////////////////////////////////////////////////////
 void Server::cmd_names(int recv_fd, const Message& msg) {
   std::map<std::string, Channel>::const_iterator it;
-  std::cout << "[FT_IRC Server] <Channel Status> :: ";
+  std::cout << "[FT_IRC Server] <Channel Status> :: [";
 
   for (it = server_channel_list.begin(); it != server_channel_list.end(); ++it) {
     const std::string& channelName = it->first;
     std::cout << channelName << "=> ";
   }
-  std::cout << std::endl;
+  std::cout << "]" << std::endl << std::endl;
 }
 
 void Server::cmd_join(int recv_fd, const Message& msg)
 {
   // [TO DO] :: channel 목록 capacity를 넘으면 더이상 받지 않기 => RFC 에서 어떻게 리스폰스를 주는지 확인해볼것
+
   try {
     if (get_current_channel_num() > get_max_channel_num()) // && channel이 새로운 채널인지 확인하고 맞다면 에러를 뱉어야함
       throw (server_channel_list_capacity_error());
@@ -335,85 +344,37 @@ void Server::cmd_join(int recv_fd, const Message& msg)
     } else {
         Channel newChannel(targetChannelStr);
         addChannel(newChannel);
-        // get_server_channel(get_server_channel_iterator(targetChannelStr)).addClient((*this)[recv_fd]);
-        // get_server_channel(get_server_channel_iterator(targetChannelStr)).addClient((*this)[recv_fd]);
-        // newChannel.addClient((*this)[recv_fd]);
-        server_channel_iterator = get_server_channel_iterator(targetChannelStr);
-        server_channel_iterator->second.addClient((*this)[recv_fd]);
+        get_server_channel(get_server_channel_iterator(targetChannelStr)).addClient((*this)[recv_fd]);
+        get_server_channel(get_server_channel_iterator(targetChannelStr)).addOperator((*this)[recv_fd]);
     }
+      // server_channel_iterator = get_server_channel_iterator(targetChannelStr);
+      // server_channel_iterator->second.addClient((*this)[recv_fd]);
+
+    User& incomingClient = (*this)[recv_fd];
+
+    // [STEP 1] :: JOIN 요청을 수신 후 => 클라이언트와 닉네임 사용자 정보를 나타내줌
+    Message rpl1;
+    rpl1.set_source(incomingClient.get_nick_name() + std::string("!") + std::string("@localhost"));
+    rpl1.set_cmd_type(JOIN);
+    rpl1.push_back(msg.get_params()[0]);
+    std::cout << YELLOW << rpl1.to_raw_msg() << std::endl;
+    incomingClient.push_msg(rpl1.to_raw_msg());
+
+    // [STEP 2] :: 이 채널에 몇명의 어떤 클라이언트들이 있는지 반응을 보내줌
+    // example => :irc.example.net 353 lfkn___ = #b :lfkn___ lfkn__ lfkn_ @lfkn\r
+    // for 문으로 map을 순회하면서 닉네임을 만들어줄것
+
+    incomingClient.push_msg(Message::rpl_353(serv_name, get_server_channel(get_server_channel_iterator(targetChannelStr)), incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg());
+    std::cout << YELLOW <<  Message::rpl_353(serv_name, get_server_channel(get_server_channel_iterator(targetChannelStr)), incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg() << std::endl;
+
+    // [STEP 3] :: 
+    // :irc.example.net 366 lfkn___ #b :End of NAMES list\r
+    incomingClient.push_msg(Message::rpl_366(serv_name, incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg());
+    std::cout << YELLOW << Message::rpl_366(serv_name, incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg() << std::endl;
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
   }
 
-  // 서버에서 현재 채널
-  std::cout << msg;
-
-  /* 
-  
-    < Message contents > 
-    fd              : 5
-    source          : 
-    command         : JOIN
-    params          : #b
-    numeric         : 
-  
-  */
-
-  User& incomingClient = (*this)[recv_fd];
-  // [STEP 1] :: JOIN 요청을 수신 후 => 클라이언트와 닉네임 사용자 정보를 나타내줌
-  Message rpl1;
-  rpl1.set_source(incomingClient.get_nick_name() + std::string("!") + std::string("@localhost"));
-  rpl1.set_cmd_type(JOIN);
-  rpl1.push_back(msg.get_params()[0]);
-  std::cout << YELLOW << rpl1.to_raw_msg() << std::endl;
-  incomingClient.push_msg(rpl1.to_raw_msg());
-
-
-  // 여기까지 왔다면 client를 channel클래스에 속한 valid 요소로 넣어줘야함
-
-
-  // [STEP 2] :: 이 채널에 몇명의 어떤 클라이언트들이 있는지 반응을 보내줌
-  // example => :irc.example.net 353 lfkn___ = #b :lfkn___ lfkn__ lfkn_ @lfkn\r
-  // for 문으로 map을 순회하면서 닉네임을 만들어줄것
-  incomingClient.push_msg(Message::rpl_353(serv_name, incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg());
-  std::cout << YELLOW << Message::rpl_353(serv_name, incomingClient.get_nick_name(), msg.get_params()[0]).to_raw_msg() << std::endl;
-  
-  // [STEP 3] :: 
-  // :irc.example.net 366 lfkn___ #b :End of NAMES list\r
-  incomingClient.push_msg(Message::rpl_366(serv_name, incomingClient.get_nick_name()).to_raw_msg());
-  std::cout << YELLOW << Message::rpl_366(serv_name, incomingClient.get_nick_name()).to_raw_msg() << std::endl;
-
-
-  /* 
-  
-    > 2024/05/05 14:52:02.000706851  length=9 from=503 to=511
-    JOIN #b\r
-
-    < 2024/05/05 14:52:02.000707138  length=124 from=2769 to=2892
-    :[lfkn]!~[memememe]@localhost JOIN :#b\r
-    :irc.example.net 353 lfkn = #b :@lfkn\r
-    :irc.example.net 366 lfkn #b :End of NAMES list\r
-  */
-  // :irc.example.net 366 lfkn #b :End of NAMES list\r
-
-  // 여기에 클라이언트를 채널 목록
-  // channelClientLst.insert(std::make_pair("john", User()));
-
-
-  // > 2024/05/05 14:52:05.000217218  length=9 from=512 to=520
-  // MODE #b\r
-  // < 2024/05/05 14:52:05.000217639  length=73 from=2893 to=2965
-  // :irc.example.net 324 lfkn #b +\r
-  // :irc.example.net 329 lfkn #b 1714888322\r
-  // > 2024/05/05 14:52:07.000734771  length=8 from=521 to=528
-  // WHO #b\r
-  // < 2024/05/05 14:52:07.000735215  length=139 from=2966 to=3104
-  // :irc.example.net 352 lfkn #b ~memememe localhost irc.example.net lfkn H@ :0 Dong Young Kim\r
-  // :irc.example.net 315 lfkn #b :End of WHO list\r
-  // > 2024/05/05 14:52:10.000244274  length=11 from=529 to=539
-  // MODE #b b\r
-  // < 2024/05/05 14:52:10.000244511  length=55 from=3105 to=3159
-  // :irc.example.net 368 lfkn #b :End of channel ban list\r
 }
 
 void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list)

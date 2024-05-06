@@ -31,19 +31,17 @@ void	Channel::addOperator(User& Client) {
 	ops.push_back(Client);
 }
 
+int Channel::get_channel_capacity_limit(void)const { return client_limit; }
 
+bool Channel::get_invite_mode_setting(void)const { return invite_only; };
 
-int Channel::get_channel_capacity_limit(void) { return client_limit; }
+std::string Channel::get_password(void)const { return pwd; };
 
-bool Channel::get_invite_mode_setting(void) { return invite_only; };
+std::string Channel::get_topic(void)const { return topic; };
 
-std::string Channel::get_password(void) { return pwd; };
-
-std::string Channel::get_topic(void) { return topic; };
-
-std::map<std::string, User> Channel::get_channel_client_list(void) { return channel_client_list; };
-std::map<std::string, User> Channel::get_channel_banned_list(void) { return channel_banned_list; };
-std::vector<User> Channel::get_channel_operator_list(void) { return ops; };
+const std::map<std::string, User>& Channel::get_channel_client_list(void)const { return channel_client_list; };
+const std::map<std::string, User>& Channel::get_channel_banned_list(void) const{ return channel_banned_list; };
+const std::vector<User>& Channel::get_channel_operator_list(void) const{ return ops; };
 
 const std::string& Channel::get_channel_name(void) const { return channel_name; }
 
@@ -71,8 +69,9 @@ void	Channel::visualizeBannedClientList(void) {
 }
 
 // [OVERLOADING] operator<<
-std::ostream& operator<<(std::ostream& out, Channel channel) {
+std::ostream& operator<<(std::ostream& out, Channel& channel) {
 	out
+		<< BLUE
 		<< "[channel name] :: " << channel.get_channel_name() << std::endl
 		<< "[client limit] :: " << channel.get_channel_capacity_limit() << std::endl
 		<< "[invite mode] :: ";
@@ -83,38 +82,42 @@ std::ostream& operator<<(std::ostream& out, Channel channel) {
 	out
 		<< channel.get_password() << std::endl;
 
-	std::map<std::string, User>clientList = channel.get_channel_client_list();
-	std::map<std::string, User>bannedList = channel.get_channel_banned_list();
-	std::vector<User>operators = channel.get_channel_operator_list();
+	const std::map<std::string, User>& clientList = channel.get_channel_client_list();
+	const std::map<std::string, User>& bannedList = channel.get_channel_banned_list();
+	const std::vector<User>operators = channel.get_channel_operator_list();
 
 	std::map<std::string, User>::const_iterator cit;
 
-	out << "=============== Client List ===============";
+	out << "=============== Client List ===============" << std::endl;
+	int i = 1;
 	for (cit = clientList.begin(); cit != clientList.end(); ++cit) {
 		const std::string& nickName = cit->first;
 		// const User& user = cit->second;
-		out << nickName << " , ";  		
+		out << i << ". " <<  nickName << std::endl;
+		i++;  		
 	}
 	out << "\n";
 	out << "=============== Banned List ===============";
 	std::map<std::string, User>::const_iterator cit2;
+	i = 1;
 	for (cit2 = bannedList.begin(); cit2 != bannedList.end(); ++cit2) {
 		const std::string& nickName = cit2->first;
 		// const User& user = cit2->second;
-		out << nickName << " , ";  		
+		out << i << ". " <<  nickName << std::endl;
+		i++;  
 	}
 	out << "\n";
 
-	out << "=============== Operators ===============";
-	for (std::vector<User>::iterator it = operators.begin(); it != operators.end(); ++it) {
+	out << "=============== Operators =================";
+	i = 1;
+	for (std::vector<User>::const_iterator it = operators.begin(); it != operators.end(); ++it) {
 		const std::string& nickName = it->get_nick_name();
-		out << nickName << " , ";
+		out << i << ". " <<  nickName << std::endl;
+		i++;  
 	}
-	out << "\n";
+	out << std::endl << WHITE;
 
 	return out;
 }
 
-
-
-
+// [ADD]

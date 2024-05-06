@@ -52,27 +52,27 @@ public:
 	~Channel();
 
 	// GETTER && SETTER
-	int								get_channel_capacity_limit(void);
-	const std::string&				get_channel_name(void) const;
-	bool							get_invite_mode_setting(void);
-	std::string						get_password(void);
-	std::string						get_topic(void);
-	std::map<std::string, User> 	get_channel_client_list(void);
-	std::map<std::string, User>		get_channel_banned_list(void);
-	std::vector<User>				get_channel_operator_list(void);
+	int										get_channel_capacity_limit(void) const;
+	const std::string&						get_channel_name(void) const;
+	bool									get_invite_mode_setting(void) const;
+	std::string								get_password(void) const;
+	std::string								get_topic(void) const;
+	const std::map<std::string, User>& 		get_channel_client_list(void) const;
+	const std::map<std::string, User>&		get_channel_banned_list(void) const;
+	const std::vector<User>&				get_channel_operator_list(void) const;
 
 	// METHOD FUNCTIONS
-	void					addClient(User& user);
-	void					addOperator(User& user);
-	void					kickClient(User& user);
-	void 					updateTopic(std::string topic);
+	void									addClient(User& user);
+	void									addOperator(User& user);
+	void									kickClient(User& user);
+	void 									updateTopic(std::string topic);
 
 	// FOR DEBUG PURPOSE ONLY [VISUALIZE]
-	void 					visualizeClientList(void);
-	void					visualizeBannedClientList(void);
-	void 					visualizeOperators(void);
+	void 									visualizeClientList(void);
+	void									visualizeBannedClientList(void);
+	void 									visualizeOperators(void);
 };
 
-std::ostream& operator<<(std::ostream&, Channel channel);
+std::ostream& operator<<(std::ostream&, Channel& channel);
 
 #endif
