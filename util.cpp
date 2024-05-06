@@ -66,3 +66,17 @@ void read_msg_from_socket(const int socket_fd,
     }
   }
 }
+
+bool port_chk(const char* input_port) {
+  std::stringstream port_chk;
+  int port;
+
+  port_chk << std::string(input_port);
+  port_chk >> port;
+  if (port_chk.fail()) {
+    return false;
+  } else if (port < 0 || 65335 < port) {
+    return false;
+  }
+  return true;
+}

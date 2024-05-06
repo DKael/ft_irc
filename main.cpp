@@ -1,23 +1,9 @@
 #include <iostream>
-#include <sstream>
 #include <string>
 
 #include "Message.hpp"
 #include "Server.hpp"
-
-bool port_chk(const char* input_port) {
-  std::stringstream port_chk;
-  int port;
-
-  port_chk << std::string(input_port);
-  port_chk >> port;
-  if (port_chk.fail()) {
-    return false;
-  } else if (port < 0 || 65335 < port) {
-    return false;
-  }
-  return true;
-}
+#include "util.h"
 
 int main(int argc, char** argv) {
   if (argc != 3) {

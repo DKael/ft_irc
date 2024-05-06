@@ -53,6 +53,7 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   std::size_t idx2 = 0;
   std::size_t pos = 0;
   std::string tmp_trailing;
+  std::string tmp_type;
 
   // check source
   if (raw_msg[0] == ':') {
@@ -82,23 +83,30 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   idx1 = pos;
   pos = raw_msg.find_first_of(' ', pos);
   if (pos == std::string::npos) {
-    cmd = raw_msg.substr(idx1);
+    tmp_type = raw_msg.substr(idx1);
   } else {
-    cmd = raw_msg.substr(idx1, pos - idx1);
+    tmp_type = raw_msg.substr(idx1, pos - idx1);
   }
-  raw_cmd = cmd;
-  ft_upper(cmd);
-  std::map<std::string, Command>::const_iterator it = stoe.find(cmd);
-  if (it != stoe.end()) {
-    cmd_type = stoe.at(cmd);
-    if (pos == std::string::npos) {
+  if (tmp_type.find_first_not_of("0123456789") != std::string::npos) {
+    // type cmd
+    cmd = tmp_type;
+    raw_cmd = cmd;
+    ft_upper(cmd);
+    std::map<std::string, Command>::iterator it = stoe.find(cmd);
+    if (it != stoe.end()) {
+      cmd_type = stoe.at(cmd);
+      if (pos == std::string::npos) {
+        return;
+      }
+    } else {
+      set_cmd_type(NONE);
+      numeric = "421";
+      params.push_back(":Unknown command");
       return;
     }
   } else {
-    set_cmd_type(NONE);
-    numeric = "421";
-    params.push_back(":Unknown command");
-    return;
+    // type numeric
+    numeric = tmp_type;
   }
 
   // check trailing before get parameters
