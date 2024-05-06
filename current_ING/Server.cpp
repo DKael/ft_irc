@@ -810,17 +810,13 @@ void Server::cmd_pass(int recv_fd, const Message& msg) {
   std::string pass_tmp;
 
   if (event_user.get_password_chk() == NOT_YET) {
-    if (msg.get_params_size() < 1)
-    {
+    if (msg.get_params_size() < 1) {
       event_user.push_msg(Message::rpl_461(serv_name, event_user.get_nick_name(), msg.get_raw_cmd()).to_raw_msg());
       return;
     }
-    if (msg[0].at(0) == ':')
-    {
+    if (msg[0].at(0) == ':') {
       pass_tmp = msg[0].substr(1);
-    }
-    else
-    {
+    } else {
       pass_tmp = msg[0];
     }
     if (password == pass_tmp) {
@@ -984,6 +980,50 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
   std::string sourceNickName = source_user.get_nick_name();
   std::string sourceUserName = source_user.get_user_name();
   std::string targetNickName = msg.get_params().front();
+  // targetNickName 의 첫번째 글자가 '#'일 경우 => 채널간 client 들과의 소통
+  if (targetNickName[0] == '#') {
+    // 채널에 속한 유저들 fd에 message다 적어서 쏴주기
+    std::string targetChannelStr = msg.get_params()[0];
+    std::string::size_type pos = targetChannelStr.find('#');
+    if (pos != std::string::npos) {
+        targetChannelStr.erase(pos, 1);
+    }
+    std::map<std::string, User> map = get_server_channel(get_server_channel_iterator(targetChannelStr)).get_channel_client_list();
+    std::map<std::string, User>::iterator it;
+    for (it = map.begin(); it != map.end(); ++it) {
+      Message rpl;
+      int target_fd = (*this)[it->first];
+      User& target_user = (*this)[target_fd];
+      if (sourceNickName == target_user.get_nick_name())
+        continue ;
+      // :lfkn!~memememe@localhost PRIVMSG #a :d\r
+      // :lfkn!~memememe@localhost PRIVMSG #a :d\r
+      rpl.set_source(std::string(":") + sourceNickName);
+      rpl.set_cmd_type(PRIVMSG);
+      rpl.push_back(msg.get_params()[0]);
+      std::string string;
+      for (int i = 1; i < msg.get_params_size(); ++i) {
+        string += msg.get_params()[i];
+        // rpl.push_back(msg.get_params()[i]);
+      }
+      rpl.push_back(string);
+      target_user.push_msg(rpl.to_raw_msg());
+
+      pollfd tmp;
+      for(int i = 0; i < MAX_USER; i++) {
+        if (observe_fd[i].fd == target_user.get_user_socket()) {
+          tmp = observe_fd[i];
+        }
+      }
+
+      if ((*this).send_msg_at_queue(target_user.get_user_socket()) == -1) {
+        tmp.events = POLLIN | POLLOUT;
+      } else {
+        tmp.events = POLLIN;
+      }
+    }
+    return ;
+  }
   int         targetFileDescriptor ;
 
   try {
@@ -1001,8 +1041,9 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
   // 기본적인 1:1 대화 기능 구현 성공
   User& target_user = (*this)[targetFileDescriptor];
 
+  // :lfkn!~memememe@localhost JOIN :#owqenflweanfwe\r
   Message rpl;
-  rpl.set_source(sourceNickName + std::string("!") + std::string("@localhost"));
+  rpl.set_source(sourceNickName + std::string("!") + std::string("~") + sourceUserName + std::string("@localhost"));
   rpl.set_cmd_type(PRIVMSG);
 
   int i = 0;
@@ -1048,9 +1089,4 @@ Channel&  Server::get_server_channel(std::map<std::string, Channel>::iterator it
   return iterator->second;
 }
 
-
 // remove 도 추가할것.
-
-
-
-
