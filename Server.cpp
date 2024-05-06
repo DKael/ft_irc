@@ -315,7 +315,7 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
 
         Message rpl;
         rpl.set_source(serv_name);
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
 
         rpl.set_numeric("001");
         rpl.push_back(":Welcome to the Internet Relay Network");
@@ -323,25 +323,25 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
 
         rpl.clear();
         rpl.set_numeric("002");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back(std::string(":Your host is ") + serv_name);
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
         rpl.set_numeric("003");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back(":This server has been started ~");
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
         rpl.set_numeric("004");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back(":" + serv_name);
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
         rpl.set_numeric("005");
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back("RFC2812");
         rpl.push_back("IRCD=ngIRCd");
         rpl.push_back("CHARSET=UTF-8");
@@ -354,7 +354,7 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
         event_user1.push_msg(rpl.to_raw_msg());
 
         rpl.clear();
-        rpl.push_back(event_user.get_nick_name());
+        rpl.push_back(event_user1.get_nick_name());
         rpl.push_back("CHANNELLEN=50");
         rpl.push_back("NICKLEN=9");
         rpl.push_back("TOPICLEN=490");
