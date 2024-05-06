@@ -75,7 +75,7 @@ private:
   std::map<std::string, Channel>  server_channel_list;
   const int                       max_channel_num;
 
-  std::map<std::string, Channel>::iterator target_channel_it;
+  std::map<std::string, Channel>::iterator server_channel_iterator;
 
   // not use
   Server();
@@ -100,9 +100,9 @@ public:
 
   const int                       get_max_channel_num(void) const;
   int                             get_current_channel_num(void);
-  
-  std::map<std::string, Channel>::iterator get_channel_iterator(std::string targetChannelStr);
 
+  std::map<std::string, Channel>::iterator get_server_channel_iterator(std::string targetChannelStr);
+  Channel&  get_server_channel(std::map<std::string, Channel>::iterator iterator);
 
   void                            add_tmp_user(const int socket_fd, const sockaddr_in& addr);
   void                            move_tmp_user_to_user_list(int socket_fd);

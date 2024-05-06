@@ -298,17 +298,11 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   if (pos != std::string::npos) {
       targetChannelStr.erase(pos, 1);
   }
+  if (server_channel_iterator == server_channel_list.end())
+    return ;
   
-  // std::map<std::string, Channel>::iterator targetChannelIterator = server_channel_list.find(targetChannelStr);
-  // // Channel channel = targetChannelIterator->second;
-  // if (targetChannelIterator == server_channel_list.end())
-  //   return ;
-  // std::cout << targetChannelIterator->second.get_channel_name();
-  // targetChannelIterator->second.visualizeClientList();
-
-  target_channel_it = get_channel_iterator(targetChannelStr);
-  std::cout << target_channel_it->first << std::endl;
-  target_channel_it->second.visualizeClientList();
+  get_server_channel(get_server_channel_iterator(targetChannelStr)).visualizeClientList();
+  std::cout << get_server_channel(get_server_channel_iterator(targetChannelStr));
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -334,18 +328,18 @@ void Server::cmd_join(int recv_fd, const Message& msg)
     if (pos != std::string::npos) {
         targetChannelStr.erase(pos, 1);
     }
-    target_channel_it = get_channel_iterator(targetChannelStr);
-    if (target_channel_it != server_channel_list.end()) {
-        target_channel_it->second.addClient((*this)[recv_fd]);
-        target_channel_it->second.visualizeClientList();
+    server_channel_iterator = get_server_channel_iterator(targetChannelStr);  
+    if (server_channel_iterator != server_channel_list.end()) {
+        server_channel_iterator->second.addClient((*this)[recv_fd]);
+        server_channel_iterator->second.visualizeClientList();
     } else {
         Channel newChannel(targetChannelStr);
-        std::pair<std::string, Channel&> channelPair(newChannel.get_channel_name(), newChannel);
-        server_channel_list.insert(channelPair);
-        // addChannel(newChannel);
-        // server_channel_list.insert(std::pair<std::string, Channel&>(newChannel.get_channel_name(), newChannel));
-        newChannel.addClient((*this)[recv_fd]);
-        newChannel.visualizeClientList();
+        addChannel(newChannel);
+        // get_server_channel(get_server_channel_iterator(targetChannelStr)).addClient((*this)[recv_fd]);
+        // get_server_channel(get_server_channel_iterator(targetChannelStr)).addClient((*this)[recv_fd]);
+        // newChannel.addClient((*this)[recv_fd]);
+        server_channel_iterator = get_server_channel_iterator(targetChannelStr);
+        server_channel_iterator->second.addClient((*this)[recv_fd]);
     }
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
@@ -649,20 +643,9 @@ const bool Server::get_enable_ident_protocol(void) const {
   return enable_ident_protocol;
 }
 
-
-
-
-
 // CHANNEL
 const int Server::get_max_channel_num(void) const { return max_channel_num; };
-
 int Server::get_current_channel_num(void) { return server_channel_list.size(); };
-
-
-
-
-
-
 
 void Server::add_tmp_user(const int user_socket, const sockaddr_in& user_addr) {
   User tmp(user_socket, user_addr);
@@ -1091,13 +1074,22 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
 
 
 void  Server::addChannel(Channel& newChannel) {
-  server_channel_list.insert(std::pair<std::string, Channel&>(newChannel.get_channel_name(), newChannel));
+  server_channel_list.insert(std::pair<std::string, Channel>(newChannel.get_channel_name(), newChannel));
+  // server_channel_list.insert(std::pair<std::string, Channel&>(newChannel.get_channel_name(), newChannel));
 }
 
-std::map<std::string, Channel>::iterator Server::get_channel_iterator(std::string targetChannelStr) {
-  target_channel_it = server_channel_list.begin();
+std::map<std::string, Channel>::iterator Server::get_server_channel_iterator(std::string targetChannelStr) {
+  server_channel_iterator = server_channel_list.begin();
   return server_channel_list.find(targetChannelStr);
 }
 
+Channel&  Server::get_server_channel(std::map<std::string, Channel>::iterator iterator) {
+  return iterator->second;
+}
+
+
 // remove 도 추가할것.
+
+
+
 
