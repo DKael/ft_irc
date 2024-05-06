@@ -16,7 +16,7 @@ const char* socket_listening_error::what() const throw() {
   return "Socket listening error!";
 };
 
-const char* channel_list_capacity_error::what() const throw() {
+const char* server_channel_list_capacity_error::what() const throw() {
   return "Channel capacity error!";
 };
 

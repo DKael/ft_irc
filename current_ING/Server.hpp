@@ -72,8 +72,10 @@ private:
   void                            not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
 
   // CHANNEL
-  std::map<std::string, Channel>  channel_list;
+  std::map<std::string, Channel>  server_channel_list;
   const int                       max_channel_num;
+
+  std::map<std::string, Channel>::iterator target_channel_it;
 
   // not use
   Server();
@@ -98,6 +100,9 @@ public:
 
   const int                       get_max_channel_num(void) const;
   int                             get_current_channel_num(void);
+  
+  std::map<std::string, Channel>::iterator get_channel_iterator(std::string targetChannelStr);
+
 
   void                            add_tmp_user(const int socket_fd, const sockaddr_in& addr);
   void                            move_tmp_user_to_user_list(int socket_fd);
@@ -110,18 +115,18 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
-  void                         cmd_pass(int recv_fd, const Message& msg);
-  void                         cmd_nick(int recv_fd, const Message& msg);
-  void                         cmd_user(int recv_fd, const Message& msg);
-  void                         cmd_mode(int recv_fd, const Message& msg);
-  void                         cmd_pong(int recv_fd, const Message& msg);
-  void                         cmd_quit(pollfd& p_val, const Message& msg);
+  void                            cmd_pass(int recv_fd, const Message& msg);
+  void                            cmd_nick(int recv_fd, const Message& msg);
+  void                            cmd_user(int recv_fd, const Message& msg);
+  void                            cmd_mode(int recv_fd, const Message& msg);
+  void                            cmd_pong(int recv_fd, const Message& msg);
+  void                            cmd_quit(pollfd& p_val, const Message& msg);
 
-  void                         cmd_privmsg(int recv_fd, const Message& msg);
-  void                         cmd_join(int recv_fd, const Message& msg);
+  void                            cmd_privmsg(int recv_fd, const Message& msg);
+  void                            cmd_join(int recv_fd, const Message& msg);
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void                          addChannel(Channel& newChannel);
+  void                            addChannel(Channel& newChannel);
 
 
 
@@ -130,8 +135,7 @@ public:
 
 
 
-
-  std::map<std::string, Channel> channelLst;
+  // std::map<std::string, Channel> channelLst;
 
   User& operator[](const int socket_fd);
   int operator[](const std::string& nickname);
@@ -153,7 +157,7 @@ public:
     std::map<std::string, Channel>::const_iterator it;
 
     std::cout << RED << "[Channel Lists in the server] :: ";
-    for (it = channel_list.begin(); it != channel_list.end(); ++it) {
+    for (it = server_channel_list.begin(); it != server_channel_list.end(); ++it) {
       const std::string& channelName = it->first;
       const Channel& channel = it->second;
 

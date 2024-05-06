@@ -56,8 +56,8 @@ public:
 	const std::string&		get_channel_name(void) const;
 
 	// METHOD FUNCTIONS
-	void					addClient(User user);
-	void					kickClient(User user);
+	void					addClient(User& user);
+	void					kickClient(User& user);
 	void 					updateTopic(std::string topic);
 
 	// FOR DEBUG PURPOSE ONLY [VISUALIZE]

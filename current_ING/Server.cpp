@@ -293,53 +293,58 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
 // [DEBUG]
 void Server::cmd_who(int recv_fd, const Message& msg) {
   // 채널 안의 클라이언트 목록을 보여주는 기능
-  std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
   std::string targetChannelStr = msg.get_params()[0];
   std::string::size_type pos = targetChannelStr.find('#');
   if (pos != std::string::npos) {
       targetChannelStr.erase(pos, 1);
   }
-  std::map<std::string, Channel>::iterator targetChannelIterator = channel_list.find(msg.get_params().front());
-  // Channel channel = targetChannelIterator->second;
-  std::cout << "############### ==>> !!!! " << targetChannelIterator->first << std::endl;
-  targetChannelIterator->second.visualizeClientList();
+  
+  // std::map<std::string, Channel>::iterator targetChannelIterator = server_channel_list.find(targetChannelStr);
+  // // Channel channel = targetChannelIterator->second;
+  // if (targetChannelIterator == server_channel_list.end())
+  //   return ;
+  // std::cout << targetChannelIterator->second.get_channel_name();
+  // targetChannelIterator->second.visualizeClientList();
+
+  target_channel_it = get_channel_iterator(targetChannelStr);
+  std::cout << target_channel_it->first << std::endl;
+  target_channel_it->second.visualizeClientList();
 }
 
+/////////////////////////////////////////////////////////////////////
 void Server::cmd_names(int recv_fd, const Message& msg) {
   std::map<std::string, Channel>::const_iterator it;
   std::cout << "[FT_IRC Server] <Channel Status> :: ";
 
-  for (it = channel_list.begin(); it != channel_list.end(); ++it) {
+  for (it = server_channel_list.begin(); it != server_channel_list.end(); ++it) {
     const std::string& channelName = it->first;
     std::cout << channelName << "=> ";
   }
   std::cout << std::endl;
 }
 
-
 void Server::cmd_join(int recv_fd, const Message& msg)
 {
   // [TO DO] :: channel 목록 capacity를 넘으면 더이상 받지 않기 => RFC 에서 어떻게 리스폰스를 주는지 확인해볼것
   try {
     if (get_current_channel_num() > get_max_channel_num()) // && channel이 새로운 채널인지 확인하고 맞다면 에러를 뱉어야함
-      throw (channel_list_capacity_error());
-    std::map<std::string, Channel>::iterator targetChannel = channel_list.find(msg.get_params()[0]);
+      throw (server_channel_list_capacity_error());
     std::string targetChannelStr = msg.get_params()[0];
     std::string::size_type pos = targetChannelStr.find('#');
     if (pos != std::string::npos) {
         targetChannelStr.erase(pos, 1);
     }
-
-    if (targetChannel != channel_list.end()) {
-        std::cout << "Found channel: " << targetChannel->first << std::endl;
-        targetChannel->second.addClient((*this)[recv_fd]);
+    target_channel_it = get_channel_iterator(targetChannelStr);
+    if (target_channel_it != server_channel_list.end()) {
+        target_channel_it->second.addClient((*this)[recv_fd]);
+        target_channel_it->second.visualizeClientList();
     } else {
-        std::cout << "Channel '" << targetChannelStr << "' not found." << std::endl;
         Channel newChannel(targetChannelStr);
-        // 새로운 채널이 생성되면, 생성된 객체를 서버에 채널 저장소(map)에 기록(저장) 해둠
-        channel_list.insert(std::make_pair(newChannel.get_channel_name(), newChannel));
+        std::pair<std::string, Channel&> channelPair(newChannel.get_channel_name(), newChannel);
+        server_channel_list.insert(channelPair);
+        // addChannel(newChannel);
+        // server_channel_list.insert(std::pair<std::string, Channel&>(newChannel.get_channel_name(), newChannel));
         newChannel.addClient((*this)[recv_fd]);
-        std::cout << "*****************************************************" << std::endl;
         newChannel.visualizeClientList();
     }
   } catch (std::exception& e) {
@@ -651,7 +656,7 @@ const bool Server::get_enable_ident_protocol(void) const {
 // CHANNEL
 const int Server::get_max_channel_num(void) const { return max_channel_num; };
 
-int Server::get_current_channel_num(void) { return channel_list.size(); };
+int Server::get_current_channel_num(void) { return server_channel_list.size(); };
 
 
 
@@ -1080,11 +1085,18 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
   }
 }  size_t i = 0;
 
-
+// std::map<std::string, Channel>::iterator findTargetChannel(std::string targetChannelStr) {
+//   server_channel_list.find(targetChannelStr)
+// }
 
 
 void  Server::addChannel(Channel& newChannel) {
-  channel_list.insert(std::make_pair(newChannel.get_channel_name(), newChannel));
+  server_channel_list.insert(std::pair<std::string, Channel&>(newChannel.get_channel_name(), newChannel));
+}
+
+std::map<std::string, Channel>::iterator Server::get_channel_iterator(std::string targetChannelStr) {
+  target_channel_it = server_channel_list.begin();
+  return server_channel_list.find(targetChannelStr);
 }
 
 // remove 도 추가할것.

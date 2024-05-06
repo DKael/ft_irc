@@ -27,7 +27,7 @@ class socket_listening_error : public std::exception {
   const char* what() const throw();
 };
 
-class channel_list_capacity_error : public std::exception {
+class server_channel_list_capacity_error : public std::exception {
  private:
  public:
   const char* what() const throw();

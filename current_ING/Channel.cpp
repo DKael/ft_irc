@@ -12,7 +12,7 @@ Channel::Channel(const Channel& other)
 
 Channel::~Channel() {}
 
-void	Channel::addClient(User newClient) {
+void	Channel::addClient(User& newClient) {
 	if (channel_client_list.size() >= get_channel_capacity_limit()) {
 		/*
 			ERR_CHANNELISFULL (471) 
@@ -22,40 +22,26 @@ void	Channel::addClient(User newClient) {
 			The text used in the last param of this message may vary. 
 		*/
 		throw(channel_client_capacity_error());
-	}
-	channel_client_list.insert(std::make_pair(newClient.get_nick_name(), newClient));
+	}	
+	// channel_client_list.insert(std::make_pair(newClient.get_nick_name(), newClient));
+	channel_client_list.insert(std::pair<std::string, User&>(newClient.get_nick_name(), newClient));
 }
-
-// Channel& Channel::operator=(const Channel& other) {
-// 	if (this != &other) {
-// 		this->channel_name = other.channel_name;
-// 		this->client_limit = other.client_limit;
-// 		this->invite_only = other.invite_only;
-// 		this->pwd = other.pwd;
-// 		this->channel_client_list = other.channel_client_list;
-// 		this->channel_banned_list = other.channel_banned_list;
-// 		this->ops = other.ops;
-// 		this->topic = other.topic;
-// 	}
-// 	return *this;
-// }
 
 int Channel::get_channel_capacity_limit(void) { return client_limit; }
 
 const std::string& Channel::get_channel_name(void) const { return channel_name; }
 
-
 // [DEBUG]
 void	Channel::visualizeClientList(void) {
 	std::map<std::string, User>::const_iterator it;
 	std::cout << "Visualizng Channel Client lists for Channel :: " << this->get_channel_name() << std::endl;
+	std::cout << YELLOW;
 	for (it = channel_client_list.begin(); it != channel_client_list.end(); ++it) {
-		std::cout << "?????????????" << std::endl;
 		const std::string& nickName = it->first;
 		const User& user = it->second;
-
 		std::cout << nickName << std::endl;
 	}
+	std::cout << WHITE;
 }
 
 void	Channel::visualizeBannedClientList(void) {
