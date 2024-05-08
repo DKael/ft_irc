@@ -124,6 +124,7 @@ public:
 
   void                            cmd_privmsg(int recv_fd, const Message& msg);
   void                            cmd_join(int recv_fd, const Message& msg);
+  void                            cmd_kick(int recv_fd, const Message& msg);
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
   void                            addChannel(Channel& newChannel);

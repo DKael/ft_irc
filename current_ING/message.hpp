@@ -61,6 +61,8 @@ NOTES:
 #include "string_func.hpp"
 #include "Channel.hpp"
 
+class Channel;
+
 enum Command {
   CAP = 0,
   AUTHENTICATE,

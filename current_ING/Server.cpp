@@ -281,12 +281,37 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       cmd_join(p_val.fd, msg);
     } else if (cmd_type == WHO) {
       cmd_who(p_val.fd, msg);
+    } 
+    else if (cmd_type == KICK) {
+      cmd_kick(p_val.fd, msg);
     }
     if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
       p_val.events = POLLIN | POLLOUT;
     } else {
       p_val.events = POLLIN;
     }
+  }
+}
+
+void Server::cmd_kick(int recv_fd, const Message& msg) {
+  std::string targetChannelStr = msg.get_params()[0];
+  std::string::size_type pos = targetChannelStr.find('#');
+  if (pos != std::string::npos) {
+    targetChannelStr.erase(pos, 1);
+  }
+  // 강퇴할 클라이언트가 속할 채널
+  server_channel_iterator = get_server_channel_iterator(targetChannelStr);
+  if (server_channel_iterator == server_channel_list.end()) {
+    return ;
+  }
+
+  int targetFileDescriptor = (*this)[msg.get_params()[1]];
+  try {
+    User& opUser = (*this)[recv_fd];
+    User& outUser = (*this)[targetFileDescriptor];
+    get_server_channel(server_channel_iterator).kickClient(opUser, outUser, msg);
+  } catch (std::exception &e) {
+    std::cerr << e.what() << std::endl;
   }
 }
 
@@ -337,10 +362,10 @@ void Server::cmd_join(int recv_fd, const Message& msg)
     if (pos != std::string::npos) {
         targetChannelStr.erase(pos, 1);
     }
-    server_channel_iterator = get_server_channel_iterator(targetChannelStr);  
+    server_channel_iterator = get_server_channel_iterator(targetChannelStr);
     if (server_channel_iterator != server_channel_list.end()) {
-        server_channel_iterator->second.addClient((*this)[recv_fd]);
-        server_channel_iterator->second.visualizeClientList();
+        std::cout << "@@@@@@@@@\n";
+        get_server_channel(get_server_channel_iterator(targetChannelStr)).addClient((*this)[recv_fd]);
     } else {
         Channel newChannel(targetChannelStr);
         addChannel(newChannel);

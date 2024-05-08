@@ -1,13 +1,25 @@
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
 
+#include "User.hpp"
+#include "custom_exception.hpp"
+#include "message.hpp"
+#include "Channel.hpp"
+
+#include "message.hpp"
+#include "User.hpp"
+#include "custom_exception.hpp"
+#include "Channel.hpp"
+
+
 #include <iostream>
 #include <map>
 #include <vector>
-#include "User.hpp"
-#include "custom_exception.hpp"
+
+
 
 class User;
+class Message;
 
 class Channel
 {
@@ -29,10 +41,10 @@ private:
 	std::map<std::string, User> channel_banned_list;   	// nickname 과 banned user
 
 	// OPERATORS
-	std::vector<User>			ops;
-
+	// std::vector<User>			ops;
+	std::map<int, std::string>		ops;
 	// TOPIC
-	std::string					topic;
+	std::string						topic;
 
 	/*
 		i : set / remove Invite only channel
@@ -59,13 +71,17 @@ public:
 	std::string								get_topic(void) const;
 	const std::map<std::string, User>& 		get_channel_client_list(void) const;
 	const std::map<std::string, User>&		get_channel_banned_list(void) const;
-	const std::vector<User>&				get_channel_operator_list(void) const;
+	// const std::vector<User>&				get_channel_operator_list(void) const;
+	const std::map<int, std::string>&		get_channel_operator_list(void) const;
 
 	// METHOD FUNCTIONS
 	void									addClient(User& user);
 	void									addOperator(User& user);
-	void									kickClient(User& user);
+	void									kickClient(User& opUser, User& outUser, const Message& msg);
 	void 									updateTopic(std::string topic);
+
+	bool									isOperator(User& user);
+	void									removeOperator(User& user);
 
 	// FOR DEBUG PURPOSE ONLY [VISUALIZE]
 	void 									visualizeClientList(void);

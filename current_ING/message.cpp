@@ -367,21 +367,23 @@ Message Message::rpl_353(const std::string& source, Channel& channel, const std:
   // rpl.push_back(":");
   
   const std::map<std::string, User>& clientMap = channel.get_channel_client_list();
-  const std::vector<User>& operatorVec = channel.get_channel_operator_list();
+  // const std::vector<User>& operatorVec = channel.get_channel_operator_list();
+  const std::map<int, std::string>& operatorMap = channel.get_channel_operator_list();
 
   std::map<std::string, User>::const_reverse_iterator cit;
 
   std::string user_list_str;
 
   for (cit = clientMap.rbegin(); cit != clientMap.rend(); cit++) {
-    std::vector<User>::const_iterator citOp = operatorVec.begin();
-    const std::string& nickName = cit->first;
+    // std::vector<User>::const_iterator citOp = operatorMap.begin();
+    std::map<int, std::string>::const_iterator citOp = operatorMap.begin();
+    const std::string nickName = cit->first;
     const User& user = cit->second;
-    for (; citOp != operatorVec.end(); ++citOp) {
-      if (citOp->get_nick_name() == nickName)
+    for (; citOp != operatorMap.end(); ++citOp) {
+      if (citOp->second == nickName)
         break ;
     }
-    if (citOp != operatorVec.end()) {
+    if (citOp != operatorMap.end()) {
       std::string opNickName = "@" + nickName;
       user_list_str += opNickName;
     } else {

@@ -18,4 +18,4 @@ The syntax is /MODE <#channel> <+/-mode> <parameters>. For example:
 Let me know if you have any other questions! I tried to cover the key points concisely but thoroughly. IRC has many more modes and commands but those are some of the most important ones related to your query.
 
 // 오퍼레이터 권환 주는 방법
-/mode #example +o lfkn
+/mode #example +o l
