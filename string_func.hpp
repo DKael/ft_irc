@@ -20,6 +20,7 @@ std::string ft_strip(const std::string& origin);
 std::string make_random_string(std::size_t len,
                                const std::string comp = STR_COMP);
 std::string& ft_upper(std::string& origin);
+std::string ft_upper(const std::string& origin);
 
 template <typename T>
 T& ft_split(const std::string& str, const std::string& del, T& box,

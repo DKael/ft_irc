@@ -15,5 +15,6 @@
 void read_msg_from_socket(const int socket_fd,
                           std::vector<std::string>& msg_list);
 bool port_chk(const char* input_port);
+bool ipv4_chk(const char* input_ipv4);
 
 #endif

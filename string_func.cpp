@@ -50,3 +50,19 @@ std::string& ft_upper(std::string& origin) {
   }
   return origin;
 }
+
+std::string ft_upper(const std::string& origin) {
+  std::size_t len = origin.length();
+  std::size_t idx = 0;
+  std::string ret = "";
+
+  while (idx < len) {
+    if ('a' <= origin[idx] && origin[idx] <= 'z') {
+      ret += (origin[idx] - 32);
+    } else {
+      ret += origin[idx];
+    }
+    idx++;
+  }
+  return ret;
+}

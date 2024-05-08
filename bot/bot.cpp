@@ -1,89 +1,92 @@
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include "Bot.hpp"
 
-#include <ctime>
-#include <iostream>
-#include <sstream>
-#include <string>
+Bot::Bot(char** argv) : remain_msg(false) {
+  if (ipv4_chk(argv[1]) == false) {
+    std::cerr << "Invalid ip format!\n";
+    throw std::exception();
+  } else {
+    ipv4 = argv[1];
+  }
 
-#include "../Message.cpp"
-#include "../Message.hpp"
-#include "../string_func.cpp"
-#include "../string_func.hpp"
-#include "../util.cpp"
-#include "../util.hpp"
+  if (port_chk(argv[2]) == false) {
+    std::cerr << "Port range error!\n";
+    throw std::exception();
+  } else {
+    port = std::atoi(argv[2]);
+  }
 
-#define BUF_SIZE 1024
-#define NUMERIC_001 1 << 0
-#define NUMERIC_002 1 << 1
-#define NUMERIC_003 1 << 2
-#define NUMERIC_004 1 << 3
-#define NUMERIC_005 1 << 4
-#define PING_INTERVAL 20
-#define PONG_TIMEOUT 20
+  password = argv[3];
+  if (ft_strip(password).length() == 0) {
+    std::cerr << "Empty password!\n";
+    throw std::exception();
+  }
 
-std::string add_number_suffix(const std::string& bot_nick) {
-  static int suffix = 1;
-  std::string str_suffix;
-  std::stringstream num_to_str;
+  nickname = argv[4];
+  if (('0' <= nickname[0] && nickname[0] <= '9') ||
+      nickname.find_first_of(": \n\t\v\f\r") != std::string::npos) {
+    std::cerr << "Invalid bot nickname!\n";
+    throw std::exception();
+  }
 
-  num_to_str << suffix;
-  num_to_str >> str_suffix;
-  suffix++;
-  return bot_nick + str_suffix;
+  std::ifstream menu_file_read(argv[5]);
+  if (menu_file_read.is_open() == false) {
+    std::cerr << "Cannot open file!\n";
+    throw std::exception();
+  } else {
+    std::string buf;
+
+    while (getline(menu_file_read, buf)) {
+      if (buf.length() > 0) {
+        menu.push_back(buf);
+      }
+    }
+    menu_file_read.close();
+    std::cerr << "menu size : " << menu.size() << '\n';
+    if (menu.size() == 0) {
+      std::cerr << "Blank menu file!\n";
+      throw std::exception();
+    }
+  }
 }
 
-int main(int argc, char* argv[]) {
-  int bot_sock;
-  char message[BUF_SIZE];
-  int str_len;
-  sockaddr_in serv_adr;
-  std::string bot_nickname;
-  Message::map_init();
-
-  if (argc != 5) {
-    std::cerr << "Usage : " << argv[0]
-              << " <IP> <port> <password to connect> <bot_nickname>\n";
-    exit(1);
-  }
-
+void Bot::connect_to_serv(void) {
   bot_sock = ::socket(PF_INET, SOCK_STREAM, 0);
   if (bot_sock == -1) {
-    std::cerr << "socket() error\n";
-    exit(1);
+    perror("socket() error");
+    std::cerr << "errno : " << errno << '\n';
+    throw std::exception();
   }
 
-  std::memset(&serv_adr, 0, sizeof(serv_adr));
-  serv_adr.sin_family = AF_INET;
-  serv_adr.sin_addr.s_addr = inet_addr(argv[1]);
-  serv_adr.sin_port = htons(atoi(argv[2]));
+  std::memset(&bot_addr, 0, sizeof(bot_addr));
+  bot_addr.sin_family = AF_INET;
+  bot_addr.sin_addr.s_addr = inet_addr(ipv4.c_str());
+  bot_addr.sin_port = htons(port);
 
-  if (connect(bot_sock, (sockaddr*)&serv_adr, sizeof(serv_adr)) == -1) {
+  if (::connect(bot_sock, (sockaddr*)&bot_addr, sizeof(bot_addr)) == -1) {
     perror("connect() error");
     std::cerr << "errno : " << errno << '\n';
-    exit(1);
-  } else {
-    std::cout << "Bot connected to " << argv[1] << ':' << argv[2] << '\n';
+    throw std::exception();
   }
+  std::cout << "Bot connected to " << ipv4 << ':' << port << '\n';
+}
 
-  bot_nickname = std::string(argv[4]);
-
-  std::string init =
-      std::string("PASS ") + std::string(argv[3]) + std::string("\r\n");
-  send(bot_sock, init.c_str(), init.length(), MSG_DONTWAIT);
-  init = std::string("NICK ") + bot_nickname + std::string("\r\n");
-  send(bot_sock, init.c_str(), init.length(), MSG_DONTWAIT);
-  init = std::string("USER ") + bot_nickname + std::string(" 0 * :") +
-         bot_nickname + std::string("\r\n");
-  send(bot_sock, init.c_str(), init.length(), MSG_DONTWAIT);
-
-  std::vector<std::string> msg_list;
-  std::string serv_name;
+void Bot::step_auth(void) {
   int auth_flag = 0;
+  std::string nick_retry;
+  int nick_retry_cnt = 0;
+  std::vector<std::string> msg_list;
+
+  to_send.push(std::string("PASS ") + password + std::string("\r\n"));
+  to_send.push(std::string("NICK ") + nickname + std::string("\r\n"));
+  to_send.push(std::string("USER ") + nickname + std::string(" 0 * :") +
+               nickname + std::string("\r\n"));
+
+  send_msg_at_queue();
 
   while (auth_flag != 0x1F) {
+    if (remain_msg == true) {
+      send_msg_at_queue();
+    }
     try {
       read_msg_from_socket(bot_sock, msg_list);
 
@@ -92,6 +95,11 @@ int main(int argc, char* argv[]) {
         continue;
       }
       for (int i = 0; i < msg_list.size(); i++) {
+        if (msg_list[i] == std::string("connection finish")) {
+          std::cerr << "Connection lost\n";
+          close(bot_sock);
+          exit(0);
+        }
         Message msg(bot_sock, msg_list[i]);
 
         if (msg.get_numeric() == std::string("001")) {
@@ -106,10 +114,15 @@ int main(int argc, char* argv[]) {
         } else if (msg.get_numeric() == std::string("005")) {
           auth_flag |= NUMERIC_005;
         } else if (msg.get_numeric() == std::string("433")) {
-          std::string nick_retry = std::string("NICK ") +
-                                   add_number_suffix(bot_nickname) +
-                                   std::string("\r\n");
-          send(bot_sock, nick_retry.c_str(), nick_retry.length(), MSG_DONTWAIT);
+          std::stringstream int_to_str;
+          std::string tmp;
+
+          nick_retry_cnt++;
+          int_to_str << nick_retry_cnt;
+          int_to_str >> tmp;
+          nick_retry = nickname + tmp;
+          to_send.push(std::string("NICK ") + nick_retry + std::string("\r\n"));
+          send_msg_at_queue();
         } else if (msg.get_numeric() == std::string("421") ||
                    msg.get_numeric() == std::string("432") ||
                    msg.get_numeric() == std::string("451") ||
@@ -136,13 +149,22 @@ int main(int argc, char* argv[]) {
       exit(1);
     }
   }
+  if (nick_retry_cnt != 0) {
+    nickname = nick_retry;
+  }
+}
 
-  // auth done
-  time_t last_ping_chk = time(NULL);
+void Bot::step_listen(void) {
+time_t last_ping_chk = time(NULL);
   time_t ping_send_time = time(NULL);
   bool is_ping_sent = false;
   bool is_pong_received = false;
+  std::vector<std::string> msg_list;
+
   while (true) {
+    if (remain_msg == true) {
+      send_msg_at_queue();
+    }
     try {
       read_msg_from_socket(bot_sock, msg_list);
 
@@ -150,8 +172,8 @@ int main(int argc, char* argv[]) {
         Message ping;
         ping.set_cmd_type(PING);
         ping.push_back(serv_name);
-        std::string raw_msg = ping.to_raw_msg();
-        send(bot_sock, raw_msg.c_str(), raw_msg.length(), MSG_DONTWAIT);
+        to_send.push(ping.to_raw_msg());
+        send_msg_at_queue();
         ping_send_time = time(NULL);
         is_ping_sent = true;
         is_pong_received = false;
@@ -160,8 +182,8 @@ int main(int argc, char* argv[]) {
         Message rpl;
         rpl.set_cmd_type(ERROR);
         rpl.push_back(":leaving");
-        std::string raw_msg = rpl.to_raw_msg();
-        send(bot_sock, raw_msg.c_str(), raw_msg.length(), MSG_DONTWAIT);
+        to_send.push(rpl.to_raw_msg());
+        send_msg_at_queue();
         close(bot_sock);
         exit(0);
       }
@@ -171,7 +193,12 @@ int main(int argc, char* argv[]) {
         continue;
       }
       for (int i = 0; i < msg_list.size(); i++) {
-        std::cerr << "msg " << i << " : " << msg_list[i] << '\n';
+        // std::cerr << "msg " << i << " : " << msg_list[i] << '\n';
+        if (msg_list[i] == std::string("connection finish")) {
+          std::cerr << "Connection lost\n";
+          close(bot_sock);
+          exit(0);
+        }
         Message msg(bot_sock, msg_list[i]);
 
         if (msg.get_cmd_type() == PONG) {
@@ -187,12 +214,17 @@ int main(int argc, char* argv[]) {
           std::string who_send = msg.get_source().substr(0, tail);
           rpl.push_back(who_send);
           if (msg[1] == std::string("lunch menu recommend")) {
-            rpl.push_back(":bot reply for lunch menu recommend");
+            int select = std::rand() % menu.size();
+            rpl.push_back(std::string(":Today's lunch menu recommendation : ") +
+                          menu[select]);
+          } else if (ft_upper(msg[1]) == std::string("HELLO") ||
+                     ft_upper(msg[1]) == std::string("HI")) {
+            rpl.push_back(":Hi there");
           } else {
             rpl.push_back(":unknown command");
           }
-          std::string raw_msg = rpl.to_raw_msg();
-          send(bot_sock, raw_msg.c_str(), raw_msg.length(), MSG_DONTWAIT);
+          to_send.push(rpl.to_raw_msg());
+        send_msg_at_queue();
         }
       }
     } catch (const std::bad_alloc& e) {
@@ -210,4 +242,36 @@ int main(int argc, char* argv[]) {
       exit(1);
     }
   }
+}
+
+const std::string& Bot::get_ipv4(void) { return ipv4; }
+
+const int Bot::get_port(void) { return port; }
+
+const int Bot::get_bot_sock(void) { return bot_sock; }
+
+const sockaddr_in& Bot::get_bot_adr(void) { return bot_addr; }
+
+const std::string& Bot::get_password(void) { return password; }
+
+const std::string& Bot::get_nickname(void) { return nickname; }
+
+void Bot::send_msg_at_queue(void) {
+  std::size_t to_send_num = to_send.size();
+
+  while (to_send_num > 0) {
+    const std::string& msg_tmp = to_send.front();
+    if (send(bot_sock, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT) == -1) {
+      if (errno == EWOULDBLOCK) {
+        remain_msg = true;
+        return;
+      } else {
+        std::cerr << "send() error\n";
+        throw std::exception();
+      }
+    }
+    to_send.pop();
+    to_send_num--;
+  }
+  remain_msg = false;
 }
