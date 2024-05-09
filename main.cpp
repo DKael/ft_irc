@@ -3,6 +3,7 @@
 
 #include "Message.hpp"
 #include "Server.hpp"
+#include "message.hpp"
 #include "util.h"
 
 Server* g_server_ptr;
@@ -16,6 +17,13 @@ void on_sigint(int sig) {
 
 int main(int argc, char** argv) {
   if (argc != 3) {
+    std::cerr << "Usage : " << argv[0] << " <port> <password to connect>\n";
+    return 1;
+  } else if (port_chk(argv[1]) == false) {
+    std::cerr << "Port range error!\n";
+    return 1;
+  } else if (ft_strip(std::string(argv[2])).length() == 0) {
+    std::cerr << "Empty password!";
     std::cerr << "Usage : " << argv[0] << " <port> <password to connect>\n";
     return 1;
   } else if (port_chk(argv[1]) == false) {

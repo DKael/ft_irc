@@ -12,6 +12,18 @@
 
 #include "string_func.hpp"
 
+#define BLACK "\033[0;30m"
+#define RED "\033[0;31m"
+#define GREEN "\033[0;32m"
+#define GREEN_BOLD "\033[1;32m"
+#define YELLOW "\033[0;33m"
+#define BLUE "\033[0;34m"
+#define PURPLE "\033[0;35m"
+#define CYAN "\033[0;36m"
+#define WHITE "\033[0;37m"
+#define DEF_COLOR "\033[0;39m"
+#define LF "\e[1K\r"
+
 enum chk_status {
   NOT_YET = 0,
   FAIL,
@@ -72,5 +84,9 @@ class User {
   void pop_msg(void);
   std::size_t number_of_to_send(void);
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+std::ostream& operator<<(std::ostream& out, User user);
 
 #endif

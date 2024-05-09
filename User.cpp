@@ -92,3 +92,24 @@ const std::string& User::front_msg(void) { return to_send.front(); }
 void User::pop_msg(void) { to_send.pop(); }
 
 std::size_t User::number_of_to_send(void) { return to_send.size(); }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+std::ostream& operator<<(std::ostream& out, User user) {
+  out << GREEN << "[Client Information]" << WHITE << std::endl
+      << "NICKNAME :: " << user.get_nick_name() << std::endl
+      << "USERNAME :: " << user.get_user_name() << std::endl
+      << "REALNAME :: " << user.get_real_name() << std::endl
+      << "Client Socket(fd) :: " << user.get_user_socket() << std::endl
+      << "Client address(sockaddr_in) :: " << &user.get_user_addr() << std::endl
+      << "Client created time :: " << user.get_created_time() << std::endl;
+  if (user.get_password_chk() == OK)
+    out << "STATUS PASSWORD :: OK" << std::endl;
+  else if (user.get_password_chk() == FAIL)
+    out << "STATUS PASSWORD :: FAILED" << std::endl;
+  if (user.get_is_authenticated() == OK)
+    out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
+  else if (user.get_is_authenticated() == FAIL)
+    out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
+  return (out);
+}
