@@ -257,20 +257,20 @@ const std::string& Bot::get_password(void) { return password; }
 const std::string& Bot::get_nickname(void) { return nickname; }
 
 void Bot::send_msg_at_queue(void) {
+  int send_result;
   std::size_t to_send_num = to_send.size();
 
   while (to_send_num > 0) {
-    const std::string msg_tmp = to_send.front();
+    const std::string& msg_tmp = to_send.front();
+    send_result =
+        send(bot_sock, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
     to_send.pop();
-    if (send(bot_sock, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT) == -1) {
-      if (errno == EWOULDBLOCK) {
-        remain_msg = true;
-        return;
-      } else {
-        std::cerr << "send() error\n";
-        throw std::exception();
-      }
+    if (send_result == -1) {
+      remain_msg = true;
+      return;
     }
+
+    to_send.pop();
     to_send_num--;
   }
   remain_msg = false;

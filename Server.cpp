@@ -802,15 +802,10 @@ int Server::send_msg_at_queue(int socket_fd) {
               << msg_tmp << "]" << WHITE;
     send_result =
         send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
-    if (send_result == -1) {
-      if (errno == EWOULDBLOCK) {
-        return -1;
-      } else {
-        std::cerr << "send() error\n";
-        return -2;
-      }
-    }
     user_tmp.pop_msg();
+    if (send_result == -1) {
+      return -1;
+    }
     to_send_num--;
   }
   return 0;
