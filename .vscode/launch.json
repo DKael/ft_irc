@@ -1,18 +1,35 @@
 {
+    "version": "2.0.0",
     "configurations": [
         {
-            "name": "C/C++: g++ 활성 파일 빌드 및 디버그",
+            "name": "ircserv debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": ["4242", "123456"],
+            "program": "${fileDirname}/ircserv",
+            "args": [
+               "4444", "1234"
+            ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb",
-            "preLaunchTask": "C/C++: g++ 활성 파일 빌드"
+            "preLaunchTask": "ircserv build",
+        },
+        {
+            "name": "bot debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/bot",
+            "args": [
+                "127.0.0.1", "4444", "1234", "tmp_bot", "lunch_menu_240508.txt"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "bot build",
         }
-    ],
-    "version": "2.0.0"
+    ]
 }
