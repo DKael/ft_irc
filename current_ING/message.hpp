@@ -170,6 +170,11 @@ public:
   static Message                                      rpl_464(const std::string& source, const std::string& client);
   static Message                                      rpl_353(const std::string& source, Channel& channel, const std::string& nickName, const std::string& channelName);
   static Message                                      rpl_366(const std::string& source, const std::string& client, const std::string& channelName);
+
+  // KICK
+  static Message                                      rpl_401(const std::string& source, const std::string& nickName, const Message& msg);
+  static Message                                      rpl_403(const std::string& source, const std::string& nickName, const Message& msg);
+  //   static Message                                      rpl_422();
   
   const std::string& operator[](const int idx) const;
 };

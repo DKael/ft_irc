@@ -302,15 +302,19 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
   // 강퇴할 클라이언트가 속할 채널
   server_channel_iterator = get_server_channel_iterator(targetChannelStr);
   if (server_channel_iterator == server_channel_list.end()) {
-    return ;
+    // ERR_NOSUCHCHANNEL (403)
+      User& event_user = (*this)[recv_fd];
+      Message rpl = Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
+      event_user.push_msg(rpl.to_raw_msg());
+      return ;
   }
 
   int targetFileDescriptor = (*this)[msg.get_params()[1]];
   try {
     User& opUser = (*this)[recv_fd];
     User& outUser = (*this)[targetFileDescriptor];
-    get_server_channel(server_channel_iterator).kickClient(opUser, outUser, msg);
-  } catch (std::exception &e) {
+    (*this).kickClient(opUser, outUser, get_server_channel(server_channel_iterator), msg);
+  } catch (std::invalid_argument &e) {
     std::cerr << e.what() << std::endl;
   }
 
@@ -329,10 +333,14 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   
   std::cout << CYAN << "=>> Server Channel List :: [";
   std::map<std::string, Channel>::const_iterator cit;
+  bool found = false;
   for (cit = server_channel_list.begin(); cit != server_channel_list.end(); cit++) {
     std::string channelName = cit->first;
     std::cout << channelName << ", ";
+    found = true;
   }
+  if (found == false)
+    return ;
   std::cout << "]" << std::endl << std::endl;
 
   // get_server_channel(get_server_channel_iterator(targetChannelStr)).visualizeClientList();
@@ -795,7 +803,7 @@ int Server::send_msg_at_queue(int socket_fd) {
 
   while (to_send_num > 0) {
     const std::string& msg_tmp = user_tmp.front_msg();
-    std::cout << GREEN_BOLD << "[Sending] :: " << msg_tmp << WHITE;
+    std::cout << YELLOW << "[SERVER SENDING...] " << GREEN_BOLD <<  "[" << msg_tmp << "]" << WHITE;
     send_result =
         send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
     if (send_result == -1) {
@@ -988,22 +996,7 @@ void Server::cmd_quit(pollfd& p_val, const Message& msg) {
 
 void Server::cmd_privmsg(int recv_fd, const Message& msg) {
   User& source_user = (*this)[recv_fd];
-  std::cout << source_user.get_user_name();
-  // std::string user_tmp;
 
-/*
-  [IRSSI REQUEST] :: PRIVMSG lfkn_ :a
-
-  < Message contents > 
-  fd              : 4
-  source          : 
-  command         : PRIVMSG
-  params          : lfkn_, a
-  numeric         : 
-  ================================= 
-*/
-
-  // privmsg jwionfd  :nownoiw
   std::string sourceNickName = source_user.get_nick_name();
   std::string sourceUserName = source_user.get_user_name();
   std::string targetNickName = msg.get_params().front();
@@ -1015,17 +1008,28 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
     if (pos != std::string::npos) {
         targetChannelStr.erase(pos, 1);
     }
-    std::map<std::string, User> map = get_server_channel(get_server_channel_iterator(targetChannelStr)).get_channel_client_list();
-    std::map<std::string, User>::iterator it;
+
+    if (get_server_channel(get_server_channel_iterator(targetChannelStr)).foundClient(sourceNickName) == false) {
+      return ;
+    }
+    std::map<std::string, User&> map = get_server_channel(get_server_channel_iterator(targetChannelStr)).get_channel_client_list();
+    std::map<std::string, User&>::iterator it;
     for (it = map.begin(); it != map.end(); ++it) {
       Message rpl;
       int target_fd = (*this)[it->first];
       User& target_user = (*this)[target_fd];
       if (sourceNickName == target_user.get_nick_name())
         continue ;
-      // :lfkn!~memememe@localhost PRIVMSG #a :d\r
-      // :lfkn!~memememe@localhost PRIVMSG #a :d\r
-      rpl.set_source(std::string(":") + sourceNickName);
+      // if (!foundClient(target_user.get_nick_name()))
+      //   continue ;
+      
+
+      /* 
+        :lfkn_!~memememe@localhost PRIVMSG #test :d\r
+      */
+      
+      
+      rpl.set_source(sourceNickName + std::string("!~") + sourceUserName + std::string("@localhost"));
       rpl.set_cmd_type(PRIVMSG);
       rpl.push_back(msg.get_params()[0]);
       std::string string;
@@ -1051,6 +1055,7 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
     }
     return ;
   }
+
   int         targetFileDescriptor ;
 
   try {
@@ -1083,24 +1088,19 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
   // (*this).send_msg_at_queue(target_user.get_user_socket());
 
 
-  pollfd tmp;
+  pollfd* tmp;
   for(int i = 0; i < MAX_USER; i++) {
     if (observe_fd[i].fd == target_user.get_user_socket()) {
-      tmp = observe_fd[i];
+      tmp = &(observe_fd[i]);
     }
   }
 
   if ((*this).send_msg_at_queue(target_user.get_user_socket()) == -1) {
-    tmp.events = POLLIN | POLLOUT;
+    tmp->events = POLLIN | POLLOUT;
   } else {
-    tmp.events = POLLIN;
+    tmp->events = POLLIN;
   }
-}  size_t i = 0;
-
-// std::map<std::string, Channel>::iterator findTargetChannel(std::string targetChannelStr) {
-//   server_channel_list.find(targetChannelStr)
-// }
-
+}  
 
 void  Server::addChannel(Channel& newChannel) {
   server_channel_list.insert(std::pair<std::string, Channel>(newChannel.get_channel_name(), newChannel));
@@ -1117,3 +1117,54 @@ Channel&  Server::get_server_channel(std::map<std::string, Channel>::iterator it
 }
 
 // remove 도 추가할것.
+void	Server::kickClient(User& opUser, User& outUser, Channel& channelName, const Message& msg) {
+	std::string clientNickName = outUser.get_nick_name();
+	Message rpl;
+
+	// 강퇴할 클라이언트를 찾으면
+	if (channelName.get_channel_client_list().find(clientNickName) != channelName.get_channel_client_list().end()) {
+		rpl.set_source(opUser.get_nick_name() + std::string("!") + std::string("~") + opUser.get_user_name() + std::string("@localhost"));
+		rpl.set_cmd_type(KICK);
+    std::string sentence = msg.get_params()[0] + std::string(" ") + msg.get_params()[1] + std::string(" ") + ":";
+    if (msg.get_params_size() > 2) {
+      for (int i = 2; i < msg.get_params_size(); i++) {
+        sentence += msg.get_params()[i];
+      }
+    }
+		rpl.push_back(sentence); // 사유 적어주기
+
+		// 채널에 속한 모든 클라이언트들에게 RESPONSE 보내주기
+		std::map<std::string, User&>::iterator it;
+		it = channelName.get_channel_client_list().begin();
+		for (; it != channelName.get_channel_client_list().end(); ++it) {
+			User& event_user = it->second;
+			event_user.push_msg(rpl.to_raw_msg());
+
+      pollfd* tmp;
+      for(int i = 0; i < MAX_USER; i++) {
+        if (observe_fd[i].fd == event_user.get_user_socket()) {
+          tmp = &(observe_fd[i]);
+        }
+      }
+      if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
+        tmp->events = POLLIN | POLLOUT;
+      } else {
+        tmp->events = POLLIN;
+      }
+		}
+		std::cout << YELLOW << rpl.to_raw_msg() << std::endl;
+		if (channelName.isOperator(outUser)) {
+			channelName.removeOperator(outUser);
+		}
+		channelName.get_channel_client_list().erase(clientNickName);
+	} else {
+    std::cout << "?!@#?!@#?!@?#!@?#!?@#?!@#?!@?#!@?#\n";
+    /* 
+      ERR_NOSUCHNICK (401) 
+        "<client> <nickname> :No such nick/channel"
+        Indicates that no client can be found for the supplied nickname. The text used in the last param of this message may vary.
+    */
+
+    // :irc.example.net 401 lfkn slkfdn :No such nick or channel name\r
+	}
+}

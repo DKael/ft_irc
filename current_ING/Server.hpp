@@ -86,48 +86,49 @@ public:
   Server(const char* _port, const char* _password);
   ~Server();
 
-  void                            listen(void);
+  void                                          listen(void);
 
-  const int                       get_port(void) const;
-  const std::string&              get_str_port(void) const;
-  const std::string&              get_serv_name(void) const;
-  const std::string&              get_password(void) const;
-  const int                       get_serv_socket(void) const;
-  const sockaddr_in&              get_serv_addr(void) const;
-  const int                       get_tmp_user_cnt(void) const;
-  const int                       get_user_cnt(void) const;
-  const bool                      get_enable_ident_protocol(void) const;
+  const int                                     get_port(void) const;
+  const std::string&                            get_str_port(void) const;
+  const std::string&                            get_serv_name(void) const;
+  const std::string&                            get_password(void) const;
+  const int                                     get_serv_socket(void) const;
+  const sockaddr_in&                            get_serv_addr(void) const;
+  const int                                     get_tmp_user_cnt(void) const;
+  const int                                     get_user_cnt(void) const;
+  const bool                                    get_enable_ident_protocol(void) const;
 
-  const int                       get_max_channel_num(void) const;
-  int                             get_current_channel_num(void);
+  const int                                     get_max_channel_num(void) const;
+  int                                           get_current_channel_num(void);
 
-  std::map<std::string, Channel>::iterator get_server_channel_iterator(std::string targetChannelStr);
-  Channel&  get_server_channel(std::map<std::string, Channel>::iterator iterator);
+  std::map<std::string, Channel>::iterator      get_server_channel_iterator(std::string targetChannelStr);
+  Channel&                                      get_server_channel(std::map<std::string, Channel>::iterator iterator);
 
-  void                            add_tmp_user(const int socket_fd, const sockaddr_in& addr);
-  void                            move_tmp_user_to_user_list(int socket_fd);
-  void                            remove_user(const int socket_fd);
-  void                            remove_user(const std::string& nickname);
-  void                            change_nickname(const std::string& old_nick, const std::string& new_nick);
-  void                            tmp_user_timeout_chk(void);
+  void                                          add_tmp_user(const int socket_fd, const sockaddr_in& addr);
+  void                                          move_tmp_user_to_user_list(int socket_fd);
+  void                                          remove_user(const int socket_fd);
+  void                                          remove_user(const std::string& nickname);
+  void                                          change_nickname(const std::string& old_nick, const std::string& new_nick);
+  void                                          tmp_user_timeout_chk(void);
 
-  int                             send_msg_at_queue(int socket_fd);
+  int                                           send_msg_at_queue(int socket_fd);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
-  void                            cmd_pass(int recv_fd, const Message& msg);
-  void                            cmd_nick(int recv_fd, const Message& msg);
-  void                            cmd_user(int recv_fd, const Message& msg);
-  void                            cmd_mode(int recv_fd, const Message& msg);
-  void                            cmd_pong(int recv_fd, const Message& msg);
-  void                            cmd_quit(pollfd& p_val, const Message& msg);
+  void                                          cmd_pass(int recv_fd, const Message& msg);
+  void                                          cmd_nick(int recv_fd, const Message& msg);
+  void                                          cmd_user(int recv_fd, const Message& msg);
+  void                                          cmd_mode(int recv_fd, const Message& msg);
+  void                                          cmd_pong(int recv_fd, const Message& msg);
+  void                                          cmd_quit(pollfd& p_val, const Message& msg);
 
-  void                            cmd_privmsg(int recv_fd, const Message& msg);
-  void                            cmd_join(int recv_fd, const Message& msg);
-  void                            cmd_kick(int recv_fd, const Message& msg);
+  void                                          cmd_privmsg(int recv_fd, const Message& msg);
+  void                                          cmd_join(int recv_fd, const Message& msg);
+  void                                          cmd_kick(int recv_fd, const Message& msg);
+  void	                                        kickClient(User& opUser, User& outUser, Channel& channelName, const Message& msg);
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void                            addChannel(Channel& newChannel);
+  void                                           addChannel(Channel& newChannel);
 
 
 

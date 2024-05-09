@@ -366,11 +366,11 @@ Message Message::rpl_353(const std::string& source, Channel& channel, const std:
   rpl.push_back(channelName);
   // rpl.push_back(":");
   
-  const std::map<std::string, User>& clientMap = channel.get_channel_client_list();
+  const std::map<std::string, User&>& clientMap = channel.get_channel_client_list();
   // const std::vector<User>& operatorVec = channel.get_channel_operator_list();
   const std::map<int, std::string>& operatorMap = channel.get_channel_operator_list();
 
-  std::map<std::string, User>::const_reverse_iterator cit;
+  std::map<std::string, User&>::const_reverse_iterator cit;
 
   std::string user_list_str;
 
@@ -409,4 +409,63 @@ Message Message::rpl_366(const std::string& source, const std::string& client, c
   return rpl;
 }
 
+Message Message::rpl_403(const std::string& source, const std::string& nickName, const Message& msg) {
+  /*
+      ERR_NOSUCHCHANNEL (403) 
+        "<client> <channel> :No such channel"
+      Indicates that no channel can be found for the supplied channel name.
+      The text used in the last param of this message may vary.
+  */
 
+  // :irc.example.net 403 lfkn__ #asdfw :No such channel\r
+  // :ft_irc 403 lfkn #asdf :
+  // /kick #없는채널명 어딘가에있는클라이언트명 으로 하면 이 에러 나옴
+
+  Message rpl;
+  std::string sentence;
+  std::string space = std::string(" ");
+  std::string colon = std::string(":");
+  rpl.set_source(source);
+  rpl.set_numeric("403");
+  sentence = nickName + space + msg.get_params()[0] + space + colon + std::string("No such channel");
+  rpl.push_back(sentence);
+
+  return rpl;
+}
+
+Message Message::rpl_401(const std::string& source, const std::string& nickName, const Message& msg) {
+  /* 
+    ERR_NOSUCHNICK (401) 
+      "<client> <nickname> :No such nick/channel"
+      Indicates that no client can be found for the supplied nickname. The text used in the last param of this message may vary.
+  */
+  
+  // :irc.example.net 401 lfkn slkfdn :No such nick or channel name\r
+  // (hostname) (nickname) (msg)
+
+  Message rpl;
+
+  std::string sentence;
+  std::string space = std::string(" ");
+  std::string colon = std::string(":");
+  rpl.set_source(source);
+  rpl.set_numeric("401");
+  sentence = nickName + space + msg.get_params()[1] + space + colon + std::string("No such nick or channel name");
+  rpl.push_back(sentence);
+
+  return rpl;
+
+}
+
+
+// Message Message::rpl_442() {
+//   /*
+//     ERR_NOTONCHANNEL (442) 
+//     "<client> <channel> :You're not on that channel"
+//     Returned when a client tries to perform a channel-affecting command on a channel which the client isn’t a part of. 
+
+//     채널에 속했든 안했든
+//      /kick [#CHANNELNAME] [CLIENTNAME] 이런식으로 명령이 가능한데 만약 채널에 속하지 않은 유저가 명령을 내릴경우 442에러를 뱉어주면 됨.
+  
+//   */
+// }

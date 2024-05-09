@@ -37,53 +37,16 @@ void Channel::addOperator(User& Client) {
 	ops.insert(std::pair<int, std::string>(Client.get_user_socket(), Client.get_nick_name()));
 }
 
-void	Channel::kickClient(User& opUser, User& outUser, const Message& msg) {
-	std::string clientNickName = outUser.get_nick_name();
-	Message rpl;
+int Channel::get_channel_capacity_limit(void) const { return client_limit; }
 
-	// 강퇴할 클라이언트를 찾으면
-	if (channel_client_list.find(clientNickName) != channel_client_list.end()) {
-
-		/*
-			> 2024/05/08 22:31:15.000046914  length=16 from=588 to=603
-			KICK #z lfkn :\r
-			< 2024/05/08 22:31:15.000047153  length=45 from=4901 to=4945
-			:lfkn___!~memememe@localhost KICK #z lfkn :\r
-
-
-			:lfkn!~memememe@localhost KICK #a:
-		*/
-		rpl.set_source(opUser.get_nick_name() + std::string("!") + std::string("~") + opUser.get_user_name() + std::string("@localhost"));
-		rpl.set_cmd_type(KICK);
-		rpl.push_back(msg.get_params()[0] + std::string(" ") + msg.get_params()[1] + ":");
-		
-		// 채널에 속한 모든 클라이언트들에게 RESPONSE 보내주기
-		std::map<std::string, User>::iterator it;
-		it = channel_client_list.begin();
-		for (; it != channel_client_list.end(); ++it) {
-			User& user = it->second;
-			user.push_msg(rpl.to_raw_msg());
-		}
-		std::cout << YELLOW << rpl.to_raw_msg() << std::endl;
-		if (isOperator(outUser)) {
-			removeOperator(outUser);
-		}
-		channel_client_list.erase(clientNickName);
-	} else {
-		// 오류인 경우이므로 프로토콜에 맞는 Errorno 반환해 줄것
-	}
-}
-
-int Channel::get_channel_capacity_limit(void)const { return client_limit; }
-
-bool Channel::get_invite_mode_setting(void)const { return invite_only; };
+bool Channel::get_invite_mode_setting(void) const { return invite_only; };
 
 std::string Channel::get_password(void)const { return pwd; };
 
 std::string Channel::get_topic(void)const { return topic; };
 
-const std::map<std::string, User>& Channel::get_channel_client_list(void)const { return channel_client_list; };
-const std::map<std::string, User>& Channel::get_channel_banned_list(void) const{ return channel_banned_list; };
+std::map<std::string, User&>& Channel::get_channel_client_list(void) { return channel_client_list; };
+const std::map<std::string, User&>& Channel::get_channel_banned_list(void) const{ return channel_banned_list; };
 // const std::vector<User>& Channel::get_channel_operator_list(void) const{ return ops; };
 const std::map<int, std::string>& Channel::get_channel_operator_list(void) const { return ops; };
 
@@ -91,7 +54,7 @@ const std::string& Channel::get_channel_name(void) const { return channel_name; 
 
 // [DEBUG]
 void	Channel::visualizeClientList(void) {
-	std::map<std::string, User>::const_iterator it;
+	std::map<std::string, User&>::const_iterator it;
 	std::cout << "Visualizng Channel Client lists for Channel :: " << this->get_channel_name() << std::endl;
 	std::cout << YELLOW;
 	for (it = channel_client_list.begin(); it != channel_client_list.end(); ++it) {
@@ -103,7 +66,8 @@ void	Channel::visualizeClientList(void) {
 }
 
 void	Channel::visualizeBannedClientList(void) {
-	std::map<std::string, User>::const_iterator it;
+	std::map<std::string, User&>::const_iterator it;
+
 	for (it = channel_banned_list.begin(); it != channel_banned_list.end(); ++it) {
 		const std::string& nickName = it->first;
 		const User& user = it->second;
@@ -126,12 +90,12 @@ std::ostream& operator<<(std::ostream& out, Channel& channel) {
 	out
 		<< channel.get_password() << std::endl;
 
-	const std::map<std::string, User>& clientList = channel.get_channel_client_list();
-	const std::map<std::string, User>& bannedList = channel.get_channel_banned_list();
+	const std::map<std::string, User&>& clientList = channel.get_channel_client_list();
+	const std::map<std::string, User&>& bannedList = channel.get_channel_banned_list();
 	// const std::vector<User>operators = channel.get3_channel_operator_list();
 	const std::map<int, std::string>operators = channel.get_channel_operator_list();
 
-	std::map<std::string, User>::const_iterator cit;
+	std::map<std::string, User&>::const_iterator cit;
 
 	out << "=============== Client List ===============" << std::endl;
 	int i = 1;
@@ -143,7 +107,7 @@ std::ostream& operator<<(std::ostream& out, Channel& channel) {
 	}
 	out << "\n";
 	out << "=============== Banned List ===============";
-	std::map<std::string, User>::const_iterator cit2;
+	std::map<std::string, User&>::const_iterator cit2;
 	i = 1;
 	out << "\n";
 	for (cit2 = bannedList.begin(); cit2 != bannedList.end(); ++cit2) {
@@ -173,7 +137,7 @@ bool	Channel::isOperator(User& user) {
 	std::string nickName = user.get_nick_name();
 	std::string candidate;
 
-	for (it = ops.begin(); it != ops.end(); ++it ) {
+	for (it = ops.begin(); it != ops.end(); ++it) {
 		candidate = it->second;
 		if (candidate == nickName)
 			return true;
@@ -193,13 +157,14 @@ void	Channel::removeOperator(User& user) {
 	}
 }
 
+bool	Channel::foundClient(std::string nickName) {
+	std::map<std::string, User&>::iterator it;
 
-
-
-
-
-
-
-
-
-
+	for (it = channel_client_list.begin(); it != channel_client_list.end(); ++it) {
+		std::string candidate;
+		candidate = it->second.get_nick_name();
+		if (candidate == nickName)
+			return true;
+	}
+	return false;
+}

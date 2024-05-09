@@ -37,8 +37,8 @@ private:
 	std::string					pwd;
 
 	// CLIENT LIST (원본을 가지고 다닐것)
-	std::map<std::string, User> channel_client_list;    // nickname 과 user
-	std::map<std::string, User> channel_banned_list;   	// nickname 과 banned user
+	std::map<std::string, User&> channel_client_list;    // nickname 과 user
+	std::map<std::string, User&> channel_banned_list;   	// nickname 과 banned user
 
 	// OPERATORS
 	// std::vector<User>			ops;
@@ -69,20 +69,19 @@ public:
 	bool									get_invite_mode_setting(void) const;
 	std::string								get_password(void) const;
 	std::string								get_topic(void) const;
-	const std::map<std::string, User>& 		get_channel_client_list(void) const;
-	const std::map<std::string, User>&		get_channel_banned_list(void) const;
+	std::map<std::string, User&>& 			get_channel_client_list(void);
+	const std::map<std::string, User&>&		get_channel_banned_list(void) const;
 	// const std::vector<User>&				get_channel_operator_list(void) const;
 	const std::map<int, std::string>&		get_channel_operator_list(void) const;
 
 	// METHOD FUNCTIONS
 	void									addClient(User& user);
 	void									addOperator(User& user);
-	void									kickClient(User& opUser, User& outUser, const Message& msg);
 	void 									updateTopic(std::string topic);
 
 	bool									isOperator(User& user);
 	void									removeOperator(User& user);
-
+	bool									foundClient(std::string nickName);
 	// FOR DEBUG PURPOSE ONLY [VISUALIZE]
 	void 									visualizeClientList(void);
 	void									visualizeBannedClientList(void);
