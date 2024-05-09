@@ -1,0 +1,85 @@
+0509
+/who unknownChannel -> segFault [DONE]
+/kick 사유
+/kick errono
+
+invite
+초대하는 클라이언트
+> 2024/05/09 17:56:05.000110500  length=18 from=4888 to=4905
+INVITE dy #test2\r
+
+< 2024/05/09 17:56:05.000110730  length=44 from=14926 to=14969
+:dy!~memememe@localhost 341 lfkn dy #test2\r
+
+초대받는 클라이언트
+< 2024/05/09 17:56:05.000110741  length=44 from=14193 to=14236
+:lfkn!~memememe@localhost INVITE dy #test2\r
+
+
+
+
+
+topic
+
+/nick ss => 이건 같은 채널에 속한 모든 사용자한테 이 친구 nick이렇게 바꿈 이렇게 공지 띄어줘야함
+
+
+# ERR_NOSUCHNICK (401) 
+#   "<client> <nickname> :No such nick/channel"
+# Indicates that no client can be found for the supplied nickname. The text used in the last param of this message may vary.
+
+# ERR_NOSUCHCHANNEL (403) 
+#   "<client> <channel> :No such channel"
+# Indicates that no channel can be found for the supplied channel name. The text used in the last param of this message may vary.
+
+
+# ERR_NEEDMOREPARAMS (461) 
+#   "<client> <command> :Not enough parameters"
+# Returned when a client command cannot be parsed because not enough parameters were supplied. The text used in the last param of this message may vary.
+# ==>> 이건 그냥 무시해도 될듯 :: irssi클라이언트 프로그램이 알아서 처리해주는 느낌
+
+ERR_CANNOTSENDTOCHAN (404) 
+  "<client> <channel> :Cannot send to channel"
+Indicates that the PRIVMSG / NOTICE could not be delivered to <channel>. The text used in the last param of this message may vary.
+
+This is generally sent in response to channel modes, such as a channel being moderated and the client not having permission to speak on the channel, or not being joined to a channel with the no external messages mode set.
+
+# ERR_TOOMANYCHANNELS (405) 
+#   "<client> <channel> :You have joined too many channels"
+# Indicates that the JOIN command failed because the client has joined their maximum number of channels. The text used in the last param of this message may vary.
+# => 꼭 해야함? 논의 후 결정
+
+ERR_NOTONCHANNEL (442) 
+  "<client> <channel> :You're not on that channel"
+Returned when a client tries to perform a channel-affecting command on a channel which the client isn’t a part of.
+
+
+# INVITE
+ERR_USERONCHANNEL (443) 
+  "<client> <nick> <channel> :is already on channel"
+Returned when a client tries to invite <nick> to a channel they’re already joined to.
+
+< 2024/05/09 17:47:03.000224048  length=63 from=14092 to=14154
+:irc.example.net 443 lfkn sssef #test2 :is already on channel\r
+
+
+
+
+/connect localhost 8080 1234
+/connect localhost 8081 1234
+/connect localhost 8082 1234
+/connect localhost 8083 1234
+/connect localhost 8084 1234
+/connect localhost 8085 1234
+/connect localhost 8086 1234
+/connect localhost 8087 1234
+/connect localhost 8088 1234
+/connect localhost 8089 1234
+/connect localhost 8090 1234
+
+/join test
+/join test1
+/join test2
+/join test3
+/join test4
+/join test5

@@ -454,7 +454,6 @@ Message Message::rpl_401(const std::string& source, const std::string& nickName,
   rpl.push_back(sentence);
 
   return rpl;
-
 }
 
 

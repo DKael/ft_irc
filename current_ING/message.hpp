@@ -174,7 +174,7 @@ public:
   // KICK
   static Message                                      rpl_401(const std::string& source, const std::string& nickName, const Message& msg);
   static Message                                      rpl_403(const std::string& source, const std::string& nickName, const Message& msg);
-  //   static Message                                      rpl_422();
+static Message                                      rpl_422();
   
   const std::string& operator[](const int idx) const;
 };

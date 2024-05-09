@@ -246,10 +246,7 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     }
 
     Message msg(p_val.fd, msg_list[j]);
-    std::cout << "\n"
-              << GREEN
-              << msg
-              << "=================================\n\n";
+
 
     int cmd_type = msg.get_cmd_type();
     if (cmd_type == PASS) {
@@ -281,10 +278,12 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       cmd_join(p_val.fd, msg);
     } else if (cmd_type == WHO) {
       cmd_who(p_val.fd, msg);
-    } 
-    else if (cmd_type == KICK) {
+    } else if (cmd_type == KICK) {
       cmd_kick(p_val.fd, msg);
-    }
+    } 
+    // else if (cmd_type == INVITE) {
+    //   cmd_invite(p_val.fd, msg);
+    // }
     if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
       p_val.events = POLLIN | POLLOUT;
     } else {
@@ -292,6 +291,10 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     }
   }
 }
+
+// void Server::cmd_invite(int recv_fd, const Message& msg) {
+  
+// }
 
 void Server::cmd_kick(int recv_fd, const Message& msg) {
   std::string targetChannelStr = msg.get_params()[0];
@@ -302,20 +305,22 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
   // 강퇴할 클라이언트가 속할 채널
   server_channel_iterator = get_server_channel_iterator(targetChannelStr);
   if (server_channel_iterator == server_channel_list.end()) {
-    // ERR_NOSUCHCHANNEL (403)
+      // ERR_NOSUCHCHANNEL (403)
       User& event_user = (*this)[recv_fd];
       Message rpl = Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
       event_user.push_msg(rpl.to_raw_msg());
       return ;
   }
 
-  int targetFileDescriptor = (*this)[msg.get_params()[1]];
   try {
+    int targetFileDescriptor = (*this)[msg.get_params()[1]];
     User& opUser = (*this)[recv_fd];
     User& outUser = (*this)[targetFileDescriptor];
     (*this).kickClient(opUser, outUser, get_server_channel(server_channel_iterator), msg);
   } catch (std::invalid_argument &e) {
-    std::cerr << e.what() << std::endl;
+    User& event_user = (*this)[recv_fd];
+    Message rpl = Message::rpl_401(serv_name, event_user.get_nick_name(), msg);
+    event_user.push_msg(rpl.to_raw_msg());
   }
 
 }
