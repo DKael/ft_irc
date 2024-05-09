@@ -14,9 +14,9 @@
 #include <string>
 #include <vector>
 
-#include "../Message.hpp"
 #include "../string_func.hpp"
 #include "../util.hpp"
+#include "Message_bot.hpp"
 
 #define NUMERIC_001 1 << 0
 #define NUMERIC_002 1 << 1

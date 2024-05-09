@@ -1,7 +1,5 @@
 #include "Channel.hpp"
 
-#include "Message.hpp"
-
 Channel::Channel(std::string channelName)
     : channel_name(channelName),
       client_limit(50)  // 추후 논의 후 구체적인 값 결정할것

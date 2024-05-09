@@ -1,5 +1,5 @@
 CXX=c++
-CFLAGS=-std=c++98 -Wall -Wextra -Werror #-fsanitize=address -g3 
+CFLAGS=-std=c++98 #-Wall -Wextra -Werror #-fsanitize=address -g3 
 NAME=ircserv
 
 # Create a variable for the object directory
@@ -12,8 +12,8 @@ SRCS =	main.cpp \
 		custom_exception.cpp \
 		User.cpp \
 		Message.cpp \
-		Channel.cpp \
-		string_func.cpp
+		string_func.cpp \
+		util.cpp
 
 # Generate a list of object files with the obj/ prefix
 OBJS=$(addprefix $(OBJDIR)/,$(SRCS:.cpp=.o))

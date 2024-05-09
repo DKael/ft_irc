@@ -1,5 +1,5 @@
-#ifndef MESSAGE_HPP
-#define MESSAGE_HPP
+#ifndef MESSAGE_BOT_HPP
+#define MESSAGE_BOT_HPP
 
 /*
 The protocol messages must be extracted from the contiguous stream of
@@ -58,10 +58,7 @@ NOTES:
 #include <string>
 #include <vector>
 
-#include "Channel.hpp"
-#include "string_func.hpp"
-
-class Channel;
+#include "../string_func.hpp"
 
 enum Command {
   CAP = 0,
@@ -108,18 +105,6 @@ enum Command {
   NORPL,
 };
 
-#define BLACK "\033[0;30m"
-#define RED "\033[0;31m"
-#define GREEN "\033[0;32m"
-#define GREEN_BOLD "\033[1;32m"
-#define YELLOW "\033[0;33m"
-#define BLUE "\033[0;34m"
-#define PURPLE "\033[0;35m"
-#define CYAN "\033[0;36m"
-#define WHITE "\033[0;37m"
-#define DEF_COLOR "\033[0;39m"
-#define LF "\e[1K\r"
-
 class Message {
  private:
   static std::map<Command, std::string> etos;
@@ -137,7 +122,6 @@ class Message {
 
  public:
   static void map_init(void);
-
   Message();
   Message(int socket_fd, const std::string& _raw_msg);
 
@@ -161,29 +145,15 @@ class Message {
 
   std::string to_raw_msg(void);
 
-  static Message rpl_401(const std::string& source, const std::string& client,
-                         const std::string& nick);
   static Message rpl_432(const std::string& source, const std::string& client,
                          const std::string& nick);
   static Message rpl_433(const std::string& source, const std::string& client,
                          const std::string& nick);
+  static Message rpl_451(const std::string& source, const std::string& client);
   static Message rpl_461(const std::string& source, const std::string& client,
                          const std::string& cmd);
-  static Message rpl_451(const std::string& source, const std::string& client);
   static Message rpl_462(const std::string& source, const std::string& client);
   static Message rpl_464(const std::string& source, const std::string& client);
-  static Message rpl_353(const std::string& source, Channel& channel,
-                         const std::string& nickName,
-                         const std::string& channelName);
-  static Message rpl_366(const std::string& source, const std::string& client,
-                         const std::string& channelName);
-
-  // KICK
-  static Message rpl_401(const std::string& source, const std::string& nickName,
-                         const Message& msg);
-  static Message rpl_403(const std::string& source, const std::string& nickName,
-                         const Message& msg);
-  static Message rpl_422();
 };
 
 std::ostream& operator<<(std::ostream& out, Message msg);

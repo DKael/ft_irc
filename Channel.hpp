@@ -5,13 +5,9 @@
 #include <map>
 #include <vector>
 
-#include "Channel.hpp"
 #include "Message.hpp"
 #include "User.hpp"
 #include "custom_exception.hpp"
-
-class User;
-class Message;
 
 class Channel {
  private:
