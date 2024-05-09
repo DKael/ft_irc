@@ -523,6 +523,7 @@ int Server::send_msg_at_queue(int socket_fd) {
 
   while (to_send_num > 0) {
     const std::string& msg_tmp = user_tmp.front_msg();
+    user_tmp.pop_msg();
     send_result =
         send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
     if (send_result == -1) {
@@ -533,7 +534,6 @@ int Server::send_msg_at_queue(int socket_fd) {
         return -2;
       }
     }
-    user_tmp.pop_msg();
     to_send_num--;
   }
   return 0;

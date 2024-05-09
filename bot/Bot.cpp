@@ -261,6 +261,7 @@ void Bot::send_msg_at_queue(void) {
 
   while (to_send_num > 0) {
     const std::string& msg_tmp = to_send.front();
+    to_send.pop();
     if (send(bot_sock, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT) == -1) {
       if (errno == EWOULDBLOCK) {
         remain_msg = true;
@@ -270,7 +271,6 @@ void Bot::send_msg_at_queue(void) {
         throw std::exception();
       }
     }
-    to_send.pop();
     to_send_num--;
   }
   remain_msg = false;
