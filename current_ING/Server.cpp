@@ -313,6 +313,7 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
   } catch (std::exception &e) {
     std::cerr << e.what() << std::endl;
   }
+
 }
 
 // [DEBUG]
@@ -794,6 +795,7 @@ int Server::send_msg_at_queue(int socket_fd) {
 
   while (to_send_num > 0) {
     const std::string& msg_tmp = user_tmp.front_msg();
+    std::cout << GREEN_BOLD << "[Sending] :: " << msg_tmp << WHITE;
     send_result =
         send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
     if (send_result == -1) {

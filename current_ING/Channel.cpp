@@ -41,25 +41,34 @@ void	Channel::kickClient(User& opUser, User& outUser, const Message& msg) {
 	std::string clientNickName = outUser.get_nick_name();
 	Message rpl;
 
-
+	// 강퇴할 클라이언트를 찾으면
 	if (channel_client_list.find(clientNickName) != channel_client_list.end()) {
-		channel_client_list.erase(clientNickName);
 
 		/*
 			> 2024/05/08 22:31:15.000046914  length=16 from=588 to=603
 			KICK #z lfkn :\r
 			< 2024/05/08 22:31:15.000047153  length=45 from=4901 to=4945
 			:lfkn___!~memememe@localhost KICK #z lfkn :\r
-		*/
 
+
+			:lfkn!~memememe@localhost KICK #a:
+		*/
 		rpl.set_source(opUser.get_nick_name() + std::string("!") + std::string("~") + opUser.get_user_name() + std::string("@localhost"));
 		rpl.set_cmd_type(KICK);
-		rpl.push_back(msg.get_params()[0] + ":");
-		opUser.push_msg(rpl.to_raw_msg());
-		std::cout << YELLOW << rpl.to_raw_msg() << std::endl;
-		if (isOperator(opUser)) {
-			removeOperator(opUser);
+		rpl.push_back(msg.get_params()[0] + std::string(" ") + msg.get_params()[1] + ":");
+		
+		// 채널에 속한 모든 클라이언트들에게 RESPONSE 보내주기
+		std::map<std::string, User>::iterator it;
+		it = channel_client_list.begin();
+		for (; it != channel_client_list.end(); ++it) {
+			User& user = it->second;
+			user.push_msg(rpl.to_raw_msg());
 		}
+		std::cout << YELLOW << rpl.to_raw_msg() << std::endl;
+		if (isOperator(outUser)) {
+			removeOperator(outUser);
+		}
+		channel_client_list.erase(clientNickName);
 	} else {
 		// 오류인 경우이므로 프로토콜에 맞는 Errorno 반환해 줄것
 	}
