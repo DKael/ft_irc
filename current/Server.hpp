@@ -130,6 +130,18 @@ class Server {
   void cmd_kick(int recv_fd, const Message& msg);
   void kickClient(User& opUser, User& outUser, Channel& channelName,
                   const Message& msg);
+  
+  void cmd_invite(int recv_fd, const Message& msg);
+
+
+
+
+
+
+
+
+
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
   void addChannel(Channel& newChannel);

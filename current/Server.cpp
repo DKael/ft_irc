@@ -305,10 +305,9 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       cmd_who(p_val.fd, msg);
     } else if (cmd_type == KICK) {
       cmd_kick(p_val.fd, msg);
+    } else if (cmd_type == INVITE) {
+      cmd_invite(p_val.fd, msg);
     }
-    // else if (cmd_type == INVITE) {
-    //   cmd_invite(p_val.fd, msg);
-    // }
     if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
       p_val.events = POLLIN | POLLOUT;
     } else {
@@ -317,9 +316,24 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
   }
 }
 
-// void Server::cmd_invite(int recv_fd, const Message& msg) {
+void Server::cmd_invite(int recv_fd, const Message& msg) {
+  // 초대하려는 유저가 권한이 있는지 확인
+  User& event_user = (*this)[recv_fd];
+  std::cout << msg;
+  /*
+    > 2024/05/09 21:54:32.000536657  length=15 from=537 to=551
+    INVITE dy2 #a\r
+    < 2024/05/09 21:54:32.000536960  length=40 from=2359 to=2398
+    :dy2!~memememe@localhost 341 dy dy2 #a\r
+  */
 
-// }
+  // if ()
+  // 초대하려는애가 이미 있을때는
+    /*
+      < 2024/05/09 21:53:01.000382517  length=55 from=2156 to=2210
+      :irc.example.net 443 dy dy2 #a :is already on channel\r 
+    */
+}
 
 void Server::cmd_kick(int recv_fd, const Message& msg) {
   std::string targetChannelStr = msg.get_params()[0];
@@ -798,8 +812,7 @@ int Server::send_msg_at_queue(int socket_fd) {
 
   while (to_send_num > 0) {
     const std::string& msg_tmp = user_tmp.front_msg();
-    std::cout << YELLOW << "[SERVER SENDING...] " << GREEN_BOLD << "["
-              << msg_tmp << "]" << WHITE;
+    std::cout << YELLOW << "\t\t\t[SERVER {RESPONSE}...] " << GREEN_BOLD << msg_tmp << WHITE;
     send_result =
         send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
     user_tmp.pop_msg();

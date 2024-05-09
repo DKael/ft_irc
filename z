@@ -1,0 +1,18 @@
+/connect localhost 8080 1234
+/connect localhost 8081 1234
+/connect localhost 8082 1234
+/connect localhost 8083 1234
+/connect localhost 8084 1234
+/connect localhost 8085 1234
+/connect localhost 8086 1234
+/connect localhost 8087 1234
+/connect localhost 8088 1234
+/connect localhost 8089 1234
+/connect localhost 8090 1234
+
+/join test
+/join test1
+/join test2
+/join test3
+/join test4
+/join test5
