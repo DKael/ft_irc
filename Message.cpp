@@ -42,7 +42,7 @@ void Message::map_init(void) {
 Message::Message() : raw_msg(""), socket_fd(-1) {}
 
 Message::Message(int _socket_fd, const std::string& _raw_msg)
-    : socket_fd(_socket_fd), raw_msg(ft_strip(_raw_msg)) {
+    : raw_msg(ft_strip(_raw_msg)), socket_fd(_socket_fd) {
   if (raw_msg.length() == 0) {
     set_cmd_type(NONE);
     numeric = "421";
@@ -122,7 +122,7 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   idx1 = pos;
   std::string params_str = raw_msg.substr(idx1, idx2 - idx1);
   ft_split(params_str, " ", params);
-  for (int i = 0; i < params.size(); i++) {
+  for (std::size_t i = 0; i < params.size(); i++) {
     if (params[i].find_first_of("\0\n\t\v\f\r") != std::string::npos) {
       set_cmd_type(ERROR);
       params.push_back(":Invalid parameter");
@@ -156,7 +156,7 @@ void Message::set_numeric(const std::string& input) { numeric = input; }
 
 const std::string& Message::get_raw_msg(void) const { return raw_msg; }
 
-const int Message::get_socket_fd(void) const { return socket_fd; }
+int Message::get_socket_fd(void) const { return socket_fd; }
 
 const std::string& Message::get_source(void) const { return source; }
 
@@ -164,16 +164,16 @@ const std::string& Message::get_raw_cmd(void) const { return raw_cmd; }
 
 const std::string& Message::get_cmd(void) const { return cmd; }
 
-const Command Message::get_cmd_type(void) const { return cmd_type; }
+Command Message::get_cmd_type(void) const { return cmd_type; }
 
 const std::vector<std::string>& Message::get_params(void) const {
   return params;
 }
 
-const std::size_t Message::get_params_size(void) const { return params.size(); }
+std::size_t Message::get_params_size(void) const { return params.size(); }
 
 const std::string& Message::operator[](const int idx) const {
-  if (0 <= idx && idx < params.size()) {
+  if (0UL <= idx && idx < static_cast<int>(params.size())) {
     return params[idx];
   } else {
     throw std::out_of_range("params vector out of range");
@@ -208,7 +208,7 @@ std::string Message::to_raw_msg(void) {
 }
 
 std::ostream& operator<<(std::ostream& out, Message msg) {
-  int i = 0;
+  std::size_t i = 0;
 
   out << "< Message contents > \n"
       << "fd \t\t: " << msg.get_socket_fd() << '\n'
@@ -216,7 +216,7 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
       << "command\t\t: " << msg.get_cmd() << '\n'
       << "params\t\t: ";
   if (msg.get_params_size() > 0) {
-    for (i = 0; i < msg.get_params_size() - 1; i++) {
+    for (i = 0UL; i + 1 < msg.get_params_size(); i++) {
       out << msg[i] << ", ";
     }
     out << msg[i] << "\n";

@@ -133,13 +133,13 @@ class Message {
   void set_numeric(const std::string& input);
 
   const std::string& get_raw_msg(void) const;
-  const int get_socket_fd(void) const;
+  int get_socket_fd(void) const;
   const std::string& get_source(void) const;
   const std::string& get_raw_cmd(void) const;
   const std::string& get_cmd(void) const;
-  const Command get_cmd_type(void) const;
+  Command get_cmd_type(void) const;
   const std::vector<std::string>& get_params(void) const;
-  const std::size_t get_params_size(void) const;
+  std::size_t get_params_size(void) const;
   const std::string& operator[](const int idx) const;
   const std::string& get_numeric(void) const;
 

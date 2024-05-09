@@ -10,7 +10,7 @@ TOTAL_OBJS = ${OBJS}
 
 CXX = c++
 
-CXXFLAGS = -std=c++98 #-Wall -Wextra -Werror #-fsanitize=address -g3 
+CXXFLAGS = -std=c++98 -Wall -Wextra -Werror #-fsanitize=address -g3 
 
 NAME = bot
 

@@ -72,8 +72,8 @@ void Bot::connect_to_serv(void) {
 
 void Bot::step_auth(void) {
   int auth_flag = 0;
-  std::string nick_retry;
   int nick_retry_cnt = 0;
+  std::string nick_retry;
   std::vector<std::string> msg_list;
 
   to_send.push(std::string("PASS ") + password + std::string("\r\n"));
@@ -94,7 +94,7 @@ void Bot::step_auth(void) {
         sleep(1);
         continue;
       }
-      for (int i = 0; i < msg_list.size(); i++) {
+      for (std::size_t i = 0; i < msg_list.size(); i++) {
         if (msg_list[i] == std::string("connection finish")) {
           std::cerr << "Connection lost\n";
           close(bot_sock);
@@ -192,7 +192,7 @@ void Bot::step_listen(void) {
         sleep(1);
         continue;
       }
-      for (int i = 0; i < msg_list.size(); i++) {
+      for (std::size_t i = 0; i < msg_list.size(); i++) {
         // std::cerr << "msg " << i << " : " << msg_list[i] << '\n';
         if (msg_list[i] == std::string("connection finish")) {
           std::cerr << "Connection lost\n";
@@ -246,9 +246,9 @@ void Bot::step_listen(void) {
 
 const std::string& Bot::get_ipv4(void) { return ipv4; }
 
-const int Bot::get_port(void) { return port; }
+int Bot::get_port(void) { return port; }
 
-const int Bot::get_bot_sock(void) { return bot_sock; }
+int Bot::get_bot_sock(void) { return bot_sock; }
 
 const sockaddr_in& Bot::get_bot_adr(void) { return bot_addr; }
 

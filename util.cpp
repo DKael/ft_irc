@@ -9,7 +9,7 @@ void read_msg_from_socket(const int socket_fd,
       0,
   };
   int read_cnt = 0;
-  int idx;
+  std::size_t idx;
   std::vector<std::string> box;
 
   msg_list.clear();
@@ -35,7 +35,7 @@ void read_msg_from_socket(const int socket_fd,
         }
         incomplete = false;
       } else {
-        for (; idx < box.size() - 1; idx++) {
+        for (; idx + 1 < box.size(); idx++) {
           if (box[idx].length() != 0) {
             msg_list.push_back(box[idx]);
           }

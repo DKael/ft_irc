@@ -53,8 +53,8 @@ class Bot {
   void step_listen(void);
 
   const std::string& get_ipv4(void);
-  const int get_port(void);
-  const int get_bot_sock(void);
+  int get_port(void);
+  int get_bot_sock(void);
   const sockaddr_in& get_bot_adr(void);
   const std::string& get_password(void);
   const std::string& get_nickname(void);
