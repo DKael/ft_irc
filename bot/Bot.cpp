@@ -155,7 +155,7 @@ void Bot::step_auth(void) {
 }
 
 void Bot::step_listen(void) {
-time_t last_ping_chk = time(NULL);
+  time_t last_ping_chk = time(NULL);
   time_t ping_send_time = time(NULL);
   bool is_ping_sent = false;
   bool is_pong_received = false;
@@ -180,7 +180,7 @@ time_t last_ping_chk = time(NULL);
       } else if (is_ping_sent == true && is_pong_received == false &&
                  time(NULL) > ping_send_time + PONG_TIMEOUT) {
         Message rpl;
-        rpl.set_cmd_type(ERROR);
+        rpl.set_cmd_type(QUIT);
         rpl.push_back(":leaving");
         to_send.push(rpl.to_raw_msg());
         send_msg_at_queue();
@@ -224,7 +224,7 @@ time_t last_ping_chk = time(NULL);
             rpl.push_back(":unknown command");
           }
           to_send.push(rpl.to_raw_msg());
-        send_msg_at_queue();
+          send_msg_at_queue();
         }
       }
     } catch (const std::bad_alloc& e) {
