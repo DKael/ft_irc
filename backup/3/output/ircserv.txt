@@ -1,4 +1,0 @@
-Connection from ('127.0.0.1', 49428)
-Forwarding: 20 bytes
-CAP LS 302
-JOIN :
