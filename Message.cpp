@@ -1,4 +1,4 @@
-#include "message.hpp"
+#include "Message.hpp"
 
 #include <iostream>  // [DEBUG]
 std::map<Command, std::string> Message::etos;
@@ -91,20 +91,21 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   if (tmp_type.find_first_not_of("0123456789") != std::string::npos) {
     // type cmd
     cmd = tmp_type;
-  raw_cmd = cmd;
-  ft_upper(cmd);
-  std::map<std::string, Command>::const_iterator it = stoe.find(cmd);
-  if (it != stoe.end()) {
-    cmd_type = stoe.at(cmd);
-    if (pos == std::string::npos) {
+    raw_cmd = cmd;
+    ft_upper(cmd);
+    std::map<std::string, Command>::const_iterator it = stoe.find(cmd);
+    if (it != stoe.end()) {
+      cmd_type = stoe.at(cmd);
+      if (pos == std::string::npos) {
+        return;
+      }
+    } else {
+      set_cmd_type(NONE);
+      numeric = "421";
+      params.push_back(":Unknown command");
       return;
     }
   } else {
-    set_cmd_type(NONE);
-    numeric = "421";
-    params.push_back(":Unknown command");
-    return;
-  } }else {
     // type numeric
     numeric = tmp_type;
   }
@@ -156,7 +157,7 @@ void Message::set_numeric(const std::string& input) { numeric = input; }
 
 const std::string& Message::get_raw_msg(void) const { return raw_msg; }
 
- int Message::get_socket_fd(void) const { return socket_fd; }
+int Message::get_socket_fd(void) const { return socket_fd; }
 
 const std::string& Message::get_source(void) const { return source; }
 
@@ -164,13 +165,13 @@ const std::string& Message::get_raw_cmd(void) const { return raw_cmd; }
 
 const std::string& Message::get_cmd(void) const { return cmd; }
 
- Command Message::get_cmd_type(void) const { return cmd_type; }
+Command Message::get_cmd_type(void) const { return cmd_type; }
 
 const std::vector<std::string>& Message::get_params(void) const {
   return params;
 }
 
- std::size_t Message::get_params_size(void) const { return params.size(); }
+std::size_t Message::get_params_size(void) const { return params.size(); }
 
 const std::string& Message::operator[](const int idx) const {
   if (0 <= idx && idx < static_cast<int>(params.size())) {

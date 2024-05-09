@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "Channel.hpp"
+#include "Message.hpp"
 #include "User.hpp"
 #include "custom_exception.hpp"
-#include "message.hpp"
 
 class User;
 class Message;

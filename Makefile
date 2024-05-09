@@ -11,7 +11,7 @@ SRCS =	main.cpp \
 		Server.cpp \
 		custom_exception.cpp \
 		User.cpp \
-		message.cpp \
+		Message.cpp \
 		Channel.cpp \
 		string_func.cpp
 

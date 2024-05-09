@@ -1,6 +1,6 @@
 #include "Channel.hpp"
 
-#include "message.hpp"
+#include "Message.hpp"
 
 Channel::Channel(std::string channelName)
     : channel_name(channelName),

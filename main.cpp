@@ -3,7 +3,6 @@
 
 #include "Message.hpp"
 #include "Server.hpp"
-#include "message.hpp"
 #include "util.h"
 
 Server* g_server_ptr;
