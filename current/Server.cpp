@@ -775,14 +775,15 @@ void Server::change_nickname(const std::string& old_nick,
     tmp = it->second;
     nick_to_soc.erase(it);
     nick_to_soc.insert(std::make_pair(new_nick, tmp));
+    // 서버 다 돌면서 old_nick인거 다 찾아서 new_nick으로 바꿔주기;; ㅠㅠ
+    for (server_channel_iterator = server_channel_list.begin(); server_channel_iterator != server_channel_list.end(); server_channel_iterator++) {
+      get_server_channel(server_channel_iterator).changeClientNickName(old_nick, new_nick);
+      // if (get_server_channel(server_channel_iterator).foundClient(old_nick) == true) {
+      //   get_server_channel(server_channel_iterator).changeClientNickName(old_nick, new_nick);
+      // }
+    }
     (*this)[tmp].set_nick_name(new_nick);
     
-    // 서버 다 돌면서 old_nick인거 다 찾아서 new_nick으로 바꿔주기;; ㅠㅠ
-    for (server_channel_iterator = server_channel_list.begin(); server_channel_iterator != server_channel_list.end(); ++server_channel_iterator) {
-      if (get_server_channel(server_channel_iterator).foundClient(old_nick) == true) {
-        get_server_channel(server_channel_iterator).changeClientNickName(old_nick, new_nick);
-      }
-    }
     
     
     
@@ -914,9 +915,6 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
     //   nick_tmp = msg[0];
     // }
     nick_tmp = msg[0];
-    std::cout << YELLOW << "===================>> " << nick_tmp << WHITE
-              << std::endl;
-
     if (('0' <= nick_tmp[0] && nick_tmp[0] <= '9') || nick_tmp[0] == ':' ||
         nick_tmp.find_first_of(chantype + std::string(": \n\t\v\f\r")) !=
             std::string::npos ||

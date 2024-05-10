@@ -190,18 +190,26 @@ bool Channel::foundClient(std::string nickName) {
 void Channel::changeClientNickName(std::string old_nick, std::string new_nick) {
   std::map<std::string, User&>::iterator it;
 
+  // 채널에 있는 유저 매핑된거 새로 추가해주고, 기존에 있던거 없애주기
   for (it = channel_client_list.begin(); it != channel_client_list.end();++it) {
     std::string candidate;
     candidate = it->second.get_nick_name();
-    if (candidate == old_nick) 
-      it->second.set_nick_name(new_nick);
+    if (candidate == old_nick) {
+        User& user = it->second;
+        user.set_nick_name(new_nick);
+        channel_client_list.insert(std::pair<std::string, User&>(user.get_nick_name(), user));
+        // channel_client_list[new_nick] = user;
+        channel_client_list.erase(it);
+        break;
+    }
   }
 
-  // std::map<int, std::string>::iterator ops_it;
-  // for (ops_it = ops.begin(); ops_it != ops.end();++it) {
-  //   std::string candidate;
-  //   candidate = ops_it->second;
-  //   if (candidate == old_nick) 
-  //     it->second.set_nick_name(new_nick);
-  // }
+  // OPERATOR도 수정해주기
+  std::map<int, std::string>::iterator ops_it;
+  for (ops_it = ops.begin(); ops_it != ops.end(); ++ops_it) {
+    std::string candidate;
+    candidate = ops_it->second;
+    if (candidate == old_nick) 
+      ops_it->second = new_nick;
+  }
 }
