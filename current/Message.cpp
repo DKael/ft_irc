@@ -313,10 +313,6 @@ Message Message::rpl_462(const std::string& source, const std::string& client) {
   rpl.set_numeric("462");
   rpl.push_back(client);
   rpl.push_back(":Connection already registered");
-
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -334,6 +330,20 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
   return rpl;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 
   > 2024/05/05 14:52:02.000706851  length=9 from=503 to=511
@@ -345,6 +355,32 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
   :irc.example.net 366 lfkn #b :End of NAMES list\r
 
 */
+Message Message::rpl_341(const std::string& source, User& user, const Message& msg) 
+{
+/*
+  < 2024/05/10 14:21:06.000167118  length=42 from=7812 to=7853
+  :dy3!~memememe@localhost 341 dy1 dy3 new\r
+*/
+
+  Message rpl;
+
+  std::string incomingClientNickName = msg.get_params()[0];
+  std::string invitingClientNickName = user.get_nick_name();
+  std::string userName = user.get_user_name();
+  std::string targetChannelStr = msg.get_params()[1];
+  std::string exclamationMark = std::string("!");
+  std::string at = std::string("@");
+  std::string localhost = std::string("localhost");
+  rpl.set_source(incomingClientNickName + exclamationMark + userName + at + localhost);
+
+  rpl.set_numeric("341");
+  rpl.push_back(invitingClientNickName);
+  rpl.push_back(incomingClientNickName);
+  rpl.push_back(targetChannelStr);
+
+  return rpl;
+}
+
 Message Message::rpl_353(const std::string& source, Channel& channel,
                          const std::string& nickName,
                          const std::string& channelName) {

@@ -44,6 +44,7 @@ class User {
   chk_status user_init_chk;
   chk_status password_chk;
   chk_status is_authenticated;
+
   bool have_to_disconnect;
 
   std::queue<std::string> to_send;
@@ -65,6 +66,7 @@ class User {
   void set_password_chk(const chk_status input);
   void set_is_authenticated(const chk_status input);
   void set_have_to_disconnect(const bool input);
+  void set_have_been_notified(bool notification);
 
   const int get_user_socket(void) const;
   const sockaddr_in& get_user_addr(void) const;

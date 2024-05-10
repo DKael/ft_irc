@@ -64,5 +64,31 @@ Returned when a client tries to invite <nick> to a channel they’re already joi
 
 
 ######################################################################################################################### 0510
-invite mode
+INVITE MODE
+
+/invite [NICKNAME] [CHANNELNAME]
+/invite [dy3] []
+
+누군가가 누구를 초대한다
+
+< 2024/05/10 14:21:06.000167118  length=42 from=7812 to=7853
+:dy3!~memememe@localhost 341 dy1 dy3 new\r
+:dy_!memememe@localhost 341 dy_ dy #test
+
+< 2024/05/10 14:21:06.000167118  length=42 from=7812 to=7853
+:dy3!~memememe@localhost 341 dy1 dy3 #new\r
+
+< 2024/05/10 14:51:57.000473281  length=42 from=10049 to=10090
+:dy1!~memememe@localhost INVITE dy3 #new\r
+
+< 2024/05/10 14:03:16.000864492  length=60 from=3147 to=3206
+:irc.example.net 401 dy1 dy4 :No such nick or channel name\r
+
+< 2024/05/10 15:53:39.000708599  length=42 from=13549 to=13590
+:dy1!~memememe@localhost INVITE dy3 #new\r
+
+
+< 2024/05/10 16:00:06.000449132  length=42 from=14006 to=14047
+:dy!~memememe@localhost INVITE dy__ #new\
+
 topic

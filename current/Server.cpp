@@ -326,14 +326,47 @@ void Server::cmd_invite(int recv_fd, const Message& msg) {
     < 2024/05/09 21:54:32.000536960  length=40 from=2359 to=2398
     :dy2!~memememe@localhost 341 dy dy2 #a\r
   */
+  std::string incomingClientNickName = msg.get_params()[0];
+  std::string targetChannelStr = msg.get_params()[1];
+  std::string::size_type pos = targetChannelStr.find('#');
+  if (pos != std::string::npos) {
+    targetChannelStr.erase(pos, 1);
+  }
+  //////////////////////////////////////////////////////////////////////
+  Message response341 = Message::rpl_341(serv_name, event_user, msg);
+  event_user.push_msg(response341.to_raw_msg());
 
-  // if ()
+  //////////////////////////////////////////////////////////////////////
+  std::map<std::string, User&>::iterator it;
+  it = get_server_channel(get_server_channel_iterator(targetChannelStr)).get_channel_client_list().begin();
+  int fd = (*this)[incomingClientNickName];
+  User& invitedClient = (*this)[fd]; 
+  Message rpl;
+  rpl.set_source(invitedClient.get_nick_name() + std::string("!~") + invitedClient.get_user_name() + std::string("@localhost"));
+  rpl.set_cmd_type(INVITE);
+  rpl.push_back(invitedClient.get_nick_name());
+  rpl.push_back(msg.get_params()[1]);
+  invitedClient.push_msg(rpl.to_raw_msg());
+  pollfd* tmp;
+  for (int i = 0; i < MAX_USER; i++) {
+    if (observe_fd[i].fd == invitedClient.get_user_socket()) {
+      tmp = &(observe_fd[i]);
+    }
+  }
+  if ((*this).send_msg_at_queue(invitedClient.get_user_socket()) == -1) {
+    tmp->events = POLLIN | POLLOUT;
+  } else {
+    tmp->events = POLLIN;
+  }
+}
+  // if (초대하고자 하는 클라이언트가 없을때는) {
+  //    여기에 초대메세지 보낼것
+  // }
   // 초대하려는애가 이미 있을때는
     /*
       < 2024/05/09 21:53:01.000382517  length=55 from=2156 to=2210
       :irc.example.net 443 dy dy2 #a :is already on channel\r 
     */
-}
 
 void Server::cmd_kick(int recv_fd, const Message& msg) {
   std::string targetChannelStr = msg.get_params()[0];
@@ -895,9 +928,6 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
     //   nick_tmp = msg[0];
     // }
     nick_tmp = msg[0];
-    std::cout << YELLOW << "===================>> " << nick_tmp << WHITE
-              << std::endl;
-
     if (('0' <= nick_tmp[0] && nick_tmp[0] <= '9') || nick_tmp[0] == ':' ||
         nick_tmp.find_first_of(chantype + std::string(": \n\t\v\f\r")) !=
             std::string::npos ||
@@ -922,9 +952,46 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
                        event_user.get_user_name() + "@localhost");
         rpl.set_cmd_type(NICK);
         rpl.push_back(":" + nick_tmp);
-        // [DEBUG]
-        std::cout << CYAN << rpl << rpl.to_raw_msg();
+        
         event_user.push_msg(rpl.to_raw_msg());
+        
+                            // Message rpl;
+
+                            // rpl.set_source(event_user.get_nick_name() + "!" +
+                            //               event_user.get_user_name() + "@localhost");
+                            // rpl.set_cmd_type(NICK);
+                            // rpl.push_back(":" + nick_tmp);
+                            // event_user.push_msg(rpl.to_raw_msg());
+                            // // 같은 채널에 속한 모든 친구들에게 같은 rpl을 전송해주는 로직을 추가
+                            // // 채널안에 닉네임 변경하는 클라이언트의 닉네임을 변경해 주고, operator 데이터 또한 알맞게 수정
+
+                            // // 모든 채널을 순회하면서 해당 유저가 속한 채널이라면, 그 안을 순회하면서 다른 클라이언트 들에게 이 친구 닉네임 바뀜을 공지해줄것
+                            // // + 데이터도 다시 수정 조작 해줄것
+                            // for (server_channel_iterator = server_channel_list.begin(); server_channel_iterator != server_channel_list.end(); ++server_channel_iterator) {
+                            //   if (server_channel_iterator->second.foundClient(event_user.get_nick_name()) == true) {
+                            //     // 채널에 속한 모든 클라이언트들에게 RESPONSE 보내주기
+                            //     std::map<std::string, User&>::iterator it;
+                            //     it = server_channel_iterator->second.get_channel_client_list().begin();
+                            //     for (; it != server_channel_iterator->second.get_channel_client_list().end(); ++it) {
+                            //       User& channelClient = it->second;
+                            //       if (channelClient.get_nick_name() == event_user.get_nick_name())
+                            //         continue ;
+                            //       channelClient.push_msg(rpl.to_raw_msg());
+
+                            //       pollfd* tmp;
+                            //       for (int i = 0; i < MAX_USER; i++) {
+                            //         if (observe_fd[i].fd == event_user.get_user_socket()) {
+                            //           tmp = &(observe_fd[i]);
+                            //         }
+                            //       }
+                            //       if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
+                            //         tmp->events = POLLIN | POLLOUT;
+                            //       } else {
+                            //         tmp->events = POLLIN;
+                            //       }
+                            //     }
+                            //   }
+                            // }
       }
       (*this).change_nickname(event_user.get_nick_name(), nick_tmp);
       event_user.set_nick_init_chk(OK);
