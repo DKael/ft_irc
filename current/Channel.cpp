@@ -181,7 +181,27 @@ bool Channel::foundClient(std::string nickName) {
        ++it) {
     std::string candidate;
     candidate = it->second.get_nick_name();
-    if (candidate == nickName) return true;
+    if (candidate == nickName) 
+      return true;
   }
   return false;
+}
+
+void Channel::changeClientNickName(std::string old_nick, std::string new_nick) {
+  std::map<std::string, User&>::iterator it;
+
+  for (it = channel_client_list.begin(); it != channel_client_list.end();++it) {
+    std::string candidate;
+    candidate = it->second.get_nick_name();
+    if (candidate == old_nick) 
+      it->second.set_nick_name(new_nick);
+  }
+
+  // std::map<int, std::string>::iterator ops_it;
+  // for (ops_it = ops.begin(); ops_it != ops.end();++it) {
+  //   std::string candidate;
+  //   candidate = ops_it->second;
+  //   if (candidate == old_nick) 
+  //     it->second.set_nick_name(new_nick);
+  // }
 }

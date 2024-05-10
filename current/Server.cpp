@@ -273,6 +273,8 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
 
     Message msg(p_val.fd, msg_list[j]);
 
+    std::cout << msg;
+
     int cmd_type = msg.get_cmd_type();
     if (cmd_type == PASS) {
       cmd_pass(p_val.fd, msg);
@@ -372,8 +374,9 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   if (pos != std::string::npos) {
     targetChannelStr.erase(pos, 1);
   }
-  if (server_channel_iterator == server_channel_list.end()) return;
-
+  server_channel_iterator = server_channel_list.begin();
+  if (server_channel_iterator == server_channel_list.end()) 
+    return;
   std::cout << CYAN << "=>> Server Channel List :: [";
   std::map<std::string, Channel>::const_iterator cit;
   bool found = false;
@@ -773,8 +776,24 @@ void Server::change_nickname(const std::string& old_nick,
     nick_to_soc.erase(it);
     nick_to_soc.insert(std::make_pair(new_nick, tmp));
     (*this)[tmp].set_nick_name(new_nick);
+    
+    // 서버 다 돌면서 old_nick인거 다 찾아서 new_nick으로 바꿔주기;; ㅠㅠ
+    for (server_channel_iterator = server_channel_list.begin(); server_channel_iterator != server_channel_list.end(); ++server_channel_iterator) {
+      if (get_server_channel(server_channel_iterator).foundClient(old_nick) == true) {
+        get_server_channel(server_channel_iterator).changeClientNickName(old_nick, new_nick);
+      }
+    }
+    
+    
+    
+    
+    
     return;
   }
+
+
+
+
   it = tmp_nick_to_soc.find(old_nick);
   if (it != tmp_nick_to_soc.end()) {
     tmp = it->second;

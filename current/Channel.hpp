@@ -34,10 +34,10 @@ class Channel {
   std::string topic;
 
   /*
-          i : set / remove Invite only channel
-          t : set / remove the restrictions of the TOPIC command to channel
-     operators k : set / remove the channel key (password) o : give / take
-     channel operator privilege l : set / remove the user limit to channel
+    i : set / remove Invite only channel
+    t : set / remove the restrictions of the TOPIC command to channel
+    operators k : set / remove the channel key (password) o : give / take
+    channel operator privilege l : set / remove the user limit to channel
   */
 
   Channel();
@@ -69,6 +69,7 @@ class Channel {
   bool isOperator(User& user);
   void removeOperator(User& user);
   bool foundClient(std::string nickName);
+  void changeClientNickName(std::string old_nick, std::string new_nick);
   // FOR DEBUG PURPOSE ONLY [VISUALIZE]
   void visualizeClientList(void);
   void visualizeBannedClientList(void);
