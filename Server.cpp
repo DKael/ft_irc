@@ -182,16 +182,13 @@ int Server::client_socket_init(void) {
     }
 
     (*this).add_tmp_user(user_socket, user_addr);
-    std::cout << "early break\n";
     for (int i = 1; i < MAX_USER; i++) {
       if (observe_fd[i].fd == -1) {
         observe_fd[i].fd = user_socket;
         observe_fd[i].events = POLLIN;
-        std::cout << "yeckim babo\n";
         break;
       }
     }
-    // std::cerr << "Connection established at " << user_socket << '\n';
     std::cout << "Connection established at " << user_socket << '\n';
     connection_limit--;
   }
@@ -635,37 +632,13 @@ int Server::get_current_channel_num(void) {
 
 void Server::add_tmp_user(const int user_socket, const sockaddr_in& user_addr) {
   User tmp(user_socket, user_addr);
-  std::cout << "---------------ㅁ-----------------" << std::endl;
-  std::cout << tmp.get_user_socket() << " :: " << tmp.get_nick_name()
-            << std::endl;
+  std::string tmp_nick = tmp.get_nick_name_no_chk();
 
-  // // tmp_user_list 순회 및 출력
-  // std::cout << "tmp_user_list contents:" << std::endl;
-  // for (const auto& pair : tmp_user_list) {
-  //     int key = pair.first;
-  //     const User& user = pair.second;
-  //     std::cout << "Key: " << key << ", User: " << user << std::endl;
-  // }
-
-  // // tmp_nick_to_soc 순회 및 출력
-  // std::cout << "tmp_nick_to_soc contents:" << std::endl;
-  // for (const auto& pair : tmp_nick_to_soc) {
-  //     const std::string& nick = pair.first;
-  //     int soc = pair.second;
-  //     std::cout << "Nick: " << nick << ", Socket: " << soc << std::endl;
-  // }
-
-  while (tmp_nick_to_soc.find(tmp.get_nick_name()) !=
-         tmp_nick_to_soc.end())  // 찾아진다면
-  {
-    std::cout << std::boolalpha
-              << (tmp_nick_to_soc.find(tmp.get_nick_name()) !=
-                  tmp_nick_to_soc.end())
-              << std::endl;
-    tmp.set_nick_name(make_random_string(20));
+  while (tmp_nick_to_soc.find(tmp_nick) != tmp_nick_to_soc.end()) {
+    tmp_nick = make_random_string(20);
+    tmp.set_nick_name(tmp_nick);
   }
-  std::cout << "~~~~~~~~~" << std::endl;
-  tmp_nick_to_soc.insert(std::make_pair(tmp.get_nick_name(), user_socket));
+  tmp_nick_to_soc.insert(std::make_pair(tmp_nick, user_socket));
   tmp_user_list.insert(std::make_pair(user_socket, tmp));
 }
 

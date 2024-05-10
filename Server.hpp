@@ -22,8 +22,6 @@
 #define MAX_USER 256
 #define POLL_TIMEOUT 5
 #define AUTHENTICATE_TIMEOUT 20
-#define BLOCK_SIZE 1025
-#define BUFFER_SIZE 65536
 
 #define SERVER_NAME "ft_irc"
 #define CHAN_TYPE "#&"
