@@ -59,6 +59,7 @@ NOTES:
 #include <vector>
 
 #include "Channel.hpp"
+#include "User.hpp"
 #include "string_func.hpp"
 
 class Channel;
@@ -183,7 +184,11 @@ class Message {
                          const Message& msg);
   static Message rpl_403(const std::string& source, const std::string& nickName,
                          const Message& msg);
-  static Message rpl_422();
+  static Message rpl_482(const std::string& source, const std::string& nickName,
+                         const Message& msg);
+
+  // INVITE
+  static Message rpl_341(const std::string& source, User& user, const Message& msg);
 };
 
 std::ostream& operator<<(std::ostream& out, Message msg);

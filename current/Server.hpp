@@ -27,10 +27,15 @@
 
 #define SERVER_NAME "ft_irc"
 #define CHAN_TYPE "#&"
+#define CHANNEL_MARK '#'
 #define INIT_MAX_NICKNAME_LEN 9
 #define INIT_MAX_USERNAME_LEN 12
 
 #define INIT_MAX_CHANNEL_NUM 20
+
+// MODE FLAG
+#define INVITE_MODE_ON "+i"
+#define INVITE_MODE_OFF "-i"
 
 #define BLACK "\033[0;30m"
 #define RED "\033[0;31m"
@@ -132,8 +137,7 @@ class Server {
                   const Message& msg);
   
   void cmd_invite(int recv_fd, const Message& msg);
-
-
+  void cmd_topic(int recv_fd, const Message& msg);
 
 
 

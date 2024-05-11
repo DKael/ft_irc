@@ -1,6 +1,5 @@
 #include "Message.hpp"
 
-#include <iostream>  // [DEBUG]
 std::map<Command, std::string> Message::etos;
 std::map<std::string, Command> Message::stoe;
 
@@ -271,9 +270,6 @@ Message Message::rpl_433(const std::string& source, const std::string& client,
   rpl.push_back(nick);
   rpl.push_back(":Nickname is already in use");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -285,9 +281,6 @@ Message Message::rpl_451(const std::string& source, const std::string& client) {
   rpl.push_back(client);
   rpl.push_back(":Connection not registered");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -300,9 +293,7 @@ Message Message::rpl_461(const std::string& source, const std::string& client,
   rpl.push_back(client);
   rpl.push_back(cmd);
   rpl.push_back(":Not enough parameters");
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
+
   return rpl;
 }
 
@@ -314,9 +305,6 @@ Message Message::rpl_462(const std::string& source, const std::string& client) {
   rpl.push_back(client);
   rpl.push_back(":Connection already registered");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -328,9 +316,6 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
   rpl.push_back(client);
   rpl.push_back(":Password incorrect");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -428,6 +413,30 @@ Message Message::rpl_403(const std::string& source, const std::string& nickName,
   return rpl;
 }
 
+Message Message::rpl_482(const std::string& source, const std::string& nickName,
+                         const Message& msg) {
+  /*
+    ERR_CHANOPRIVSNEEDED (482) 
+    "<client> <channel> :You're not channel operator"
+    Indicates that a command failed because the client does not have the appropriate channel privileges. This numeric can apply for different prefixes such as halfop, operator, etc. The text used in the last param of this message may vary.
+  */
+
+  // < 2024/05/11 14:33:05.000862471  length=62 from=2493 to=2554
+  // :irc.example.net 482 dy__ #test :Your privileges are too low\r
+
+  Message rpl;
+  std::string sentence;
+  std::string space = std::string(" ");
+  std::string colon = std::string(":");
+  rpl.set_source(source);
+  rpl.set_numeric("483");
+  sentence = nickName + space + msg.get_params()[0] + space + colon +
+             std::string("Your privileges are too low");
+  rpl.push_back(sentence);
+
+  return rpl;
+}
+
 Message Message::rpl_401(const std::string& source, const std::string& nickName,
                          const Message& msg) {
   /*
@@ -467,3 +476,29 @@ Message Message::rpl_401(const std::string& source, const std::string& nickName,
 
 //   */
 // }
+
+Message Message::rpl_341(const std::string& source, User& user, const Message& msg) 
+{
+/*
+  < 2024/05/10 14:21:06.000167118  length=42 from=7812 to=7853
+  :dy3!~memememe@localhost 341 dy1 dy3 new\r
+*/
+
+  Message rpl;
+
+  std::string incomingClientNickName = msg.get_params()[0];
+  std::string invitingClientNickName = user.get_nick_name();
+  std::string userName = user.get_user_name();
+  std::string targetChannelStr = msg.get_params()[1];
+  std::string exclamationMark = std::string("!");
+  std::string at = std::string("@");
+  std::string localhost = std::string("localhost");
+  rpl.set_source(incomingClientNickName + exclamationMark + userName + at + localhost);
+
+  rpl.set_numeric("341");
+  rpl.push_back(invitingClientNickName);
+  rpl.push_back(incomingClientNickName);
+  rpl.push_back(targetChannelStr);
+
+  return rpl;
+}

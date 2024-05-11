@@ -66,3 +66,23 @@ Returned when a client tries to invite <nick> to a channel they’re already joi
 ######################################################################################################################### 0510
 invite mode
 topic
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////////////
+0511
+
+privilege error 처리해주기
+invite only mode
+
+join 할때 broadacast 해주기

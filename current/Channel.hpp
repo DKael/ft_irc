@@ -9,6 +9,12 @@
 #include "User.hpp"
 #include "custom_exception.hpp"
 
+#define FLAG_I 1 << 0
+#define FLAG_T 1 << 1
+#define FLAG_K 1 << 2
+#define FLAG_O 1 << 3
+#define FLAG_L 1 << 4
+
 class Channel {
  private:
   // CHANNEL NAME
@@ -30,14 +36,23 @@ class Channel {
   // OPERATORS
   // std::vector<User>			ops;
   std::map<int, std::string> ops;
+
   // TOPIC
   std::string topic;
 
+  // int mode;
+
+  // MODE
+
   /*
     i : set / remove Invite only channel
+    
     t : set / remove the restrictions of the TOPIC command to channel
+    
     operators k : set / remove the channel key (password) o : give / take
+    
     channel operator privilege l : set / remove the user limit to channel
+  
   */
 
   Channel();
