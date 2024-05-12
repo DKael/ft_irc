@@ -1,4 +1,5 @@
 #include "Channel.hpp"
+#include "Server.hpp"
 
 Channel::Channel(std::string channelName)
     : channel_name(channelName),
@@ -50,12 +51,7 @@ std::string Channel::get_topic(void) const { return topic; };
 std::map<std::string, User&>& Channel::get_channel_client_list(void) {
   return channel_client_list;
 };
-const std::map<std::string, User&>& Channel::get_channel_banned_list(
-    void) const {
-  return channel_banned_list;
-};
-// const std::vector<User>& Channel::get_channel_operator_list(void) const{
-// return ops; };
+
 const std::map<int, std::string>& Channel::get_channel_operator_list(
     void) const {
   return ops;
@@ -80,18 +76,6 @@ void Channel::visualizeClientList(void) {
   std::cout << WHITE;
 }
 
-void Channel::visualizeBannedClientList(void) {
-  std::map<std::string, User&>::const_iterator it;
-
-  for (it = channel_banned_list.begin(); it != channel_banned_list.end();
-       ++it) {
-    const std::string& nickName = it->first;
-    const User& user = it->second;
-
-    std::cout << nickName << std::endl;
-  }
-}
-
 // [OVERLOADING] operator<<
 std::ostream& operator<<(std::ostream& out, Channel& channel) {
   out << BLUE << "[channel name] :: " << channel.get_channel_name() << std::endl
@@ -106,9 +90,6 @@ std::ostream& operator<<(std::ostream& out, Channel& channel) {
 
   const std::map<std::string, User&>& clientList =
       channel.get_channel_client_list();
-  const std::map<std::string, User&>& bannedList =
-      channel.get_channel_banned_list();
-  // const std::vector<User>operators = channel.get3_channel_operator_list();
   const std::map<int, std::string> operators =
       channel.get_channel_operator_list();
 
@@ -123,18 +104,6 @@ std::ostream& operator<<(std::ostream& out, Channel& channel) {
     i++;
   }
   out << "\n";
-  out << "=============== Banned List ===============";
-  std::map<std::string, User&>::const_iterator cit2;
-  i = 1;
-  out << "\n";
-  for (cit2 = bannedList.begin(); cit2 != bannedList.end(); ++cit2) {
-    const std::string& nickName = cit2->first;
-    // const User& user = cit2->second;
-    out << i << ". " << nickName << std::endl;
-    i++;
-  }
-  out << "\n";
-
   out << "=============== Operators =================";
   i = 1;
   out << "\n";
@@ -213,3 +182,19 @@ void Channel::changeClientNickName(std::string old_nick, std::string new_nick) {
       ops_it->second = new_nick;
   }
 }
+
+// 채널 모드 세팅
+void Channel::setMode(int flag) { mode |= flag; }
+void Channel::unsetMode(int flag) { mode &= ~flag; }
+
+// 채널 모드 확인
+const bool Channel::isMode(int flag) const { return mode & flag; }
+
+// if (channel.isMode(FLAG_I)) {
+//     // 초대 모드 처리 로직
+// }
+
+
+
+
+

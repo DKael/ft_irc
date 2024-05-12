@@ -121,6 +121,8 @@ enum Command {
 #define DEF_COLOR "\033[0;39m"
 #define LF "\e[1K\r"
 
+class User;
+
 class Message {
  private:
   static std::map<Command, std::string> etos;

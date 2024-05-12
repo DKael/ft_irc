@@ -9,11 +9,11 @@
 #include "User.hpp"
 #include "custom_exception.hpp"
 
-#define FLAG_I 1 << 0
-#define FLAG_T 1 << 1
-#define FLAG_K 1 << 2
-#define FLAG_O 1 << 3
-#define FLAG_L 1 << 4
+#define FLAG_I (1 << 0)
+#define FLAG_T (1 << 1)
+#define FLAG_K (1 << 2)
+#define FLAG_O (1 << 3)
+#define FLAG_L (1 << 4)
 
 class Channel {
  private:
@@ -30,8 +30,7 @@ class Channel {
   std::string pwd;
 
   // CLIENT LIST (원본을 가지고 다닐것)
-  std::map<std::string, User&> channel_client_list;  // nickname 과 user
-  std::map<std::string, User&> channel_banned_list;  // nickname 과 banned user
+  std::map<std::string, User&> channel_client_list;   // nickname 과 user
 
   // OPERATORS
   // std::vector<User>			ops;
@@ -40,15 +39,15 @@ class Channel {
   // TOPIC
   std::string topic;
 
-  // int mode;
+  int mode;
 
   // MODE
 
   /*
     i : set / remove Invite only channel
-    
+
     t : set / remove the restrictions of the TOPIC command to channel
-    
+
     operators k : set / remove the channel key (password) o : give / take
     
     channel operator privilege l : set / remove the user limit to channel
@@ -85,6 +84,12 @@ class Channel {
   void removeOperator(User& user);
   bool foundClient(std::string nickName);
   void changeClientNickName(std::string old_nick, std::string new_nick);
+
+  /* MODE */
+  void setMode(int flag);
+  void unsetMode(int flag);
+  const bool isMode(int flag) const;
+
   // FOR DEBUG PURPOSE ONLY [VISUALIZE]
   void visualizeClientList(void);
   void visualizeBannedClientList(void);

@@ -27,6 +27,7 @@ User::User(const User& origin)
       is_authenticated(origin.is_authenticated),
       have_to_disconnect(origin.have_to_disconnect),
       to_send(origin.to_send),
+      invited_channels(origin.invited_channels),
       dummy("*") {}
 
 User::~User() {}
@@ -85,31 +86,47 @@ const bool User::get_have_to_disconnect(void) const {
 
 const time_t User::get_created_time(void) const { return created_time; }
 
-void User::push_msg(const std::string& msg) { to_send.push(msg); }
+const std::vector<std::string>& User::get_invited_channel_vec(void) const { return invited_channels; }
 
+
+void User::push_msg(const std::string& msg) { to_send.push(msg); }
+void User::push_invited_channel(std::string channelName) { invited_channels.push_back(channelName); }
 const std::string& User::front_msg(void) { return to_send.front(); }
 
 void User::pop_msg(void) { to_send.pop(); }
 
 std::size_t User::number_of_to_send(void) { return to_send.size(); }
 
+const bool User::isInvited(std::string channelName) {
+  for (std::vector<std::string>::const_iterator it = (*this).get_invited_channel_vec().begin(); it != (*this).get_invited_channel_vec().end();++it) {
+    std::string channel = *it;
+    if (channel == channelName)
+      return true;
+  }
+  return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
-std::ostream& operator<<(std::ostream& out, User user) {
-  out << GREEN << "[Client Information]" << WHITE << std::endl
-      << "NICKNAME :: " << user.get_nick_name() << std::endl
-      << "USERNAME :: " << user.get_user_name() << std::endl
-      << "REALNAME :: " << user.get_real_name() << std::endl
-      << "Client Socket(fd) :: " << user.get_user_socket() << std::endl
-      << "Client address(sockaddr_in) :: " << &user.get_user_addr() << std::endl
-      << "Client created time :: " << user.get_created_time() << std::endl;
-  if (user.get_password_chk() == OK)
-    out << "STATUS PASSWORD :: OK" << std::endl;
-  else if (user.get_password_chk() == FAIL)
-    out << "STATUS PASSWORD :: FAILED" << std::endl;
-  if (user.get_is_authenticated() == OK)
-    out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
-  else if (user.get_is_authenticated() == FAIL)
-    out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
-  return (out);
+std::ostream& operator<<(std::ostream& out, const User& user) {
+  out << GREEN << "\n\t[Client Information]" << WHITE << std::endl
+      << "\tNICKNAME :: " << user.get_nick_name() << std::endl
+      << "\tUSERNAME :: " << user.get_user_name() << std::endl
+      << "\tREALNAME :: " << user.get_real_name() << std::endl
+      // << "Client Socket(fd) :: " << user.get_user_socket() << std::endl
+      // << "Client address(sockaddr_in) :: " << &user.get_user_addr() << std::endl
+      // << "Client created time :: " << user.get_created_time() << std::endl;
+  // if (user.get_password_chk() == OK)
+  //   out << "STATUS PASSWORD :: OK" << std::endl;
+  // else if (user.get_password_chk() == FAIL)
+  //   out << "STATUS PASSWORD :: FAILED" << std::endl;
+  // if (user.get_is_authenticated() == OK)
+  //   out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
+  // else if (user.get_is_authenticated() == FAIL)
+  //   out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
+      << "\n\tInvited Channel Lists :: ";
+
+
+      std::cout << std::endl << std::endl;
+  return out;
 }

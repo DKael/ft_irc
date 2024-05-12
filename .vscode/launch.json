@@ -6,7 +6,7 @@
             "request": "launch",
             "program": "${fileDirname}/ircserv",
             "args": [
-                "8095",
+                "8090",
                 "1234"
             ],
             "stopAtEntry": false,

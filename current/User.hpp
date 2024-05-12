@@ -11,6 +11,7 @@
 #include <string>
 
 #include "string_func.hpp"
+#include "Channel.hpp"
 
 #define BLACK "\033[0;30m"
 #define RED "\033[0;31m"
@@ -47,6 +48,7 @@ class User {
   bool have_to_disconnect;
 
   std::queue<std::string> to_send;
+  std::vector<std::string> invited_channels;
 
   // not use
   User();
@@ -78,8 +80,13 @@ class User {
   const chk_status get_password_chk(void) const;
   const chk_status get_is_authenticated(void) const;
   const bool get_have_to_disconnect(void) const;
+  const std::vector<std::string>& get_invited_channel_vec(void) const;
+
+  const bool isInvited(std::string channelNmae);
+
 
   void push_msg(const std::string& msg);
+  void push_invited_channel(std::string channelName);
   const std::string& front_msg(void);
   void pop_msg(void);
   std::size_t number_of_to_send(void);
@@ -87,6 +94,6 @@ class User {
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
-std::ostream& operator<<(std::ostream& out, User user);
+std::ostream& operator<<(std::ostream& out, const User& user);
 
 #endif
