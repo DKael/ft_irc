@@ -82,9 +82,9 @@ std::ostream& operator<<(std::ostream& out, Channel& channel) {
       << "[client limit] :: " << channel.get_channel_capacity_limit()
       << std::endl
       << "[invite mode] :: ";
-  if (channel.get_invite_mode_setting() == true)
+  if (channel.isMode(FLAG_I) == true)
     out << "ON" << std::endl;
-  else
+  else if (channel.isMode(FLAG_I) == false)
     out << "OFF" << std::endl;
   out << channel.get_password() << std::endl;
 
@@ -165,10 +165,13 @@ void Channel::changeClientNickName(std::string old_nick, std::string new_nick) {
     candidate = it->second.get_nick_name();
     if (candidate == old_nick) {
         User& user = it->second;
+        
+        // nickName 바꿔주기
         user.set_nick_name(new_nick);
         channel_client_list.insert(std::pair<std::string, User&>(user.get_nick_name(), user));
         // channel_client_list[new_nick] = user;
         channel_client_list.erase(it);
+        
         break;
     }
   }
@@ -181,6 +184,8 @@ void Channel::changeClientNickName(std::string old_nick, std::string new_nick) {
     if (candidate == old_nick) 
       ops_it->second = new_nick;
   }
+
+
 }
 
 // 채널 모드 세팅
@@ -190,9 +195,6 @@ void Channel::unsetMode(int flag) { mode &= ~flag; }
 // 채널 모드 확인
 const bool Channel::isMode(int flag) const { return mode & flag; }
 
-// if (channel.isMode(FLAG_I)) {
-//     // 초대 모드 처리 로직
-// }
 
 
 

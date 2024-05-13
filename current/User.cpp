@@ -125,8 +125,28 @@ std::ostream& operator<<(std::ostream& out, const User& user) {
   // else if (user.get_is_authenticated() == FAIL)
   //   out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
       << "\n\tInvited Channel Lists :: ";
-
-
+      std::vector<std::string>::const_iterator cit;
+      for (cit = user.get_invited_channel_vec().begin(); cit != user.get_invited_channel_vec().end(); ++cit) {
+        std::string channelName = *cit;
+        out << channelName << ", ";
+      }
       std::cout << std::endl << std::endl;
   return out;
 }
+
+void User::removeAllInvitations(void) { 
+  invited_channels.clear();
+}
+
+void User::removeInvitation(std::string channelName) {
+  for (std::vector<std::string>::iterator it = invited_channels.begin(); it != invited_channels.end();) {
+      if (*it == channelName) {
+          it = invited_channels.erase(it);
+      } else {
+          ++it;
+      }
+  }
+}
+
+
+

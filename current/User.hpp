@@ -82,8 +82,9 @@ class User {
   const bool get_have_to_disconnect(void) const;
   const std::vector<std::string>& get_invited_channel_vec(void) const;
 
-  const bool isInvited(std::string channelNmae);
-
+  const bool isInvited(std::string channelName);
+  void removeAllInvitations(void);
+  void removeInvitation(std::string channelName);
 
   void push_msg(const std::string& msg);
   void push_invited_channel(std::string channelName);

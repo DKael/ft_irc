@@ -86,3 +86,13 @@ privilege error 처리해주기
 invite only mode
 
 join 할때 broadacast 해주기
+
+
+######################################################################################################################### 0510
+473 에러 메시지 제대로 수정하기 DONE
+mode +i 할때마다 공지되는거 수정하기 DONE
+
+invitation을 하려는데 만약 없는 유저면 error msg 보내기
+invitation을 하려는데 만약 이미 있는 유저라면
+    ; < 2024/05/13 18:12:30.000629016  length=57 from=2079 to=2135
+    ; :irc.example.net 443 dy dy #test :is already on channel\r

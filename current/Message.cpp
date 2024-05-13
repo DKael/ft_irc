@@ -228,19 +228,16 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
   return out;
 }
 
-Message Message::rpl_401(const std::string& source, const std::string& client,
-                         const std::string& nick) {
+Message Message::rpl_401_invitation(const std::string& source, const std::string& invitingClientNickName, 
+                                    const std::string& joiningClientNickName) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("401");
-  rpl.push_back(client);
-  rpl.push_back(nick);
+  rpl.push_back(invitingClientNickName);
+  rpl.push_back(joiningClientNickName);
   rpl.push_back(":No such nick or channel name");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -437,8 +434,7 @@ Message Message::rpl_482(const std::string& source, const std::string& nickName,
   return rpl;
 }
 
-Message Message::rpl_401(const std::string& source, const std::string& nickName,
-                         const Message& msg) {
+Message Message::rpl_401(const std::string& source, const std::string& nickName, const Message& msg) {
   /*
     ERR_NOSUCHNICK (401)
       "<client> <nickname> :No such nick/channel"
@@ -502,3 +498,37 @@ Message Message::rpl_341(const std::string& source, User& user, const Message& m
 
   return rpl;
 }
+
+Message Message::rpl_473(const std::string& source, std::string joiningClientName, const Message& msg) {
+  // :irc.example.net 473 dy_ #test :Cannot join channel (+i) -- Invited users only\r
+  Message rpl;
+
+  std::string joiningChannelName = msg.get_params()[0];
+  std::string exclamationMark = std::string("!");
+  std::string at = std::string("@");
+  std::string localhost = std::string("localhost");
+  rpl.set_source(source);
+  rpl.set_numeric("473");
+  rpl.push_back(joiningClientName);
+  rpl.push_back(joiningChannelName);
+  rpl.push_back(":");
+  rpl.push_back("Cannot join channel (+i) -- Invited users only");
+  
+  return rpl;
+}
+
+// Message Message::rpl_443(const std::string& source, std::string joiningClientName, const Message& msg) {
+//   // :irc.example.net 443 dy dy #test :is already on channel\r
+//   Message rpl;
+
+//   std::string joiningChannelName = msg.get_params()[0];
+//   rpl.set_source(source);
+//   rpl.set_numeric("443");
+//   rpl.push_back(joiningClientName);
+//   rpl.push_back(joiningClientName);
+//   rpl.push_back(joiningChannelName);
+//   rpl.push_back(":");
+//   rpl.push_back("is already on channel");
+  
+//   return rpl;
+// }
