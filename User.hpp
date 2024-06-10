@@ -6,8 +6,8 @@
 #include <unistd.h>
 
 #include <ctime>
+#include <iostream>
 #include <map>
-#include <queue>
 #include <string>
 
 #include "string_func.hpp"
@@ -35,7 +35,7 @@ class User {
   const std::string dummy;
   const int user_socket;
   const sockaddr_in user_addr;
-  std::time_t created_time;
+  const std::time_t created_time;
 
   std::string nick_name;
   chk_status nick_init_chk;
@@ -46,17 +46,20 @@ class User {
   chk_status is_authenticated;
   bool have_to_disconnect;
 
-  std::queue<std::string> to_send;
+  std::map<std::string, int> invited_channels;
+  // std::map<std::string, int> join_channels;
 
   // not use
   User();
   User& operator=(const User& origin);
 
  public:
+  // constructors & desturctor
   User(const int _user_socket, const sockaddr_in& _user_addr);
   User(const User& origin);
   ~User();
 
+  // setter functions
   void set_nick_name(const std::string& input);
   void set_nick_init_chk(const chk_status input);
   void set_user_name(const std::string& input);
@@ -66,6 +69,7 @@ class User {
   void set_is_authenticated(const chk_status input);
   void set_have_to_disconnect(const bool input);
 
+  // getter functions
   const int get_user_socket(void) const;
   const sockaddr_in& get_user_addr(void) const;
   const time_t get_created_time(void) const;
@@ -78,15 +82,17 @@ class User {
   const chk_status get_password_chk(void) const;
   const chk_status get_is_authenticated(void) const;
   const bool get_have_to_disconnect(void) const;
+  const std::map<std::string, int>& get_invited_channels(void) const;
+  // const std::map<std::string, int>& get_join_channels(void) const;
 
-  void push_msg(const std::string& msg);
-  const std::string& front_msg(void);
-  void pop_msg(void);
-  std::size_t number_of_to_send(void);
+  void push_invited_channel(std::string& channelname);
+  const bool is_invited(std::string& channelname) const;
+  void remove_all_invitations(void);
+  void remove_invitation(std::string& channelname);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
-std::ostream& operator<<(std::ostream& out, User user);
+std::ostream& operator<<(std::ostream& out, const User& user);
 
 #endif

@@ -23,12 +23,30 @@
 #define POLL_TIMEOUT 5
 #define AUTHENTICATE_TIMEOUT 20
 
-#define SERVER_NAME "ft_irc"
-#define CHAN_TYPE "#&"
-#define INIT_MAX_NICKNAME_LEN 9
-#define INIT_MAX_USERNAME_LEN 12
+#define SERVER_NAME "ft_irc.net"
+#define SERVER_VERSION "ft_irc-1.0"
+#define AVAILABLE_USER_MODES
+#define AVAILABLE_CHANNEL_MODES "iklost"
 
-#define INIT_MAX_CHANNEL_NUM 20
+#define IRC_PROTOCOL "RFC2812"
+#define IRCD "ngIRCd"
+#define CHARSET "UTF-8"
+#define CASEMAPPING "ascii"
+#define PREFIX "@%+"
+#define CHANTYPES "#&"
+#define CHANMODES "k,l,ist"
+#define CHANLIMIT "#&:10"
+#define CHANNELLEN 50
+#define NICKLEN 9
+#define USERLEN 12
+#define TOPICLEN 490
+#define AWAYLEN 127
+#define KICKLEN 400
+#define CHANNELNUM 20
+
+// MODE FLAG
+#define INVITE_MODE_ON "+i"
+#define INVITE_MODE_OFF "-i"
 
 #define BLACK "\033[0;30m"
 #define RED "\033[0;31m"
@@ -47,11 +65,13 @@ class Server {
   int port;
   std::string str_port;
   std::string serv_name;
-  std::string chantype;
+  std::string serv_version;
+  std::string chantypes;
 
   std::string password;
   int serv_socket;
   sockaddr_in serv_addr;
+  bool enable_ident_protocol;
 
   pollfd observe_fd[MAX_USER];
   std::map<int, User> tmp_user_list;
@@ -59,21 +79,15 @@ class Server {
   std::map<int, User> user_list;
   std::map<std::string, int> nick_to_soc;
 
-  bool enable_ident_protocol;
-  std::size_t max_nickname_len;
-  std::size_t max_username_len;
+  // CHANNEL
+  std::map<std::string, Channel> channel_list;
+  std::map<std::string, Channel>::iterator channel_iterator;
 
+  // private functions
   int client_socket_init(void);
-  void revent_pollout(pollfd& p_val);
   void revent_pollin(pollfd& p_val);
   void auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
   void not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
-
-  // CHANNEL
-  std::map<std::string, Channel> server_channel_list;
-  const int max_channel_num;
-
-  std::map<std::string, Channel>::iterator server_channel_iterator;
 
   // not use
   Server();
@@ -86,23 +100,21 @@ class Server {
 
   void listen(void);
 
-  const int get_port(void) const;
+  int get_port(void) const;
   const std::string& get_str_port(void) const;
   const std::string& get_serv_name(void) const;
+  const std::string& get_serv_version(void) const;
   const std::string& get_password(void) const;
-  const int get_serv_socket(void) const;
+  int get_serv_socket(void) const;
   const sockaddr_in& get_serv_addr(void) const;
-  const int get_tmp_user_cnt(void) const;
-  const int get_user_cnt(void) const;
-  const bool get_enable_ident_protocol(void) const;
+  int get_tmp_user_cnt(void) const;
+  int get_user_cnt(void) const;
+  bool get_enable_ident_protocol(void) const;
+  int get_channel_num(void) const;
 
-  const int get_max_channel_num(void) const;
-  int get_current_channel_num(void);
-
-  std::map<std::string, Channel>::iterator get_server_channel_iterator(
-      std::string targetChannelStr);
-  Channel& get_server_channel(
-      std::map<std::string, Channel>::iterator iterator);
+  std::map<std::string, Channel>::iterator get_channel_iterator(
+      const std::string& channelname);
+  Channel& get_channel(std::map<std::string, Channel>::iterator iterator);
 
   void add_tmp_user(const int socket_fd, const sockaddr_in& addr);
   void move_tmp_user_to_user_list(int socket_fd);
@@ -111,8 +123,6 @@ class Server {
   void change_nickname(const std::string& old_nick,
                        const std::string& new_nick);
   void tmp_user_timeout_chk(void);
-
-  int send_msg_at_queue(int socket_fd);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
@@ -128,6 +138,10 @@ class Server {
   void cmd_kick(int recv_fd, const Message& msg);
   void kickClient(User& opUser, User& outUser, Channel& channelName,
                   const Message& msg);
+
+  void cmd_invite(int recv_fd, const Message& msg);
+  void cmd_topic(int recv_fd, const Message& msg);
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
   void addChannel(Channel& newChannel);
@@ -137,7 +151,7 @@ class Server {
   User& operator[](const int socket_fd);
   int operator[](const std::string& nickname);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////
   // [DEBUG] PURPOSE ONLY
   // CLIENT LIST
 
@@ -154,8 +168,7 @@ class Server {
     std::map<std::string, Channel>::const_iterator it;
 
     std::cout << RED << "[Channel Lists in the server] :: ";
-    for (it = server_channel_list.begin(); it != server_channel_list.end();
-         ++it) {
+    for (it = channel_list.begin(); it != channel_list.end(); ++it) {
       const std::string& channelName = it->first;
       const Channel& channel = it->second;
 

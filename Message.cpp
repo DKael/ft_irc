@@ -1,6 +1,5 @@
 #include "Message.hpp"
 
-#include <iostream>  // [DEBUG]
 std::map<Command, std::string> Message::etos;
 std::map<std::string, Command> Message::stoe;
 
@@ -229,19 +228,136 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
   return out;
 }
 
+// reply message functions
+Message Message::rpl_341(const std::string& source, const std::string& client,
+                         const std::string& nick, const std::string& channel) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("341");
+  rpl.push_back(client);
+  rpl.push_back(nick);
+  rpl.push_back(channel);
+
+  return rpl;
+}
+
+/*
+  > 2024/05/05 14:52:02.000706851  length=9 from=503 to=511
+  JOIN #b\r
+
+  < 2024/05/05 14:52:02.000707138  length=124 from=2769 to=2892
+  :[lfkn]!~[memememe]@localhost JOIN :#b\r
+  :irc.example.net 353 lfkn = #b :@lfkn\r
+  :irc.example.net 366 lfkn #b :End of NAMES list\r
+*/
+Message Message::rpl_353(const std::string& source, const std::string& client,
+                         const Channel& channel) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("353");
+  rpl.push_back(client);
+  if (channel.chk_mode(FLAG_S) == true) {
+    rpl.push_back("@");
+  } else {
+    rpl.push_back("=");
+  }
+  rpl.push_back(channel.get_channel_name());
+
+  std::string trail = ":";
+  const std::map<std::string, User&>& client_map = channel.get_client_list();
+  const std::map<std::string, User&>& operator_map =
+      channel.get_operator_list();
+  std::map<std::string, User&>::const_reverse_iterator cit1 =
+      client_map.rbegin();
+  std::map<std::string, User&>::const_iterator cit2;
+
+  for (std::size_t i = 0; i + 1 < client_map.size(); ++i, ++cit1) {
+    cit2 = operator_map.find(cit1->first);
+    if (cit2 != operator_map.end()) {
+      trail += (OPERATOR_PREFIX + cit1->first);
+    } else {
+      trail += cit1->first;
+    }
+    trail += " ";
+  }
+  cit2 = operator_map.find(cit1->first);
+  if (cit2 != operator_map.end()) {
+    trail += (OPERATOR_PREFIX + cit1->first);
+  } else {
+    trail += cit1->first;
+  }
+  rpl.push_back(trail);
+
+  return rpl;
+}
+
+Message Message::rpl_366(const std::string& source, const std::string& client,
+                         const std::string& channel) {
+  // :irc.example.net 366 lfkn__ #a :End of NAMES list\r
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("366");
+  rpl.push_back(client);
+  rpl.push_back(channel);
+  rpl.push_back(std::string(":End of NAMES list"));
+  return rpl;
+}
+
 Message Message::rpl_401(const std::string& source, const std::string& client,
-                         const std::string& nick) {
+                         const std::string& nickname) {
+  /*
+  ERR_NOSUCHNICK (401)
+  "<client> <nickname> :No such nick/channel"
+  Indicates that no client can be found for the supplied nickname. The text
+  used in the last param of this message may vary.
+
+  :irc.example.net 401 lfkn slkfdn :No such nick or channel name\r
+  (hostname) (nickname) (msg)
+  */
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("401");
   rpl.push_back(client);
-  rpl.push_back(nick);
+  rpl.push_back(nickname);
   rpl.push_back(":No such nick or channel name");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
+  return rpl;
+}
+
+Message Message::rpl_403(const std::string& source, const std::string& client,
+                         const std::string& channel) {
+  /* ERR_NOSUCHCHANNEL (403)
+    "<client> <channel> :No such channel"
+    Indicates that no channel can be found for the supplied channel name.
+    The text used in the last param of this message may vary.
+    :irc.example.net 403 lfkn__ #asdfw :No such channel\r
+    :ft_irc 403 lfkn #asdf :
+    /kick #없는채널명 어딘가에있는클라이언트명 으로 하면 이 에러 나옴*/
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("403");
+  rpl.push_back(client);
+  rpl.push_back(channel);
+  rpl.push_back(std::string(":No such channel"));
+
+  return rpl;
+}
+
+Message Message::rpl_421(const std::string& source, const std::string& client,
+                         const std::string& command) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("421");
+  rpl.push_back(client);
+  rpl.push_back(command);
+  rpl.push_back(":Unknown command");
+
   return rpl;
 }
 
@@ -255,9 +371,6 @@ Message Message::rpl_432(const std::string& source, const std::string& client,
   rpl.push_back(nick);
   rpl.push_back(":Erroneous nickname");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -271,9 +384,44 @@ Message Message::rpl_433(const std::string& source, const std::string& client,
   rpl.push_back(nick);
   rpl.push_back(":Nickname is already in use");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
+  return rpl;
+}
+
+Message Message::rpl_442(const std::string& source, const std::string& client,
+                         const std::string& channel) {
+  /*
+    ERR_NOTONCHANNEL (442)
+    "<client> <channel> :You're not on that channel"
+    Returned when a client tries to perform a channel-affecting command on a
+    channel which the client isn’t a part of.
+
+    채널에 속했든 안했든
+     /kick [#CHANNELNAME] [CLIENTNAME] 이런식으로 명령이 가능한데 만약 채널에
+     속하지 않은 유저가 명령을 내릴경우 442에러를 뱉어주면 됨.
+  */
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("442");
+  rpl.push_back(client);
+  rpl.push_back(channel);
+  rpl.push_back(std::string(":You're not on that channel"));
+
+  return rpl;
+}
+
+Message Message::rpl_443(const std::string& source, const std::string& client,
+                         const std::string& nick, const std::string& channel) {
+  // :irc.example.net 443 dy dy #test :is already on channel\r
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("443");
+  rpl.push_back(client);
+  rpl.push_back(nick);
+  rpl.push_back(channel);
+  rpl.push_back(":is already on channel");
+
   return rpl;
 }
 
@@ -285,24 +433,19 @@ Message Message::rpl_451(const std::string& source, const std::string& client) {
   rpl.push_back(client);
   rpl.push_back(":Connection not registered");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
 Message Message::rpl_461(const std::string& source, const std::string& client,
-                         const std::string& cmd) {
+                         const std::string& command) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("461");
   rpl.push_back(client);
-  rpl.push_back(cmd);
+  rpl.push_back(command);
   rpl.push_back(":Not enough parameters");
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
+
   return rpl;
 }
 
@@ -314,9 +457,6 @@ Message Message::rpl_462(const std::string& source, const std::string& client) {
   rpl.push_back(client);
   rpl.push_back(":Connection already registered");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
@@ -328,142 +468,45 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
   rpl.push_back(client);
   rpl.push_back(":Password incorrect");
 
-  /////////////////
-  // [DEBUG]
-  std::cout << CYAN << rpl << std::endl << rpl.to_raw_msg();
   return rpl;
 }
 
-/*
-
-  > 2024/05/05 14:52:02.000706851  length=9 from=503 to=511
-  JOIN #b\r
-
-  < 2024/05/05 14:52:02.000707138  length=124 from=2769 to=2892
-  :[lfkn]!~[memememe]@localhost JOIN :#b\r
-  :irc.example.net 353 lfkn = #b :@lfkn\r
-  :irc.example.net 366 lfkn #b :End of NAMES list\r
-
-*/
-Message Message::rpl_353(const std::string& source, Channel& channel,
-                         const std::string& nickName,
-                         const std::string& channelName) {
+Message Message::rpl_473(const std::string& source, const std::string& client,
+                         const std::string& channel) {
+  // :irc.example.net 473 dy_ #test :Cannot join channel (+i) -- Invited users
+  // only\r
   Message rpl;
 
-  rpl.source = source;
-  rpl.set_numeric("353");
-  rpl.push_back(nickName);
-  rpl.push_back("=");
-  rpl.push_back(channelName);
-  // rpl.push_back(":");
-
-  const std::map<std::string, User&>& clientMap =
-      channel.get_channel_client_list();
-  // const std::vector<User>& operatorVec = channel.get_channel_operator_list();
-  const std::map<int, std::string>& operatorMap =
-      channel.get_channel_operator_list();
-
-  std::map<std::string, User&>::const_reverse_iterator cit;
-
-  std::string user_list_str;
-
-  for (cit = clientMap.rbegin(); cit != clientMap.rend(); cit++) {
-    // std::vector<User>::const_iterator citOp = operatorMap.begin();
-    std::map<int, std::string>::const_iterator citOp = operatorMap.begin();
-    const std::string nickName = cit->first;
-    const User& user = cit->second;
-    for (; citOp != operatorMap.end(); ++citOp) {
-      if (citOp->second == nickName) break;
-    }
-    if (citOp != operatorMap.end()) {
-      std::string opNickName = "@" + nickName;
-      user_list_str += opNickName;
-    } else {
-      user_list_str += nickName;
-    }
-    user_list_str += std::string(" ");
-  }
-  rpl.push_back(std::string(":") + user_list_str);
-
-  return rpl;
-}
-
-Message Message::rpl_366(const std::string& source, const std::string& client,
-                         const std::string& channelName) {
-  // :irc.example.net 366 lfkn__ #a :End of NAMES list\r
-  Message rpl;
-
-  std::string str = std::string(":") + std::string("End of NAMES list");
-  rpl.source = source;
-  rpl.set_numeric("366");
+  rpl.set_source(source);
+  rpl.set_numeric("473");
   rpl.push_back(client);
-  rpl.push_back(channelName);
-  rpl.push_back(str);
-  return rpl;
-}
-
-Message Message::rpl_403(const std::string& source, const std::string& nickName,
-                         const Message& msg) {
-  /*
-      ERR_NOSUCHCHANNEL (403)
-        "<client> <channel> :No such channel"
-      Indicates that no channel can be found for the supplied channel name.
-      The text used in the last param of this message may vary.
-  */
-
-  // :irc.example.net 403 lfkn__ #asdfw :No such channel\r
-  // :ft_irc 403 lfkn #asdf :
-  // /kick #없는채널명 어딘가에있는클라이언트명 으로 하면 이 에러 나옴
-
-  Message rpl;
-  std::string sentence;
-  std::string space = std::string(" ");
-  std::string colon = std::string(":");
-  rpl.set_source(source);
-  rpl.set_numeric("403");
-  sentence = nickName + space + msg.get_params()[0] + space + colon +
-             std::string("No such channel");
-  rpl.push_back(sentence);
+  rpl.push_back(channel);
+  rpl.push_back(":Cannot join channel (+i) -- Invited users only");
 
   return rpl;
 }
 
-Message Message::rpl_401(const std::string& source, const std::string& nickName,
-                         const Message& msg) {
+Message Message::rpl_482(const std::string& source, const std::string& client,
+                         const std::string& channel) {
   /*
-    ERR_NOSUCHNICK (401)
-      "<client> <nickname> :No such nick/channel"
-      Indicates that no client can be found for the supplied nickname. The text
-    used in the last param of this message may vary.
-  */
+    ERR_CHANOPRIVSNEEDED (482)
+    "<client> <channel> :You're not channel operator"
+    Indicates that a command failed because the client does not have the
+    appropriate channel privileges. This numeric can apply for different
+    prefixes such as halfop, operator, etc. The text used in the last param of
+    this message may vary.
 
-  // :irc.example.net 401 lfkn slkfdn :No such nick or channel name\r
-  // (hostname) (nickname) (msg)
+    < 2024/05/11 14:33:05.000862471  length=62 from=2493 to=2554
+    :irc.example.net 482 dy__ #test :Your privileges are too low\r
+  */
 
   Message rpl;
 
-  std::string sentence;
-  std::string space = std::string(" ");
-  std::string colon = std::string(":");
   rpl.set_source(source);
-  rpl.set_numeric("401");
-  sentence = nickName + space + msg.get_params()[1] + space + colon +
-             std::string("No such nick or channel name");
-  rpl.push_back(sentence);
+  rpl.set_numeric("482");
+  rpl.push_back(client);
+  rpl.push_back(channel);
+  rpl.push_back(":Your privileges are too low");
 
   return rpl;
 }
-
-// Message Message::rpl_442() {
-//   /*
-//     ERR_NOTONCHANNEL (442)
-//     "<client> <channel> :You're not on that channel"
-//     Returned when a client tries to perform a channel-affecting command on a
-//     channel which the client isn’t a part of.
-
-//     채널에 속했든 안했든
-//      /kick [#CHANNELNAME] [CLIENTNAME] 이런식으로 명령이 가능한데 만약 채널에
-//      속하지 않은 유저가 명령을 내릴경우 442에러를 뱉어주면 됨.
-
-//   */
-// }
