@@ -1,0 +1,88 @@
+/JOIN #a || /JOIN a
+> 2024/04/29 14:39:37.000456234  length=9 from=190 to=198
+JOIN #a\r
+< 2024/04/29 14:39:37.000456564  length=144 from=1864 to=2007
+:dong-kim_!~dong-kim@localhost JOIN :#a\r
+:irc.example.net 353 dong-kim_ = #a :@dong-kim_\r
+:irc.example.net 366 dong-kim_ #a :End of NAMES list\r
+> 2024/04/29 14:39:39.000971836  length=9 from=199 to=207
+MODE #a\r
+< 2024/04/29 14:39:39.000972261  length=83 from=2008 to=2090
+:irc.example.net 324 dong-kim_ #a +\r
+:irc.example.net 329 dong-kim_ #a 1714369177\r
+> 2024/04/29 14:39:42.000483752  length=8 from=208 to=215
+WHO #a\r
+< 2024/04/29 14:39:42.000484230  length=154 from=2091 to=2244
+:irc.example.net 352 dong-kim_ #a ~dong-kim localhost irc.example.net dong-kim_ H@ :0 Dong Young Kim\r
+:irc.example.net 315 dong-kim_ #a :End of WHO list\r
+> 2024/04/29 14:39:44.000997777  length=11 from=216 to=226
+MODE #a b\r
+< 2024/04/29 14:39:44.000998156  length=60 from=2245 to=2304
+:irc.example.net 368 dong-kim_ #a :End of channel ban list\r
+
+
+
+
+
+
+< 2024/04/29 19:10:31.000858991  length=140 from=1550 to=1689
+:dong-kim!~dong-kim@localhost JOIN :#a\r
+:irc.example.net 353 dong-kim = #a :@dong-kim\r
+:irc.example.net 366 dong-kim #a :End of NAMES list\r
+> 2024/04/29 19:10:34.000281133  length=9 from=166 to=174
+MODE #a\r
+< 2024/04/29 19:10:34.000281518  length=81 from=1690 to=1770
+:irc.example.net 324 dong-kim #a +\r
+:irc.example.net 329 dong-kim #a 1714385431\r
+> 2024/04/29 19:10:36.000785045  length=8 from=175 to=182
+WHO #a\r
+< 2024/04/29 19:10:36.000785325  length=151 from=1771 to=1921
+:irc.example.net 352 dong-kim #a ~dong-kim localhost irc.example.net dong-kim H@ :0 Dong Young Kim\r
+:irc.example.net 315 dong-kim #a :End of WHO list\r
+> 2024/04/29 19:10:39.000295256  length=11 from=183 to=193
+MODE #a b\r
+< 2024/04/29 19:10:39.000295662  length=59 from=1922 to=1980
+:irc.example.net 368 dong-kim #a :End of channel ban list\r
+
+
+> 2024/04/29 19:13:33.000224512  length=9 from=125 to=133
+JOIN #a\r
+< 2024/04/29 19:13:33.000224878  length=129 from=1358 to=1486
+:sex!~dong-kim@localhost JOIN :#a\r
+:irc.e< 2024/04/29 19:13:33.000224888  length=35 from=2149 to=2183
+xa:mspelxe!.~ndeotn g3-5k3i ms@elxo c=a l#hao s:ts eJxO I@Nd o:n#ga-\rk
+im\r
+:irc.example.net 366 sex #a :End of NAMES list\r
+> 2024/04/29 19:13:35.000568891  length=9 from=134 to=142
+MODE #a\r
+< 2024/04/29 19:13:35.000569279  length=71 from=1487 to=1557
+:irc.example.net 324 sex #a +\r
+:irc.example.net 329 sex #a 1714385431\r
+> 2024/04/29 19:13:38.000081798  length=8 from=143 to=150
+WHO #a\r
+< 2024/04/29 19:13:38.000082154  length=230 from=1558 to=1787
+:irc.example.net 352 sex #a ~dong-kim localhost irc.example.net sex H :0 Dong Young Kim\r
+:irc.example.net 352 sex #a ~dong-kim localhost irc.example.net dong-kim H@ :0 Dong Young Kim\r
+:irc.example.net 315 sex #a :End of WHO list\r
+> 2024/04/29 19:13:40.000584570  length=11 from=151 to=161
+MODE #a b\r
+< 2024/04/29 19:13:40.000584779  length=54 from=1788 to=1841
+:irc.example.net 368 sex #a :End of channel ban list\r
+> 2024/04/29 19:13:45.000318077  length=22 from=162 to=183
+PING irc.example.net\r
+< 2024/04/29 19:13:45.000318395  length=56 from=1842 to=1897
+:irc.example.net PONG irc.example.net :irc.example.net\r
+
+
+
+
+
+> 2024/06/11 22:03:48.000492770  length=20 from=516 to=535
+MODE #test +o dy__\r
+< 2024/06/11 22:03:48.000493072  length=44 from=2528 to=2571
+:dy!~memememe@localhost MODE #test +o dy__\r
+
+> 2024/06/11 22:09:02.000998246  length=19 from=770 to=788
+MODE #test +o dy_\r
+< 2024/06/11 22:09:02.000998512  length=43 from=3049 to=3091
+:dy!~memememe@localhost MODE #test +o dy_\r

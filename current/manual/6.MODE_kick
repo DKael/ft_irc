@@ -1,0 +1,6 @@
+강퇴기능은 권한이 있는지부터 확인해야함
+
+/kick [CHANNEL NAME] [CLIENT NICKNAME]
+	-> 첫번째 인자는 [#채널명], 두번째 인자는 [채널에 속한 클라이언트 명]
+/kick [CLIENT NICKNAME]
+	-> 이 경우 [본인이 속한 해당 채널에서] [클라이언트 명]을 킥

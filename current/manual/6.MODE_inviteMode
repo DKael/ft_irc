@@ -1,0 +1,5 @@
+mode 속성을 채널에 추가해주기
+
+// join #test 를 했는데 invite-only mode 라 들어갈수없을때
+< 2024/05/12 12:24:23.000352955  length=80 from=2072 to=2151
+:irc.example.net 473 dy_ #test :Cannot join channel (+i) -- Invited users only\r
