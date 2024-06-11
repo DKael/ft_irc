@@ -22,6 +22,7 @@
 #define MAX_USER 256
 #define POLL_TIMEOUT 5
 #define AUTHENTICATE_TIMEOUT 20
+#define SOCKET_BUFFER_SIZE 8192
 
 #define SERVER_NAME "ft_irc.net"
 #define SERVER_VERSION "ft_irc-1.0"
@@ -88,6 +89,7 @@ class Server {
   void revent_pollin(pollfd& p_val);
   void auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
   void not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
+  void ft_send(int send_fd, Message& msg);
 
   // not use
   Server();
@@ -141,6 +143,8 @@ class Server {
 
   void cmd_invite(int recv_fd, const Message& msg);
   void cmd_topic(int recv_fd, const Message& msg);
+  void cmd_who(int recv_fd, const Message& msg);
+  void cmd_names(int recv_fd, const Message& msg);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -176,9 +180,6 @@ class Server {
     }
     std::cout << WHITE << std::endl;
   }
-
-  void cmd_who(int recv_fd, const Message& msg);
-  void cmd_names(int recv_fd, const Message& msg);
 };
 
 #endif
