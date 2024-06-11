@@ -1,0 +1,96 @@
+< Message contents > 
+source		: 
+command		: NICK
+params		: kael
+trailing	: 
+numeric		: 
+ret_msg		: 
+
+< Message contents > 
+source		: irc.example.com
+command		: CAP
+params		: *, LIST
+trailing	: 
+numeric		: 
+ret_msg		: 
+
+< Message contents > 
+source		: 
+command		: CAP
+params		: *, LS
+trailing	: multi-prefix sasl
+numeric		: 
+ret_msg		: 
+
+< Message contents > 
+source		: 
+command		: CAP
+params		: REQ
+trailing	: sasl message-tags foo
+numeric		: 
+ret_msg		: 
+
+< Message contents > 
+source		: dan!d@localhost
+command		: PRIVMSG
+params		: #chan
+trailing	: Hey!
+numeric		: 
+ret_msg		: 
+
+< Message contents > 
+source		: dan!d@localhost
+command		: PRIVMSG
+params		: #chan, Hey!
+trailing	: 
+numeric		: 
+ret_msg		: 
+
+< Message contents > 
+source		: dan!d@localhost
+command		: PRIVMSG
+params		: #chan
+trailing	: :-)
+numeric		: 
+ret_msg		: 
+
+< Message contents > 
+source		: 
+command		: 
+params		: 
+trailing	: 
+numeric		: ERROR
+ret_msg		: Prefix without command
+
+< Message contents > 
+source		: 
+command		: 
+params		: 
+trailing	: 
+numeric		: ERROR
+ret_msg		: Prefix without command
+
+< Message contents > 
+source		: 
+command		: fniowd
+params		: 
+trailing	: 
+numeric		: 421
+ret_msg		: Unknown command
+
+< Message contents > 
+source		: 
+command		: fniowd
+params		: 
+trailing	: 
+numeric		: 421
+ret_msg		: Unknown command
+
+< Message contents > 
+source		: dsfdsfw
+command		: NICK
+params		: dan
+trailing	: 
+numeric		: 
+ret_msg		: 
+
