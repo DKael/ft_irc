@@ -102,20 +102,21 @@ class Server {
 
   void listen(void);
 
-  int get_port(void) const;
-  const std::string& get_str_port(void) const;
-  const std::string& get_serv_name(void) const;
-  const std::string& get_serv_version(void) const;
-  const std::string& get_password(void) const;
-  int get_serv_socket(void) const;
-  const sockaddr_in& get_serv_addr(void) const;
-  int get_tmp_user_cnt(void) const;
-  int get_user_cnt(void) const;
-  bool get_enable_ident_protocol(void) const;
-  int get_channel_num(void) const;
+  int get_port(void);
+  std::string& get_str_port(void);
+  std::string& get_serv_name(void);
+  std::string& get_serv_version(void);
+  std::string& get_password(void);
+  int get_serv_socket(void);
+  sockaddr_in& get_serv_addr(void);
+  int get_tmp_user_cnt(void);
+  int get_user_cnt(void);
+  bool get_enable_ident_protocol(void);
+  int get_channel_num(void);
+  int get_current_channel_num(void);
 
   std::map<std::string, Channel>::iterator get_channel_iterator(
-      const std::string& channelname);
+      std::string channelname);
   Channel& get_channel(std::map<std::string, Channel>::iterator iterator);
 
   void add_tmp_user(const int socket_fd, const sockaddr_in& addr);
@@ -158,6 +159,8 @@ class Server {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
   // [DEBUG] PURPOSE ONLY
   // CLIENT LIST
+
+  int send_msg_at_queue(int socket_fd);
 
   std::vector<User> getUserList(void) const {
     std::vector<User> users;

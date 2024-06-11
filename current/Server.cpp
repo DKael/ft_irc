@@ -279,7 +279,7 @@ void Server::ft_send(int send_fd, Message& msg) {
   send(send_fd, str_msg.c_str(), str_msg.length(), MSG_DONTWAIT);
 }
 
-/*
+
 int Server::send_msg_at_queue(int socket_fd) {
   User& user_tmp = (*this)[socket_fd];
   int send_result;
@@ -298,7 +298,7 @@ int Server::send_msg_at_queue(int socket_fd) {
     to_send_num--;
   }
   return 0;
-}*/
+}
 
 void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
   User& event_user = (*this)[p_val.fd];
@@ -437,30 +437,30 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
   }
 }
 
-const int Server::get_port(void) const { return port; }
+int Server::get_port(void) { return port; }
 
-const std::string& Server::get_str_port(void) const { return str_port; }
+std::string& Server::get_str_port(void) { return str_port; }
 
-const std::string& Server::get_serv_name(void) const { return serv_name; }
+std::string& Server::get_serv_name(void) { return serv_name; }
 
-const std::string& Server::get_password(void) const { return password; }
+std::string& Server::get_password(void) { return password; }
 
-const int Server::get_serv_socket(void) const { return serv_socket; }
+int Server::get_serv_socket(void) { return serv_socket; }
 
-const sockaddr_in& Server::get_serv_addr(void) const { return serv_addr; }
+sockaddr_in& Server::get_serv_addr(void) { return serv_addr; }
 
-const int Server::get_tmp_user_cnt(void) const { return tmp_user_list.size(); }
+int Server::get_tmp_user_cnt(void) { return tmp_user_list.size(); }
 
-const int Server::get_user_cnt(void) const { return user_list.size(); }
+int Server::get_user_cnt(void) { return user_list.size(); }
 
-const bool Server::get_enable_ident_protocol(void) const {
+bool Server::get_enable_ident_protocol(void) {
   return enable_ident_protocol;
 }
 
 // CHANNEL
-const int Server::get_max_channel_num(void) const { return max_channel_num; };
+int Server::get_channel_num(void) { return CHANNELNUM; };
 int Server::get_current_channel_num(void) {
-  return server_channel_list.size();
+  return channel_list.size();
 };
 
 void Server::add_tmp_user(const int user_socket, const sockaddr_in& user_addr) {
@@ -569,14 +569,14 @@ void Server::change_nickname(const std::string& old_nick,
     nick_to_soc.erase(it);
     nick_to_soc.insert(std::make_pair(new_nick, tmp_fd));
     // 서버 다 돌면서 old_nick인거 다 찾아서 new_nick으로 바꿔주기;; ㅠㅠ
-    for (server_channel_iterator = server_channel_list.begin();
-         server_channel_iterator != server_channel_list.end();
-         server_channel_iterator++) {
-      get_server_channel(server_channel_iterator)
+    for (channel_iterator = channel_list.begin();
+         channel_iterator != channel_list.end();
+         channel_iterator++) {
+      get_channel(channel_iterator)
           .changeClientNickName(old_nick, new_nick);
-      // if (get_server_channel(server_channel_iterator).foundClient(old_nick)
+      // if (get_channel(channel_iterator).foundClient(old_nick)
       // == true) {
-      //   get_server_channel(server_channel_iterator).changeClientNickName(old_nick,
+      //   get_channel(channel_iterator).changeClientNickName(old_nick,
       //   new_nick);
       // }
     }
@@ -668,19 +668,19 @@ int Server::operator[](const std::string& nickname) {
 }
 
 void Server::addChannel(Channel& newChannel) {
-  server_channel_list.insert(std::pair<std::string, Channel>(
+  channel_list.insert(std::pair<std::string, Channel>(
       newChannel.get_channel_name(), newChannel));
-  // server_channel_list.insert(std::pair<std::string,
+  // channel_list.insert(std::pair<std::string,
   // Channel&>(newChannel.get_channel_name(), newChannel));
 }
 
-std::map<std::string, Channel>::iterator Server::get_server_channel_iterator(
+std::map<std::string, Channel>::iterator Server::get_channel_iterator(
     std::string targetChannelStr) {
-  server_channel_iterator = server_channel_list.begin();
-  return server_channel_list.find(targetChannelStr);
+  channel_iterator = channel_list.begin();
+  return channel_list.find(targetChannelStr);
 }
 
-Channel& Server::get_server_channel(
+Channel& Server::get_channel(
     std::map<std::string, Channel>::iterator iterator) {
   return iterator->second;
 }

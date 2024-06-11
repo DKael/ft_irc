@@ -20,3 +20,9 @@ ctlr + c => SIGINT
 /join test5
 
 irssi
+
+check list
+Server_cmd.cpp 	-> line# 435, chantypes
+			   	-> line# 437, NICKLEN
+				-> line# 488, max_username_len -> USERLEN
+				-> line# 489, max_username_len -> USERLEN

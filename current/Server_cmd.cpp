@@ -6,8 +6,8 @@ void Server::cmd_topic(int recv_fd, const Message& msg) {
   if (pos != std::string::npos) {
     targetChannelStr.erase(pos, 1);
   }
-  server_channel_iterator = get_server_channel_iterator(targetChannelStr);
-  if (server_channel_iterator == server_channel_list.end()) {
+  channel_iterator = get_channel_iterator(targetChannelStr);
+  if (channel_iterator == channel_list.end()) {
     // ERR_NOSUCHCHANNEL (403)
     User& event_user = (*this)[recv_fd];
     Message rpl = Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
@@ -19,9 +19,9 @@ void Server::cmd_topic(int recv_fd, const Message& msg) {
   // checkPrivilege() 라는 함수로 나중에 refactoring 할것
   User& event_user = (*this)[recv_fd];
 
-  // if (get_server_channel(server_channel_iterator).get_channel_mode() & FLAG_T
+  // if (get_channel(channel_iterator).get_channel_mode() & FLAG_T
   // == 0 ) { if
-  // (get_server_channel(server_channel_iterator).isOperator(event_user) ==
+  // (get_channel(channel_iterator).isOperator(event_user) ==
   // false) {
   //   Message rpl = Message::rpl_482(serv_name, event_user.get_nick_name(),
   //   msg); event_user.push_msg(rpl.to_raw_msg()); return;
@@ -29,7 +29,7 @@ void Server::cmd_topic(int recv_fd, const Message& msg) {
   // }  else {
   // TOPIC 변경하기
   // }
-  if (get_server_channel(server_channel_iterator).isOperator(event_user) ==
+  if (get_channel(channel_iterator).isOperator(event_user) ==
       false) {
     Message rpl = Message::rpl_482(serv_name, event_user.get_nick_name(), msg);
     event_user.push_msg(rpl.to_raw_msg());
@@ -100,7 +100,7 @@ void Server::cmd_invite(int recv_fd, const Message& msg) {
     // :irc.example.net 401 dy lkkllk :No such nick or channel name\r
 
     std::map<std::string, User&>::iterator it;
-    it = get_server_channel(get_server_channel_iterator(targetChannelStr))
+    it = get_channel(get_channel_iterator(targetChannelStr))
              .get_channel_client_list()
              .begin();
     int fd = (*this)[incomingClientNickName];
@@ -143,8 +143,8 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
     targetChannelStr.erase(pos, 1);
   }
   // 강퇴할 클라이언트가 속할 채널
-  server_channel_iterator = get_server_channel_iterator(targetChannelStr);
-  if (server_channel_iterator == server_channel_list.end()) {
+  channel_iterator = get_channel_iterator(targetChannelStr);
+  if (channel_iterator == channel_list.end()) {
     // ERR_NOSUCHCHANNEL (403)
     User& event_user = (*this)[recv_fd];
     Message rpl = Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
@@ -155,7 +155,7 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
   // OPERATOR가 아닐경우 482 RESPONSE
   // checkPrivilege() 라는 함수로 나중에 refactoring 할것
   User& event_user = (*this)[recv_fd];
-  if (get_server_channel(server_channel_iterator).isOperator(event_user) ==
+  if (get_channel(channel_iterator).isOperator(event_user) ==
       false) {
     Message rpl = Message::rpl_482(serv_name, event_user.get_nick_name(), msg);
     event_user.push_msg(rpl.to_raw_msg());
@@ -167,7 +167,7 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
     User& opUser = (*this)[recv_fd];
     User& outUser = (*this)[targetFileDescriptor];
     (*this).kickClient(opUser, outUser,
-                       get_server_channel(server_channel_iterator), msg);
+                       get_channel(channel_iterator), msg);
   } catch (std::invalid_argument& e) {
     User& event_user = (*this)[recv_fd];
     Message rpl = Message::rpl_401(serv_name, event_user.get_nick_name(), msg);
@@ -183,12 +183,12 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   if (pos != std::string::npos) {
     targetChannelStr.erase(pos, 1);
   }
-  server_channel_iterator = server_channel_list.begin();
-  if (server_channel_iterator == server_channel_list.end()) return;
+  channel_iterator = channel_list.begin();
+  if (channel_iterator == channel_list.end()) return;
   std::cout << CYAN << "=>> Server Channel List :: [";
   std::map<std::string, Channel>::const_iterator cit;
   bool found = false;
-  for (cit = server_channel_list.begin(); cit != server_channel_list.end();
+  for (cit = channel_list.begin(); cit != channel_list.end();
        cit++) {
     std::string channelName = cit->first;
     std::cout << channelName << ", ";
@@ -197,9 +197,9 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   if (found == false) return;
   std::cout << "]" << std::endl << std::endl;
 
-  // get_server_channel(get_server_channel_iterator(targetChannelStr)).visualizeClientList();
-  std::cout << get_server_channel(
-      get_server_channel_iterator(targetChannelStr));
+  // get_channel(get_channel_iterator(targetChannelStr)).visualizeClientList();
+  std::cout << get_channel(
+      get_channel_iterator(targetChannelStr));
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -207,7 +207,7 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
   std::map<std::string, Channel>::const_iterator it;
   std::cout << "[FT_IRC Server] <Channel Status> :: [";
 
-  for (it = server_channel_list.begin(); it != server_channel_list.end();
+  for (it = channel_list.begin(); it != channel_list.end();
        ++it) {
     const std::string& channelName = it->first;
     std::cout << channelName << "=> ";
@@ -223,13 +223,13 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
     // mode +l 이 켜져있다면의 조건을 추가해야함
     // if (get_current_channel_num() > get_max_channel_num())  // && channel이
     // 새로운 채널인지 확인하고  // 맞다면 에러를 뱉어야함
-    //   throw(server_channel_list_capacity_error());
+    //   throw(channel_list_capacity_error());
     std::string targetChannelStr = msg.get_params()[0];
     std::string::size_type pos = targetChannelStr.find('#');
     if (pos != std::string::npos) {
       targetChannelStr.erase(pos, 1);
     }
-    server_channel_iterator = get_server_channel_iterator(targetChannelStr);
+    channel_iterator = get_channel_iterator(targetChannelStr);
 
     Message response;
     User& incomingClient = (*this)[recv_fd];
@@ -239,20 +239,20 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
     response.push_back(msg.get_params()[0]);
 
     // 서버에 채널은 등록이 되어있고
-    if (server_channel_iterator != server_channel_list.end()) {
+    if (channel_iterator != channel_list.end()) {
       // 들어가려는 채널이 초대받은 사람만 갈수 있는 경우
-      if (get_server_channel(get_server_channel_iterator(targetChannelStr))
+      if (get_channel(get_channel_iterator(targetChannelStr))
               .isMode(FLAG_I)) {
         if ((*this)[recv_fd].isInvited(targetChannelStr)) {
           incomingClient.push_msg(response.to_raw_msg());
 
-          get_server_channel(get_server_channel_iterator(targetChannelStr))
+          get_channel(get_channel_iterator(targetChannelStr))
               .addClient((*this)[recv_fd]);
           incomingClient.push_msg(
               Message::rpl_353(
                   serv_name,
-                  get_server_channel(
-                      get_server_channel_iterator(targetChannelStr)),
+                  get_channel(
+                      get_channel_iterator(targetChannelStr)),
                   incomingClient.get_nick_name(), msg.get_params()[0])
                   .to_raw_msg());
           incomingClient.push_msg(
@@ -261,7 +261,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
                   .to_raw_msg());
 
           std::map<std::string, User&> clients =
-              get_server_channel(get_server_channel_iterator(targetChannelStr))
+              get_channel(get_channel_iterator(targetChannelStr))
                   .get_channel_client_list();
           std::map<std::string, User&>::iterator it;
 
@@ -304,11 +304,11 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
         response.push_back(msg.get_params()[0]);
         incomingClient.push_msg(response.to_raw_msg());
 
-        get_server_channel(get_server_channel_iterator(targetChannelStr))
+        get_channel(get_channel_iterator(targetChannelStr))
             .addClient((*this)[recv_fd]);
 
         std::map<std::string, User&> clients =
-            get_server_channel(get_server_channel_iterator(targetChannelStr))
+            get_channel(get_channel_iterator(targetChannelStr))
                 .get_channel_client_list();
         std::map<std::string, User&>::iterator it;
         for (it = clients.begin(); it != clients.end(); ++it) {
@@ -332,8 +332,8 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
         }
         incomingClient.push_msg(
             Message::rpl_353(serv_name,
-                             get_server_channel(
-                                 get_server_channel_iterator(targetChannelStr)),
+                             get_channel(
+                                 get_channel_iterator(targetChannelStr)),
                              incomingClient.get_nick_name(),
                              msg.get_params()[0])
                 .to_raw_msg());
@@ -346,14 +346,14 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
     } else {
       Channel newChannel(targetChannelStr);
       addChannel(newChannel);
-      get_server_channel(get_server_channel_iterator(targetChannelStr))
+      get_channel(get_channel_iterator(targetChannelStr))
           .addClient((*this)[recv_fd]);
-      get_server_channel(get_server_channel_iterator(targetChannelStr))
+      get_channel(get_channel_iterator(targetChannelStr))
           .addOperator((*this)[recv_fd]);
       incomingClient.push_msg(
           Message::rpl_353(
               serv_name,
-              get_server_channel(get_server_channel_iterator(targetChannelStr)),
+              get_channel(get_channel_iterator(targetChannelStr)),
               incomingClient.get_nick_name(), msg.get_params()[0])
               .to_raw_msg());
       incomingClient.push_msg(Message::rpl_366(serv_name,
@@ -368,7 +368,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
     // example => :irc.example.net 353 lfkn___ = #b :lfkn___ lfkn__ lfkn_
     // @lfkn\r for 문으로 map을 순회하면서 닉네임을 만들어줄것
     // incomingClient.push_msg(Message::rpl_353(serv_name,
-    // get_server_channel(get_server_channel_iterator(targetChannelStr)),
+    // get_channel(get_channel_iterator(targetChannelStr)),
     // incomingClient.get_nick_name(), msg.get_params()[0]) .to_raw_msg());
 
     // [STEP 3] ::
@@ -432,9 +432,9 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
     // }
     nick_tmp = msg[0];
     if (('0' <= nick_tmp[0] && nick_tmp[0] <= '9') || nick_tmp[0] == ':' ||
-        nick_tmp.find_first_of(chantype + std::string(": \n\t\v\f\r")) !=
+        nick_tmp.find_first_of(chantypes + std::string(": \n\t\v\f\r")) !=
             std::string::npos ||
-        nick_tmp.length() > max_nickname_len) {
+        nick_tmp.length() > NICKLEN) {
       // ERR_ERRONEUSNICKNAME (432)
       event_user.push_msg(
           Message::rpl_432(serv_name, event_user.get_nick_name(), nick_tmp)
@@ -485,8 +485,8 @@ void Server::cmd_user(int recv_fd, const Message& msg) {
     } else {
       user_tmp = "~" + msg[0];
     }
-    if (user_tmp.length() > max_username_len) {
-      user_tmp = user_tmp.substr(0, max_username_len);
+    if (user_tmp.length() > USERLEN) {
+      user_tmp = user_tmp.substr(0, USERLEN);
     }
     event_user.set_real_name(msg[3]);
     event_user.set_user_init_chk(OK);
@@ -522,10 +522,10 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
       targetChannelStr.erase(pos, 1);
     }
     // 해당 채널 찾고
-    server_channel_iterator = get_server_channel_iterator(targetChannelStr);
+    channel_iterator = get_channel_iterator(targetChannelStr);
 
     // 없으면 에러 RESPONSE 뱉어주기
-    if (server_channel_iterator == server_channel_list.end()) {
+    if (channel_iterator == channel_list.end()) {
       // ERR_NOSUCHCHANNEL (403)
       User& event_user = (*this)[recv_fd];
       Message rpl =
@@ -543,7 +543,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
       // 일단 MODE 설정한 유저에게 응답 보내주기
 
       // 그런데 그 전에 operator가 아니면 권한이 없다고 말해주기
-      if (get_server_channel(server_channel_iterator)
+      if (get_channel(channel_iterator)
               .isOperator((*this)[recv_fd]) == false) {
         User& event_user = (*this)[recv_fd];
         Message rpl =
@@ -559,8 +559,8 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
       if (pos != std::string::npos) {
         targetChannelStr.erase(pos, 1);
       }
-      server_channel_iterator = get_server_channel_iterator(targetChannelStr);
-      if (server_channel_iterator == server_channel_list.end()) {
+      channel_iterator = get_channel_iterator(targetChannelStr);
+      if (channel_iterator == channel_list.end()) {
         // ERR_NOSUCHCHANNEL (403)
         User& event_user = (*this)[recv_fd];
         Message rpl =
@@ -571,14 +571,14 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
 
       // CHANNEL MODE 가 이미 +i 이면 중복 메세지 혹은 중복 세팅은 불피요 함으로
       // return ; 으로 더 이상 진행 못하게 바꿔줌
-      if (get_server_channel(get_server_channel_iterator(targetChannelStr))
+      if (get_channel(get_channel_iterator(targetChannelStr))
               .isMode(FLAG_I))
         return;
 
       // 여기서 어떤 모드인지에 따라 RESPONSE 메세지를 처리해줌
       // 즉, 채널 속성값을 여기서 변경함
 
-      get_server_channel(get_server_channel_iterator(targetChannelStr))
+      get_channel(get_channel_iterator(targetChannelStr))
           .setMode(FLAG_I);
 
       User& event_user = (*this)[recv_fd];
@@ -591,16 +591,16 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
       rpl.push_back(msg.get_params()[1]);
 
       // 해당 채널에서 모드값 스위치 ON / OFF 해주기
-      get_server_channel(get_server_channel_iterator(targetChannelStr))
+      get_channel(get_channel_iterator(targetChannelStr))
           .setMode(FLAG_I);
       // BROADCASTING
       std::map<std::string, User&>::iterator it;
       for (it =
-               get_server_channel(get_server_channel_iterator(targetChannelStr))
+               get_channel(get_channel_iterator(targetChannelStr))
                    .get_channel_client_list()
                    .begin();
            it !=
-           get_server_channel(get_server_channel_iterator(targetChannelStr))
+           get_channel(get_channel_iterator(targetChannelStr))
                .get_channel_client_list()
                .end();
            ++it) {
@@ -638,22 +638,22 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
 
       // CHANNEL MODE 가 이미 +i 이면 중복 메세지 혹은 중복 세팅은 불피요 함으로
       // return ; 으로 더 이상 진행 못하게 바꿔줌
-      if (!get_server_channel(get_server_channel_iterator(targetChannelStr))
+      if (!get_channel(get_channel_iterator(targetChannelStr))
                .isMode(FLAG_I))
         return;
 
       // 해당 채널에서 모드값 스위치 ON / OFF 해주기
-      get_server_channel(get_server_channel_iterator(targetChannelStr))
+      get_channel(get_channel_iterator(targetChannelStr))
           .unsetMode(FLAG_I);
 
       // BROADCASTING
       std::map<std::string, User&>::iterator it;
       for (it =
-               get_server_channel(get_server_channel_iterator(targetChannelStr))
+               get_channel(get_channel_iterator(targetChannelStr))
                    .get_channel_client_list()
                    .begin();
            it !=
-           get_server_channel(get_server_channel_iterator(targetChannelStr))
+           get_channel(get_channel_iterator(targetChannelStr))
                .get_channel_client_list()
                .end();
            ++it) {
@@ -729,12 +729,12 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
       targetChannelStr.erase(pos, 1);
     }
 
-    if (get_server_channel(get_server_channel_iterator(targetChannelStr))
+    if (get_channel(get_channel_iterator(targetChannelStr))
             .foundClient(sourceNickName) == false) {
       return;
     }
     std::map<std::string, User&> map =
-        get_server_channel(get_server_channel_iterator(targetChannelStr))
+        get_channel(get_channel_iterator(targetChannelStr))
             .get_channel_client_list();
     std::map<std::string, User&>::iterator it;
     for (it = map.begin(); it != map.end(); ++it) {
