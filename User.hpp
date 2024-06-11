@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #include <ctime>
-#include <iostream>
+#include <list>
 #include <map>
 #include <string>
 
@@ -45,9 +45,9 @@ class User {
   chk_status password_chk;
   chk_status is_authenticated;
   bool have_to_disconnect;
-
+  std::list<std::string> to_send;
   std::map<std::string, int> invited_channels;
-  // std::map<std::string, int> join_channels;
+  std::map<std::string, int> channels;
 
   // not use
   User();
@@ -55,7 +55,7 @@ class User {
 
  public:
   // constructors & desturctor
-  User(const int _user_socket, const sockaddr_in& _user_addr);
+  User(int _user_socket, const sockaddr_in& _user_addr);
   User(const User& origin);
   ~User();
 
@@ -68,31 +68,44 @@ class User {
   void set_password_chk(const chk_status input);
   void set_is_authenticated(const chk_status input);
   void set_have_to_disconnect(const bool input);
+  void change_nickname(const std::string& new_nick);
 
   // getter functions
-  const int get_user_socket(void) const;
+  int get_user_socket(void) const;
   const sockaddr_in& get_user_addr(void) const;
-  const time_t get_created_time(void) const;
+  time_t get_created_time(void) const;
   const std::string& get_nick_name(void) const;
   const std::string& get_nick_name_no_chk(void) const;
-  const chk_status get_nick_init_chk(void) const;
+  chk_status get_nick_init_chk(void) const;
   const std::string& get_user_name(void) const;
   const std::string& get_real_name(void) const;
-  const chk_status get_user_init_chk(void) const;
-  const chk_status get_password_chk(void) const;
-  const chk_status get_is_authenticated(void) const;
-  const bool get_have_to_disconnect(void) const;
+  chk_status get_user_init_chk(void) const;
+  chk_status get_password_chk(void) const;
+  chk_status get_is_authenticated(void) const;
+  bool get_have_to_disconnect(void) const;
   const std::map<std::string, int>& get_invited_channels(void) const;
-  // const std::map<std::string, int>& get_join_channels(void) const;
+  const std::map<std::string, int>& get_channels(void) const;
+  std::string make_source(int mode);
 
-  void push_invited_channel(std::string& channelname);
-  const bool is_invited(std::string& channelname) const;
+  void push_front_msg(const std::string& msg);
+  void push_back_msg(const std::string& msg);
+  const std::string& get_front_msg(void) const;
+  void pop_front_msg(void);
+  std::size_t get_to_send_size(void);
+
+  void push_invitation(std::string& chan_name);
+  void remove_invitation(std::string& chan_name);
   void remove_all_invitations(void);
-  void remove_invitation(std::string& channelname);
+  bool is_invited(std::string& chan_name) const;
+  void join_channel(std::string& chan_name);
+  void part_channel(std::string& chan_name);
 };
 
-////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef DEBUG
+
+#include <iostream>
 std::ostream& operator<<(std::ostream& out, const User& user);
+
+#endif
 
 #endif

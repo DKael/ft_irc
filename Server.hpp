@@ -26,7 +26,7 @@
 
 #define SERVER_NAME "ft_irc.net"
 #define SERVER_VERSION "ft_irc-1.0"
-#define AVAILABLE_USER_MODES
+#define AVAILABLE_USER_MODES "i"
 #define AVAILABLE_CHANNEL_MODES "iklost"
 
 #define IRC_PROTOCOL "RFC2812"
@@ -68,6 +68,8 @@ class Server {
   std::string serv_name;
   std::string serv_version;
   std::string chantypes;
+  std::time_t created_time;
+  std::string created_time_str;
 
   std::string password;
   int serv_socket;
@@ -86,10 +88,15 @@ class Server {
 
   // private functions
   int client_socket_init(void);
+  void ft_send(pollfd& p_val);
+  void ft_sendd(pollfd& p_val);
+  int send_msg_at_queue(int socket_fd);
+  int send_msg_block(int socket_fd, const std::string& blk);
+  void revent_pollout(pollfd& p_val);
   void revent_pollin(pollfd& p_val);
   void auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
   void not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
-  void ft_send(int send_fd, Message& msg);
+  void auth_complete(pollfd& p_val);
 
   // not use
   Server();
@@ -107,6 +114,8 @@ class Server {
   const std::string& get_serv_name(void) const;
   const std::string& get_serv_version(void) const;
   const std::string& get_password(void) const;
+  const std::time_t& get_created_time(void) const;
+  const std::string& get_created_time_str(void) const;
   int get_serv_socket(void) const;
   const sockaddr_in& get_serv_addr(void) const;
   int get_tmp_user_cnt(void) const;
@@ -115,7 +124,7 @@ class Server {
   int get_channel_num(void) const;
 
   std::map<std::string, Channel>::iterator get_channel_iterator(
-      const std::string& channelname);
+      const std::string& chan_name);
   Channel& get_channel(std::map<std::string, Channel>::iterator iterator);
 
   void add_tmp_user(const int socket_fd, const sockaddr_in& addr);
@@ -125,6 +134,9 @@ class Server {
   void change_nickname(const std::string& old_nick,
                        const std::string& new_nick);
   void tmp_user_timeout_chk(void);
+
+  User& operator[](const int socket_fd);
+  int operator[](const std::string& nickname);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
@@ -138,8 +150,9 @@ class Server {
   void cmd_privmsg(int recv_fd, const Message& msg);
   void cmd_join(int recv_fd, const Message& msg);
   void cmd_kick(int recv_fd, const Message& msg);
-  void kickClient(User& opUser, User& outUser, Channel& channelName,
-                  const Message& msg);
+  void kick_client(const std::string& nickname, const std::string& chan_name);
+  void kick_client(User& opUser, User& outUser, Channel& chan_name,
+                   const Message& msg);
 
   void cmd_invite(int recv_fd, const Message& msg);
   void cmd_topic(int recv_fd, const Message& msg);
@@ -148,12 +161,7 @@ class Server {
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void addChannel(Channel& newChannel);
-
-  // std::map<std::string, Channel> channelLst;
-
-  User& operator[](const int socket_fd);
-  int operator[](const std::string& nickname);
+  void add_channel(Channel& newChannel);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
   // [DEBUG] PURPOSE ONLY
@@ -173,10 +181,10 @@ class Server {
 
     std::cout << RED << "[Channel Lists in the server] :: ";
     for (it = channel_list.begin(); it != channel_list.end(); ++it) {
-      const std::string& channelName = it->first;
+      const std::string& chan_name = it->first;
       const Channel& channel = it->second;
 
-      std::cout << channelName << " => ";
+      std::cout << chan_name << " => ";
     }
     std::cout << WHITE << std::endl;
   }

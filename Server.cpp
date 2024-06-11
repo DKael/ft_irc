@@ -6,6 +6,7 @@ Server::Server(const char* _port, const char* _password)
       serv_name(SERVER_NAME),
       serv_version(SERVER_VERSION),
       chantypes(CHANTYPES),
+      created_time(std::time(NULL)),
       password(_password),
       enable_ident_protocol(false) {
   serv_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -15,13 +16,6 @@ Server::Server(const char* _port, const char* _password)
   if (fcntl(serv_socket, F_SETFL, O_NONBLOCK) == -1) {
     throw std::exception();
   }
-  int bufSize = SOCKET_BUFFER_SIZE;
-  socklen_t len = sizeof(bufSize);
-  if (setsockopt(serv_socket, SOL_SOCKET, SO_SNDBUF, &bufSize,
-                 sizeof(bufSize)) == -1) {
-    throw std::exception();
-  }
-
   std::memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -59,7 +53,10 @@ Server::Server(const char* _port, const char* _password)
     observe_fd[i].fd = -1;
   }
 
-  std::cout << "Server listening at " << ::inet_ntoa(serv_addr.sin_addr) << ":"
+  created_time_str = ctime(&created_time);
+
+  std::clog << "Server created at " << created_time_str << '\n'
+            << "Server listening at " << ::inet_ntoa(serv_addr.sin_addr) << ":"
             << port << std::endl;
 }
 
@@ -97,6 +94,9 @@ void Server::listen(void) {
       }
       for (int i = 1; i < MAX_USER && event_cnt > 0; i++) {
         if (observe_fd[i].fd > 0) {
+          if (observe_fd[i].revents & POLLOUT) {
+            revent_pollout(observe_fd[i]);
+          }
           if (observe_fd[i].revents & (POLLIN | POLLHUP)) {
             revent_pollin(observe_fd[i]);
           }
@@ -120,14 +120,10 @@ int Server::client_socket_init(void) {
     std::memset(&user_addr, 0, user_addr_len);
     user_socket = ::accept(serv_socket, (sockaddr*)&user_addr, &user_addr_len);
     if (user_socket == -1) {
-      if (errno == EWOULDBLOCK) {
-        return 0;
-      } else {
-        // error_handling
-        // accept 함수 에러나는 경우 찾아보자
-        perror("accept() error");
-        return -1;
-      }
+      // error_handling
+      // accept 함수 에러나는 경우 찾아보자
+      perror("accept() error");
+      return -1;
     }
 
     if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
@@ -135,6 +131,17 @@ int Server::client_socket_init(void) {
       perror("fcntl() error");
       send(user_socket, "ERROR :socket setting error",
            std::strlen("ERROR :socket setting error"), MSG_DONTWAIT);
+      close(user_socket);
+      return -1;
+    }
+
+    int bufSize = SOCKET_BUFFER_SIZE;
+    socklen_t len = sizeof(bufSize);
+    if (setsockopt(user_socket, SOL_SOCKET, SO_SNDBUF, &bufSize,
+                   sizeof(bufSize)) == -1) {
+      send(user_socket, "ERROR :socket setting error",
+           std::strlen("ERROR :socket setting error"), MSG_DONTWAIT);
+      perror("setsockopt() error");
       close(user_socket);
       return -1;
     }
@@ -149,7 +156,7 @@ int Server::client_socket_init(void) {
       send(user_socket, "ERROR :Too many users on server",
            std::strlen("ERROR :Too many users on server"), MSG_DONTWAIT);
       close(user_socket);
-      return 0;
+      return -1;
     }
 
     (*this).add_tmp_user(user_socket, user_addr);
@@ -164,6 +171,82 @@ int Server::client_socket_init(void) {
     connection_limit--;
   }
   return 0;
+}
+
+void Server::ft_send(pollfd& p_val) {
+  if (send_msg_at_queue(p_val.fd) == -1) {
+    p_val.events = POLLIN | POLLOUT;
+  } else {
+    p_val.events = POLLIN;
+  }
+}
+
+void Server::ft_sendd(pollfd& p_val) {
+  if (send_msg_at_queue(p_val.fd) == -1) {
+    p_val.events = POLLOUT;
+  } else {
+    (*this).remove_user(p_val.fd);
+    p_val.fd = -1;
+  }
+}
+
+int Server::send_msg_at_queue(int socket_fd) {
+  User& user_tmp = (*this)[socket_fd];
+  std::size_t to_send_num = user_tmp.get_to_send_size();
+  size_t msg_len;
+  size_t idx;
+  ssize_t bytes_sent;
+  bool error_flag;
+
+  while (to_send_num > 0) {
+    const std::string& msg = user_tmp.get_front_msg();
+    msg_len = msg.length();
+    idx = 0;
+    error_flag = false;
+
+    while (idx < msg_len) {
+      std::string msg_blk = msg.substr(idx, SOCKET_BUFFER_SIZE);
+      bytes_sent = send_msg_block(socket_fd, msg_blk);
+      if (bytes_sent == msg_blk.length()) {
+        idx += msg_blk.length();
+      } else {
+        error_flag = true;
+        break;
+      }
+    }
+    user_tmp.pop_front_msg();
+    if (error_flag == true) {
+      user_tmp.push_front_msg(msg.substr(idx + bytes_sent));
+      return -1;
+    }
+    to_send_num--;
+  }
+  return 0;
+}
+
+int Server::send_msg_block(int socket_fd, const std::string& blk) {
+  const char* c_blk = blk.c_str();
+  size_t blk_len = blk.length();
+  ssize_t bytes_sent = 0;
+  size_t total_bytes_sent = 0;
+
+  while (total_bytes_sent < blk_len) {
+    bytes_sent = send(socket_fd, c_blk + total_bytes_sent,
+                      blk_len - total_bytes_sent, MSG_DONTWAIT);
+    if (bytes_sent < 0) {
+      break;
+    }
+    total_bytes_sent += bytes_sent;
+  }
+  return total_bytes_sent;
+}
+
+void Server::revent_pollout(pollfd& p_val) {
+  if ((*this)[p_val.fd].get_have_to_disconnect() == false) {
+    ft_send(p_val);
+  } else {
+    ft_sendd(p_val);
+  }
 }
 
 void Server::revent_pollin(pollfd& p_val) {
@@ -206,7 +289,9 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       break;
     }
 
-////////////////////////////////////////////////////////////////////////////////////////////
+    Message msg(p_val.fd, msg_list[j]);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef DEBUG
     std::cout << RED << "\n[IRSSI REQUEST] :: " << YELLOW << msg_list[j]
               << WHITE << std::endl;
@@ -219,14 +304,10 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
         std::cout << it->second;
       }
     }
+
+    std::cout << YELLOW << msg << WHITE << std::endl;
 #endif
     ////////////////////////////////////////////////////////////////////////////////////////////
-
-    Message msg(p_val.fd, msg_list[j]);
-
-#ifdef DEBUG
-    std::cout << msg;
-#endif
 
     int cmd_type = msg.get_cmd_type();
     if (cmd_type == PASS) {
@@ -242,18 +323,13 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     } else if (cmd_type == PRIVMSG) {
       cmd_privmsg(p_val.fd, msg);
     } else if (cmd_type == ERROR) {
-      ft_send(p_val.fd, msg);
+      event_user.push_back_msg(msg.to_raw_msg());
     } else if (cmd_type == CAP) {
       continue;
     } else if (cmd_type == QUIT) {
       cmd_quit(p_val, msg);
       msg_list.clear();
       break;
-      if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
-        p_val.events = POLLIN | POLLOUT;
-      } else {
-        p_val.events = POLLIN;
-      }
     } else if (cmd_type == JOIN) {
       cmd_join(p_val.fd, msg);
     } else if (cmd_type == WHO) {
@@ -265,64 +341,32 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     } else if (cmd_type == TOPIC) {
       cmd_topic(p_val.fd, msg);
     }
-    if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
-      p_val.events = POLLIN | POLLOUT;
-    } else {
-      p_val.events = POLLIN;
-    }
+    ft_send(p_val);
   }
 }
-
-void Server::ft_send(int send_fd, Message& msg) {
-  std::string str_msg = msg.to_raw_msg();
-
-  send(send_fd, str_msg.c_str(), str_msg.length(), MSG_DONTWAIT);
-}
-
-/*
-int Server::send_msg_at_queue(int socket_fd) {
-  User& user_tmp = (*this)[socket_fd];
-  int send_result;
-  std::size_t to_send_num = user_tmp.number_of_to_send();
-
-  while (to_send_num > 0) {
-    const std::string& msg_tmp = user_tmp.front_msg();
-    std::cout << YELLOW << "[SERVER SENDING...] " << GREEN_BOLD << "["
-              << msg_tmp << "]" << WHITE;
-    send_result =
-        send(socket_fd, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
-    user_tmp.pop_msg();
-    if (send_result == -1) {
-      return -1;
-    }
-    to_send_num--;
-  }
-  return 0;
-}*/
 
 void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
   for (int j = 0; j < msg_list.size(); j++) {
-    // [DEBUG]
-    std::cout << YELLOW << "msg :: " << msg_list[j] << WHITE << std::endl;
-    //////////////////////////////////////////////////////////////////////
-
     if (msg_list[j] == std::string("connection finish")) {
       (*this).remove_user(p_val.fd);
-      std::cerr << "Connection close at " << p_val.fd << '\n';
+      std::clog << "Connection close at " << p_val.fd << '\n';
       p_val.fd = -1;
       msg_list.clear();
       break;
     }
 
     Message msg(p_val.fd, msg_list[j]);
-    int cmd_type = msg.get_cmd_type();
 
-    // [DEBUG]
+    //////////////////////////////////////////////////////////////////////
+#ifdef DEBUG
+    std::cout << YELLOW << "msg :: " << msg_list[j] << WHITE << std::endl;
     std::cout << YELLOW << msg << WHITE << std::endl;
+#endif
     //////////////////////////////////////////////////////////////////////
 
+    int cmd_type = msg.get_cmd_type();
     if (cmd_type == PASS) {
       cmd_pass(p_val.fd, msg);
     } else if (cmd_type == NICK) {
@@ -338,106 +382,82 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     } else if (cmd_type == CAP) {
       continue;
     } else if (cmd_type == ERROR) {
-      event_user.push_msg(msg.to_raw_msg());
+      event_user.push_back_msg(msg.to_raw_msg());
     } else if (cmd_type == QUIT) {
       cmd_quit(p_val, msg);
       msg_list.clear();
       break;
     } else {
       Message rpl = Message::rpl_451(serv_name, event_user.get_nick_name());
-      event_user.push_msg(rpl.to_raw_msg());
+      event_user.push_back_msg(rpl.to_raw_msg());
     }
-    if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
-      p_val.events = POLLIN | POLLOUT;
-    } else {
-      p_val.events = POLLIN;
-    }
+    ft_send(p_val);
 
     if (event_user.get_nick_init_chk() == OK &&
         event_user.get_user_init_chk() == OK) {
       if (event_user.get_password_chk() != OK) {
         event_user.set_have_to_disconnect(true);
-        event_user.push_msg(
+        event_user.push_back_msg(
             Message::rpl_464(serv_name, event_user.get_nick_name())
                 .to_raw_msg());
-        if ((*this).send_msg_at_queue(event_user.get_user_socket()) == -1) {
-          p_val.events = POLLOUT;
-        } else {
-          (*this).remove_user(p_val.fd);
-          p_val.fd = -1;
-        }
+        ft_sendd(p_val);
       } else {
-        // authenticate complete
-        move_tmp_user_to_user_list(event_user.get_user_socket());
-        User& event_user1 = (*this)[p_val.fd];
-
-        Message rpl;
-        rpl.set_source(serv_name);
-        rpl.push_back(event_user1.get_nick_name());
-
-        rpl.set_numeric("001");
-        rpl.push_back(":Welcome to the Internet Relay Network");
-        event_user1.push_msg(rpl.to_raw_msg());
-
-        rpl.clear();
-        rpl.set_numeric("002");
-        rpl.push_back(event_user1.get_nick_name());
-        rpl.push_back(std::string(":Your host is ") + serv_name);
-        event_user1.push_msg(rpl.to_raw_msg());
-
-        rpl.clear();
-        rpl.set_numeric("003");
-        rpl.push_back(event_user1.get_nick_name());
-        rpl.push_back(":This server has been started ~");
-        event_user1.push_msg(rpl.to_raw_msg());
-
-        rpl.clear();
-        rpl.set_numeric("004");
-        rpl.push_back(event_user1.get_nick_name());
-        rpl.push_back(":" + serv_name);
-        event_user1.push_msg(rpl.to_raw_msg());
-
-        rpl.clear();
-        rpl.set_numeric("005");
-        rpl.push_back(event_user1.get_nick_name());
-        rpl.push_back("RFC2812");
-        rpl.push_back("IRCD=ngIRCd");
-        rpl.push_back("CHARSET=UTF-8");
-        rpl.push_back("CASEMAPPING=ascii");
-        rpl.push_back("PREFIX=(qaohv)~&@%+");
-        rpl.push_back("CHANTYPES=#&+");
-        rpl.push_back("CHANMODES=beI,k,l,imMnOPQRstVz");
-        rpl.push_back("CHANLIMIT=#&+:10");
-        rpl.push_back(":are supported on this server");
-        event_user1.push_msg(rpl.to_raw_msg());
-
-        rpl.clear();
-        rpl.push_back(event_user1.get_nick_name());
-        rpl.push_back("CHANNELLEN=50");
-        rpl.push_back("NICKLEN=9");
-        rpl.push_back("TOPICLEN=490");
-        rpl.push_back("AWAYLEN=127");
-        rpl.push_back("KICKLEN=400");
-        rpl.push_back("MODES=5");
-        rpl.push_back("MAXLIST=beI:50");
-        rpl.push_back("EXCEPTS=e");
-        rpl.push_back("PENALTY");
-        rpl.push_back("FNC");
-        rpl.push_back(":are supported on this server");
-        event_user1.push_msg(rpl.to_raw_msg());
-        event_user1.set_is_authenticated(OK);
-
-        if ((*this).send_msg_at_queue(event_user1.get_user_socket()) == -1) {
-          p_val.events = POLLIN | POLLOUT;
-        } else {
-          p_val.events = POLLIN;
-        }
+        auth_complete(p_val);
       }
     }
   }
 }
 
-const int Server::get_port(void) const { return port; }
+void Server::auth_complete(pollfd& p_val) {
+  move_tmp_user_to_user_list(p_val.fd);
+  User& event_user = (*this)[p_val.fd];
+  event_user.set_is_authenticated(OK);
+  const std::string& client = event_user.get_nick_name();
+
+  event_user.push_back_msg(
+      Message::rpl_001(serv_name, client, event_user.make_source(1))
+          .to_raw_msg());
+  event_user.push_back_msg(
+      Message::rpl_002(serv_name, client, serv_name, serv_version)
+          .to_raw_msg());
+  event_user.push_back_msg(
+      Message::rpl_003(serv_name, client, created_time_str).to_raw_msg());
+  event_user.push_back_msg(Message::rpl_004(serv_name, client, serv_name,
+                                            serv_version, AVAILABLE_USER_MODES,
+                                            AVAILABLE_CHANNEL_MODES)
+                               .to_raw_msg());
+
+  static bool specs_created = false;
+  static std::vector<std::string> specs1;
+  static std::vector<std::string> specs2;
+
+  if (specs_created == false) {
+    specs_created = true;
+
+    specs1.push_back(IRC_PROTOCOL);
+    specs1.push_back("IRCD=" + std::string(IRCD));
+    specs1.push_back("CHARSET=" + std::string(CHARSET));
+    specs1.push_back("CASEMAPPING=" + std::string(CASEMAPPING));
+    specs1.push_back("PREFIX=" + std::string(PREFIX));
+    specs1.push_back("CHANTYPES=" + std::string(CHANTYPES));
+    specs1.push_back("CHANMODES=" + std::string(CHANMODES));
+    specs1.push_back("CHANLIMIT=" + std::string(CHANLIMIT));
+
+    specs2.push_back("CHANNELLEN=" + ft_itos(CHANNELLEN));
+    specs2.push_back("NICKLEN=" + ft_itos(NICKLEN));
+    specs2.push_back("TOPICLEN=" + ft_itos(TOPICLEN));
+    specs2.push_back("AWAYLEN=" + ft_itos(AWAYLEN));
+    specs2.push_back("KICKLEN=" + ft_itos(KICKLEN));
+  }
+  event_user.push_back_msg(
+      Message::rpl_005(serv_name, client, specs1).to_raw_msg());
+  event_user.push_back_msg(
+      Message::rpl_005(serv_name, client, specs2).to_raw_msg());
+
+  ft_send(p_val);
+}
+
+int Server::get_port(void) const { return port; }
 
 const std::string& Server::get_str_port(void) const { return str_port; }
 
@@ -445,60 +465,44 @@ const std::string& Server::get_serv_name(void) const { return serv_name; }
 
 const std::string& Server::get_password(void) const { return password; }
 
-const int Server::get_serv_socket(void) const { return serv_socket; }
+const std::time_t& Server::get_created_time(void) const { return created_time; }
+
+const std::string& Server::get_created_time_str(void) const {
+  return created_time_str;
+}
+
+int Server::get_serv_socket(void) const { return serv_socket; }
 
 const sockaddr_in& Server::get_serv_addr(void) const { return serv_addr; }
 
-const int Server::get_tmp_user_cnt(void) const { return tmp_user_list.size(); }
+int Server::get_tmp_user_cnt(void) const { return tmp_user_list.size(); }
 
-const int Server::get_user_cnt(void) const { return user_list.size(); }
+int Server::get_user_cnt(void) const { return user_list.size(); }
 
-const bool Server::get_enable_ident_protocol(void) const {
+bool Server::get_enable_ident_protocol(void) const {
   return enable_ident_protocol;
 }
+int Server::get_channel_num(void) const { return channel_list.size(); };
 
-// CHANNEL
-const int Server::get_max_channel_num(void) const { return max_channel_num; };
-int Server::get_current_channel_num(void) {
-  return server_channel_list.size();
-};
-
-void Server::add_tmp_user(const int user_socket, const sockaddr_in& user_addr) {
+void Server::add_tmp_user(int user_socket, const sockaddr_in& user_addr) {
   User tmp(user_socket, user_addr);
-  while (tmp_nick_to_soc.find(tmp.get_nick_name()) !=
-         tmp_nick_to_soc.end())  // 찾아진다면
-  {
-    std::cout << std::boolalpha
-              << (tmp_nick_to_soc.find(tmp.get_nick_name()) !=
-                  tmp_nick_to_soc.end())
-              << std::endl;
-    tmp.set_nick_name(make_random_string(20));
+  std::string tmp_nick = tmp.get_nick_name_no_chk();
+
+  while (tmp_nick_to_soc.find(tmp_nick) != tmp_nick_to_soc.end()) {
+    tmp_nick = make_random_string(20);
+    tmp.set_nick_name(tmp_nick);
   }
-  std::cout << "~~~~~~~~~" << std::endl;
-  tmp_nick_to_soc.insert(std::make_pair(tmp.get_nick_name(), user_socket));
+  tmp_nick_to_soc.insert(std::make_pair(tmp_nick, user_socket));
   tmp_user_list.insert(std::make_pair(user_socket, tmp));
 }
 
 void Server::move_tmp_user_to_user_list(int socket_fd) {
   User& user_tmp = (*this)[socket_fd];
-  // User  authenticatedUser(user_tmp);
-  // std::cout << &user_tmp << "VS" << &authenticatedUser << std::endl;
-  // nick_to_soc.insert(std::make_pair(authenticatedUser.get_nick_name(),
-  // socket_fd)); user_list.insert(std::make_pair(socket_fd,
-  // authenticatedUser));
+
   nick_to_soc.insert(std::make_pair(user_tmp.get_nick_name(), socket_fd));
   user_list.insert(std::make_pair(socket_fd, user_tmp));
   tmp_nick_to_soc.erase(user_tmp.get_nick_name());
   tmp_user_list.erase(socket_fd);
-
-  // user_list 순회
-  for (std::map<int, User>::iterator it = user_list.begin();
-       it != user_list.end(); ++it) {
-    int key = it->first;
-    User value = it->second;
-    // key와 value를 사용하여 필요한 작업 수행
-    std::cout << key << std::endl << value << std::endl;
-  }
 }
 
 void Server::remove_user(const int socket_fd) {
@@ -561,59 +565,42 @@ void Server::change_nickname(const std::string& old_nick,
                              const std::string& new_nick) {
   std::map<std::string, int>::iterator it;
   int tmp_fd;
-  std::string old_nick_save = old_nick;
 
   it = nick_to_soc.find(old_nick);
   if (it != nick_to_soc.end()) {
     tmp_fd = it->second;
     nick_to_soc.erase(it);
     nick_to_soc.insert(std::make_pair(new_nick, tmp_fd));
-    // 서버 다 돌면서 old_nick인거 다 찾아서 new_nick으로 바꿔주기;; ㅠㅠ
-    for (server_channel_iterator = server_channel_list.begin();
-         server_channel_iterator != server_channel_list.end();
-         server_channel_iterator++) {
-      get_server_channel(server_channel_iterator)
-          .changeClientNickName(old_nick, new_nick);
-      // if (get_server_channel(server_channel_iterator).foundClient(old_nick)
-      // == true) {
-      //   get_server_channel(server_channel_iterator).changeClientNickName(old_nick,
-      //   new_nick);
-      // }
+
+    User& tmp_user = (*this)[tmp_fd];
+    const std::map<std::string, int>& user_chan = tmp_user.get_channels();
+    std::map<std::string, int>::const_iterator it;
+    for (it = user_chan.begin(); it != user_chan.end(); ++it) {
+      channel_list[it->first].change_client_nickname(old_nick, new_nick);
     }
 
+    Message rpl;
+
+    rpl.set_source(tmp_user.make_source(1));
+    rpl.set_cmd_type(NICK);
+    rpl.push_back(":" + new_nick);
+
     // [REFACTORING] :: broadcast();
-    std::map<int, User>::iterator it;
-    for (it = user_list.begin(); it != user_list.end(); ++it) {
-      std::string clientNickName = it->second.get_nick_name();
-      if (clientNickName == old_nick) {
-        continue;
-      } else {
-        Message rpl;
+    std::map<int, User>::iterator user_it;
+    for (user_it = user_list.begin(); user_it != user_list.end(); ++user_it) {
+      user_it->second.push_back_msg(rpl.to_raw_msg());
+    }
 
-        rpl.set_source(old_nick_save + "!~" +
-                       (*this)[it->first].get_user_name() + "@localhost");
-        rpl.set_cmd_type(NICK);
-        rpl.push_back(":" + new_nick);
-        (*this)[it->first].push_msg(rpl.to_raw_msg());
-        pollfd* tmp;
-        for (int i = 0; i < MAX_USER; i++) {
-          if (observe_fd[i].fd == ((*this)[it->first]).get_user_socket()) {
-            tmp = &(observe_fd[i]);
-          }
-        }
-
-        if ((*this).send_msg_at_queue(((*this)[it->first]).get_user_socket()) ==
-            -1) {
-          tmp->events = POLLIN | POLLOUT;
-        } else {
-          tmp->events = POLLIN;
-        }
+    int user_num = user_list.size();
+    for (size_t i = 1; i < MAX_USER && user_num > 0; ++i) {
+      if (observe_fd[i].fd != -1) {
+        ft_send(observe_fd[i]);
+        user_num--;
       }
     }
 
     // 실제 데이터는 여기서 바꿔주기 (공지 다 완료한 후)
-    (*this)[tmp_fd].set_nick_name(new_nick);
-
+    tmp_user.set_nick_name(new_nick);
     return;
   }
 
@@ -667,36 +654,35 @@ int Server::operator[](const std::string& nickname) {
   }
 }
 
-void Server::addChannel(Channel& newChannel) {
-  server_channel_list.insert(std::pair<std::string, Channel>(
-      newChannel.get_channel_name(), newChannel));
-  // server_channel_list.insert(std::pair<std::string,
-  // Channel&>(newChannel.get_channel_name(), newChannel));
+void Server::add_channel(Channel& new_channel) {
+  channel_list.insert(std::pair<std::string, Channel>(
+      new_channel.get_channel_name(), new_channel));
 }
 
-std::map<std::string, Channel>::iterator Server::get_server_channel_iterator(
-    std::string targetChannelStr) {
-  server_channel_iterator = server_channel_list.begin();
-  return server_channel_list.find(targetChannelStr);
+std::map<std::string, Channel>::iterator Server::get_channel_iterator(
+    const std::string& chan_name) {
+  return channel_list.find(chan_name);
 }
 
-Channel& Server::get_server_channel(
+Channel& Server::get_channel(
     std::map<std::string, Channel>::iterator iterator) {
   return iterator->second;
 }
 
+void Server::kick_client(const std::string& nickname,
+                         const std::string& chan_name) {}
+
 // remove 도 추가할것.
-void Server::kickClient(User& opUser, User& outUser, Channel& channelName,
-                        const Message& msg) {
-  std::string clientNickName = outUser.get_nick_name();
+void Server::kick_client(User& oper, User& out, Channel& chan,
+                         const Message& msg) {
+  std::string clientNickName = out.get_nick_name();
   Message rpl;
 
   // 강퇴할 클라이언트를 찾으면
-  if (channelName.get_channel_client_list().find(clientNickName) !=
-      channelName.get_channel_client_list().end()) {
-    rpl.set_source(opUser.get_nick_name() + std::string("!") +
-                   std::string("~") + opUser.get_user_name() +
-                   std::string("@localhost"));
+  if (chan.get_client_list().find(clientNickName) !=
+      chan.get_client_list().end()) {
+    rpl.set_source(oper.get_nick_name() + std::string("!") + std::string("~") +
+                   oper.get_user_name() + std::string("@localhost"));
     rpl.set_cmd_type(KICK);
     std::string sentence = msg.get_params()[0] + std::string(" ") +
                            msg.get_params()[1] + std::string(" ") + ":";
@@ -708,11 +694,11 @@ void Server::kickClient(User& opUser, User& outUser, Channel& channelName,
     rpl.push_back(sentence);  // 사유 적어주기
 
     // 채널에 속한 모든 클라이언트들에게 RESPONSE 보내주기
-    std::map<std::string, User&>::iterator it;
-    it = channelName.get_channel_client_list().begin();
-    for (; it != channelName.get_channel_client_list().end(); ++it) {
+    std::map<std::string, User&>::const_iterator it;
+    it = chan.get_client_list().begin();
+    for (; it != chan.get_client_list().end(); ++it) {
       User& event_user = it->second;
-      event_user.push_msg(rpl.to_raw_msg());
+      event_user.push_back_msg(rpl.to_raw_msg());
 
       pollfd* tmp;
       for (int i = 0; i < MAX_USER; i++) {
@@ -726,11 +712,15 @@ void Server::kickClient(User& opUser, User& outUser, Channel& channelName,
         tmp->events = POLLIN;
       }
     }
+
+#ifdef DEBUG
     std::cout << YELLOW << rpl.to_raw_msg() << std::endl;
-    if (channelName.isOperator(outUser)) {
-      channelName.removeOperator(outUser);
+#endif
+
+    if (chan.is_operator(out.get_nick_name())) {
+      chan.remove_operator(out.get_nick_name());
     }
-    channelName.get_channel_client_list().erase(clientNickName);
+    chan.remove_client(clientNickName);
   } else {
     /*
       ERR_NOSUCHNICK (401)

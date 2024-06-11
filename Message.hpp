@@ -59,7 +59,6 @@ NOTES:
 #include <vector>
 
 #include "Channel.hpp"
-#include "User.hpp"
 #include "string_func.hpp"
 
 class Channel;
@@ -109,20 +108,6 @@ enum Command {
   NORPL,
 };
 
-#define BLACK "\033[0;30m"
-#define RED "\033[0;31m"
-#define GREEN "\033[0;32m"
-#define GREEN_BOLD "\033[1;32m"
-#define YELLOW "\033[0;33m"
-#define BLUE "\033[0;34m"
-#define PURPLE "\033[0;35m"
-#define CYAN "\033[0;36m"
-#define WHITE "\033[0;37m"
-#define DEF_COLOR "\033[0;39m"
-#define LF "\e[1K\r"
-
-class User;
-
 class Message {
  private:
   static std::map<Command, std::string> etos;
@@ -164,6 +149,20 @@ class Message {
 
   std::string to_raw_msg(void);
 
+  static Message rpl_001(const std::string& source, const std::string& client,
+                         const std::string& client_source);
+  static Message rpl_002(const std::string& source, const std::string& client,
+                         const std::string& server_name,
+                         const std::string& server_version);
+  static Message rpl_003(const std::string& source, const std::string& client,
+                         const std::string& server_created_time);
+  static Message rpl_004(const std::string& source, const std::string& client,
+                         const std::string& server_name,
+                         const std::string& server_version,
+                         const std::string& available_user_modes,
+                         const std::string& available_channel_modes);
+  static Message rpl_005(const std::string& source, const std::string& client,
+                         std::vector<std::string> specs);
   static Message rpl_341(const std::string& source, const std::string& client,
                          const std::string& nick, const std::string& channel);
   static Message rpl_353(const std::string& source, const std::string& client,
@@ -195,6 +194,24 @@ class Message {
                          const std::string& channel);
 };
 
+#ifdef DEBUG
+
+#include <iostream>
+
+#define BLACK "\033[0;30m"
+#define RED "\033[0;31m"
+#define GREEN "\033[0;32m"
+#define GREEN_BOLD "\033[1;32m"
+#define YELLOW "\033[0;33m"
+#define BLUE "\033[0;34m"
+#define PURPLE "\033[0;35m"
+#define CYAN "\033[0;36m"
+#define WHITE "\033[0;37m"
+#define DEF_COLOR "\033[0;39m"
+#define LF "\e[1K\r"
+
 std::ostream& operator<<(std::ostream& out, Message msg);
+
+#endif
 
 #endif

@@ -2,7 +2,6 @@
 #define CHANNEL_HPP
 
 #include <ctime>
-#include <iostream>
 #include <map>
 #include <string>
 
@@ -25,7 +24,7 @@
 #define LOCAL_CHANNEL 1
 #define LOCAL_CHANNEL_PREFIX "&"
 
-#define MAX_CLIENT_LIMIT 10
+#define INIT_CLIENT_LIMIT 10
 
 class Channel {
  private:
@@ -79,6 +78,7 @@ class Channel {
   void add_operator(User& user);
 
   bool is_operator(const std::string& nickname) const;
+  void remove_client(const std::string& nickname);
   void remove_operator(const std::string& nickname);
   bool chk_client_join(const std::string& nickname) const;
   void change_client_nickname(const std::string& old_nick,
@@ -88,13 +88,13 @@ class Channel {
   void set_mode(int flag);
   void unset_mode(int flag);
   bool chk_mode(int flag) const;
-
-  // FOR DEBUG PURPOSE ONLY [VISUALIZE]
-  void visualizeClientList(void);
-  void visualizeBannedClientList(void);
-  void visualizeOperators(void);
 };
 
+#ifdef DEBUG
+
+#include <iostream>
 std::ostream& operator<<(std::ostream&, const Channel& channel);
+
+#endif
 
 #endif

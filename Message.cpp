@@ -207,25 +207,83 @@ std::string Message::to_raw_msg(void) {
   return raw_msg;
 }
 
-std::ostream& operator<<(std::ostream& out, Message msg) {
-  std::size_t i = 0;
+/*
+:irc.example.net 001 kael :Welcome to the Internet Relay Network kael!~kael@localhost\r
+:irc.example.net 002 kael :Your host is irc.example.net, running version ngircd-26.1 (aarch64/apple/darwin23.0.0)\r
+:irc.example.net 003 kael :This server has been started Tue Jun 11 2024 at 22:33:30 (KST)\r
+:irc.example.net 004 kael irc.example.net ngircd-26.1 abBcCFiIoqrRswx abehiIklmMnoOPqQrRstvVz\r
+:irc.example.net 005 kael RFC2812 IRCD=ngIRCd CHARSET=UTF-8 CASEMAPPING=ascii PREFIX=(qaohv)~&@%+ CHANTYPES=#&+ CHANMODES=beI,k,l,imMnOPQRstVz CHANLIMIT=#&+:10 :are supported on this server\r
+:irc.example.net 005 kael CHANNELLEN=50 NICKLEN=9 TOPICLEN=490 AWAYLEN=127 KICKLEN=400 MODES=5 MAXLIST=beI:50 EXCEPTS=e INVEX=I PENALTY FNC :are supported on this server\r
+*/
 
-  out << "< Message contents > \n"
-      << "fd \t\t: " << msg.get_socket_fd() << '\n'
-      << "source\t\t: " << msg.get_source() << '\n'
-      << "command\t\t: " << msg.get_cmd() << '\n'
-      << "params\t\t: ";
-  if (msg.get_params_size() > 0) {
-    for (i = 0UL; i + 1 < msg.get_params_size(); i++) {
-      out << msg[i] << ", ";
-    }
-    out << msg[i] << "\n";
-  } else {
-    out << '\n';
+Message Message::rpl_001(const std::string& source, const std::string& client,
+                         const std::string& client_source) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("001");
+  rpl.push_back(client);
+  rpl.push_back(":Welcome to the Internet Relay Network " + client_source);
+
+  return rpl;
+}
+
+Message Message::rpl_002(const std::string& source, const std::string& client,
+                         const std::string& server_name,
+                         const std::string& server_version) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("002");
+  rpl.push_back(client);
+  rpl.push_back(":Your host is " + server_name + ", running version " +
+                server_version);
+
+  return rpl;
+}
+
+Message Message::rpl_003(const std::string& source, const std::string& client,
+                         const std::string& server_created_time) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("003");
+  rpl.push_back(client);
+  rpl.push_back(":This server has been started " + server_created_time +
+                "(KST)");
+
+  return rpl;
+}
+Message Message::rpl_004(const std::string& source, const std::string& client,
+                         const std::string& server_name,
+                         const std::string& server_version,
+                         const std::string& available_user_modes,
+                         const std::string& available_channel_modes) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("004");
+  rpl.push_back(client);
+  rpl.push_back(server_name);
+  rpl.push_back(server_version);
+  rpl.push_back(available_user_modes);
+  rpl.push_back(available_channel_modes);
+
+  return rpl;
+}
+Message Message::rpl_005(const std::string& source, const std::string& client,
+                         std::vector<std::string> specs) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("004");
+  rpl.push_back(client);
+  for (size_t i = 0; i < specs.size(); ++i) {
+    rpl.push_back(specs[i]);
   }
-  out << "numeric\t\t: " << msg.get_numeric() << '\n';
+  rpl.push_back(":are supported on this server");
 
-  return out;
+  return rpl;
 }
 
 // reply message functions
@@ -396,7 +454,7 @@ Message Message::rpl_442(const std::string& source, const std::string& client,
     channel which the client isn’t a part of.
 
     채널에 속했든 안했든
-     /kick [#CHANNELNAME] [CLIENTNAME] 이런식으로 명령이 가능한데 만약 채널에
+     /kick [#chan_name] [CLIENTNAME] 이런식으로 명령이 가능한데 만약 채널에
      속하지 않은 유저가 명령을 내릴경우 442에러를 뱉어주면 됨.
   */
   Message rpl;
@@ -510,3 +568,28 @@ Message Message::rpl_482(const std::string& source, const std::string& client,
 
   return rpl;
 }
+
+#ifdef DEBUG
+
+std::ostream& operator<<(std::ostream& out, Message msg) {
+  std::size_t i = 0;
+
+  out << "< Message contents > \n"
+      << "fd \t\t: " << msg.get_socket_fd() << '\n'
+      << "source\t\t: " << msg.get_source() << '\n'
+      << "command\t\t: " << msg.get_cmd() << '\n'
+      << "params\t\t: ";
+  if (msg.get_params_size() > 0) {
+    for (i = 0UL; i + 1 < msg.get_params_size(); i++) {
+      out << msg[i] << ", ";
+    }
+    out << msg[i] << "\n";
+  } else {
+    out << '\n';
+  }
+  out << "numeric\t\t: " << msg.get_numeric() << '\n';
+
+  return out;
+}
+
+#endif

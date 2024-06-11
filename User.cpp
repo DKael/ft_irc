@@ -1,6 +1,6 @@
 #include "User.hpp"
 
-User::User(const int _user_socket, const sockaddr_in& _user_addr)
+User::User(int _user_socket, const sockaddr_in& _user_addr)
     : user_socket(_user_socket),
       user_addr(_user_addr),
       created_time(std::time(NULL)),
@@ -26,8 +26,9 @@ User::User(const User& origin)
       password_chk(origin.password_chk),
       is_authenticated(origin.is_authenticated),
       have_to_disconnect(origin.have_to_disconnect),
+      to_send(origin.to_send),
       invited_channels(origin.invited_channels),
-      // join_channels(origin.join_channels),
+      channels(origin.channels),
       dummy("*") {}
 
 User::~User() {}
@@ -54,13 +55,18 @@ void User::set_have_to_disconnect(const bool input) {
   have_to_disconnect = input;
 }
 
+void User::change_nickname(const std::string& new_nick) {
+  nick_name = new_nick;
+  invited_channels.clear();
+}
+
 // getter functions
 
-const int User::get_user_socket(void) const { return user_socket; }
+int User::get_user_socket(void) const { return user_socket; }
 
 const sockaddr_in& User::get_user_addr(void) const { return user_addr; }
 
-const time_t User::get_created_time(void) const { return created_time; }
+time_t User::get_created_time(void) const { return created_time; }
 
 const std::string& User::get_nick_name(void) const {
   if (nick_init_chk != NOT_YET) {
@@ -72,43 +78,84 @@ const std::string& User::get_nick_name(void) const {
 
 const std::string& User::get_nick_name_no_chk(void) const { return nick_name; }
 
-const chk_status User::get_nick_init_chk(void) const { return nick_init_chk; }
+chk_status User::get_nick_init_chk(void) const { return nick_init_chk; }
 
 const std::string& User::get_user_name(void) const { return user_name; }
 
 const std::string& User::get_real_name(void) const { return real_name; }
 
-const chk_status User::get_user_init_chk(void) const { return user_init_chk; }
+chk_status User::get_user_init_chk(void) const { return user_init_chk; }
 
-const chk_status User::get_password_chk(void) const { return password_chk; }
+chk_status User::get_password_chk(void) const { return password_chk; }
 
-const chk_status User::get_is_authenticated(void) const {
-  return is_authenticated;
-}
+chk_status User::get_is_authenticated(void) const { return is_authenticated; }
 
-const bool User::get_have_to_disconnect(void) const {
-  return have_to_disconnect;
-}
+bool User::get_have_to_disconnect(void) const { return have_to_disconnect; }
 
 const std::map<std::string, int>& User::get_invited_channels(void) const {
   return invited_channels;
 }
 
-// const std::map<std::string, int>& User::get_join_channels(void) const {
-//   return join_channels;
-// }
+const std::map<std::string, int>& User::get_channels(void) const {
+  return channels;
+}
 
-void User::push_invited_channel(std::string& channelName) {
-  std::map<std::string, int>::iterator it = invited_channels.find(channelName);
+/*
+mode 1 : <nickname>!<user>@<host>
+mode 2 : <nickname>!<user>
+mode 3 : <nickname>
+*/
+std::string User::make_source(int mode = 1) {
+  std::string source = nick_name;
+  std::string ip;
+
+  if (mode <= 2) {
+    source += "!";
+    source += user_name;
+  }
+  if (mode <= 1) {
+    source += "@";
+    ip = inet_ntoa(user_addr.sin_addr);
+    if (ip == "127.0.0.1") {
+      source += "localhost";
+    } else {
+      source += ip;
+    }
+  }
+  return source;
+}
+
+void User::push_front_msg(const std::string& msg) { to_send.push_front(msg); }
+
+void User::push_back_msg(const std::string& msg) { to_send.push_back(msg); }
+
+const std::string& User::get_front_msg(void) const { return to_send.front(); }
+
+void User::pop_front_msg(void) { to_send.pop_front(); }
+
+std::size_t User::get_to_send_size(void) { return to_send.size(); }
+
+void User::push_invitation(std::string& chan_name) {
+  std::map<std::string, int>::iterator it = invited_channels.find(chan_name);
 
   if (it == invited_channels.end()) {
-    invited_channels.insert(std::pair<std::string, int>(channelName, 0));
+    invited_channels.insert(std::pair<std::string, int>(chan_name, 0));
   }
 }
 
-const bool User::is_invited(std::string& channelName) const {
+void User::remove_invitation(std::string& chan_name) {
+  std::map<std::string, int>::iterator it = invited_channels.find(chan_name);
+
+  if (it != invited_channels.end()) {
+    invited_channels.erase(it);
+  }
+}
+
+void User::remove_all_invitations(void) { invited_channels.clear(); }
+
+bool User::is_invited(std::string& chan_name) const {
   std::map<std::string, int>::const_iterator cit =
-      invited_channels.find(channelName);
+      invited_channels.find(chan_name);
 
   if (cit != invited_channels.end()) {
     return true;
@@ -117,18 +164,27 @@ const bool User::is_invited(std::string& channelName) const {
   }
 }
 
-void User::remove_all_invitations(void) { invited_channels.clear(); }
+void User::join_channel(std::string& chan_name) {
+  std::map<std::string, int>::iterator it = channels.find(chan_name);
 
-void User::remove_invitation(std::string& channelName) {
-  std::map<std::string, int>::iterator it = invited_channels.find(channelName);
-
-  if (it != invited_channels.end()) {
-    invited_channels.erase(it);
+  if (it == channels.end()) {
+    channels.insert(std::pair<std::string, int>(chan_name, 0));
+    if (is_invited(nick_name) == true) {
+      invited_channels.erase(chan_name);
+    }
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////
+void User::part_channel(std::string& chan_name) {
+  std::map<std::string, int>::iterator it = channels.find(chan_name);
+
+  if (it != channels.end()) {
+    channels.erase(chan_name);
+  }
+}
+
+#ifdef DEBUG
+
 std::ostream& operator<<(std::ostream& out, const User& user) {
   out << GREEN << "\n\t[Client Information]" << WHITE << std::endl
       << "\tNICKNAME :: " << user.get_nick_name() << std::endl
@@ -149,12 +205,14 @@ std::ostream& operator<<(std::ostream& out, const User& user) {
       //   out << "AUTHENTICATION :: AUTHENTICATED" << std::endl;
       << "\n\tInvited Channel Lists :: ";
   std::map<std::string, int>::const_iterator cit;
-  std::string channelName;
+  std::string chan_name;
   for (cit = user.get_invited_channels().begin();
        cit != user.get_invited_channels().end(); ++cit) {
-    channelName = (*cit).first;
-    out << channelName << ", ";
+    chan_name = (*cit).first;
+    out << chan_name << ", ";
   }
   std::cout << "\n\n";
   return out;
 }
+
+#endif

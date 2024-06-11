@@ -7,7 +7,7 @@ Channel::Channel(const std::string& _channel_name, char _channel_type)
       created_time(std::time(NULL)),
       invite_only(false),
       mode(0),
-      client_limit(MAX_CLIENT_LIMIT) {}
+      client_limit(INIT_CLIENT_LIMIT) {}
 
 Channel::Channel(const Channel& other)
     : channel_name(other.channel_name),
@@ -115,6 +115,15 @@ bool Channel::is_operator(const std::string& nickname) const {
   }
 }
 
+void Channel::remove_client(const std::string& nickname) {
+  std::map<std::string, User&>::iterator it = client_list.find(nickname);
+
+  if (it != client_list.end()) {
+    remove_operator(nickname);
+    client_list.erase(it);
+  }
+}
+
 void Channel::remove_operator(const std::string& nickname) {
   std::map<std::string, User&>::iterator it = operator_list.find(nickname);
 
@@ -157,7 +166,7 @@ void Channel::unset_mode(int flag) { mode &= ~flag; }
 // 채널 모드 확인
 bool Channel::chk_mode(int flag) const { return mode & flag; }
 
-// [OVERLOADING] operator<<
+#ifdef DEBUG
 std::ostream& operator<<(std::ostream& out, Channel& channel) {
   out << BLUE << "[channel name] :: " << channel.get_channel_name() << '\n'
       << "[client limit] :: " << channel.get_client_limit() << '\n'
@@ -191,17 +200,4 @@ std::ostream& operator<<(std::ostream& out, Channel& channel) {
 
   return out;
 }
-
-// [DEBUG]
-void Channel::visualizeClientList(void) {
-  std::map<std::string, User&>::const_iterator cit;
-  std::cout << "Visualizng Channel Client lists for Channel :: "
-            << this->get_channel_name() << std::endl;
-  std::cout << YELLOW;
-  for (cit = client_list.begin(); cit != client_list.end(); ++cit) {
-    const std::string& nickName = cit->first;
-    const User& user = cit->second;
-    std::cout << nickName << std::endl;
-  }
-  std::cout << WHITE;
-}
+#endif
