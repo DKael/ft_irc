@@ -2,6 +2,7 @@
 SRCS =	main.cpp \
 		Channel.cpp \
 		custom_exception.cpp \
+		Message_rpl.cpp \
 		Message.cpp \
 		Server_cmd.cpp \
 		Server.cpp \

@@ -33,7 +33,7 @@ typedef std::string String;
 #define LOCAL_CHANNEL 1
 #define LOCAL_CHANNEL_PREFIX "&"
 
-#define INIT_CLIENT_LIMIT 10
+#define INIT_CLIENT_LIMIT 50
 
 class Channel {
  private:

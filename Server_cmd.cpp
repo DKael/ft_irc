@@ -513,6 +513,61 @@ NAMES
 */
 
 void Server::cmd_names(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+  const std::map<String, int>& event_user_chan = event_user.get_channels();
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // short parameter chk
+  if (msg.get_params_size() == 0) {
+    std::map<String, Channel>::iterator chan_it = channel_list.begin();
+    String symbol;
+
+    for (; chan_it != channel_list.end(); ++chan_it) {
+      Channel& tmp_chan = chan_it->second;
+      String tmp_chan_name = tmp_chan.get_channel_name();
+      if (tmp_chan.chk_mode(CHAN_FLAG_S) == true) {
+        std::map<String, int>::const_iterator user_chan_it =
+            event_user_chan.find(tmp_chan_name);
+        if (user_chan_it == event_user_chan.end()) {
+          continue;
+        } else {
+          symbol = "@";
+        }
+      } else {
+        symbol = "=";
+      }
+      String nicks = "";
+      const std::map<String, User&>& client_map = tmp_chan.get_client_list();
+      const std::map<String, User&>& operator_map =
+          tmp_chan.get_operator_list();
+      std::map<String, User&>::const_reverse_iterator cit1 =
+          client_map.rbegin();
+      std::map<String, User&>::const_iterator cit2;
+
+      for (std::size_t i = 0; i + 1 < client_map.size(); ++i, ++cit1) {
+        cit2 = operator_map.find(cit1->first);
+        if (cit2 != operator_map.end()) {
+          nicks += (OPERATOR_PREFIX + cit1->first);
+        } else {
+          nicks += cit1->first;
+        }
+        nicks += " ";
+      }
+      cit2 = operator_map.find(cit1->first);
+      if (cit2 != operator_map.end()) {
+        nicks += (OPERATOR_PREFIX + cit1->first);
+      } else {
+        nicks += cit1->first;
+      }
+    }
+
+    rpl.push_back(nicks);
+  } else {
+    event_user.push_back_msg(
+        Message::rpl_366(serv_name, event_user_nick, chan_it->first)
+            .to_raw_msg());
+  }
+
   std::map<String, Channel>::const_iterator it;
   std::cout << "[FT_IRC Server] <Channel Status> :: [";
 

@@ -190,41 +190,16 @@ Message Message::rpl_352(const String& source, const String& client,
   :irc.example.net 366 lfkn #b :End of NAMES list\r
 */
 Message Message::rpl_353(const String& source, const String& client,
-                         const Channel& channel) {
+                         const String& symbol, const String& channel,
+                         const String& nicks) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("353");
   rpl.push_back(client);
-  if (channel.chk_mode(CHAN_FLAG_S) == true) {
-    rpl.push_back("@");
-  } else {
-    rpl.push_back("=");
-  }
-  rpl.push_back(channel.get_channel_name());
-
-  String trail = ":";
-  const std::map<String, User&>& client_map = channel.get_client_list();
-  const std::map<String, User&>& operator_map = channel.get_operator_list();
-  std::map<String, User&>::const_reverse_iterator cit1 = client_map.rbegin();
-  std::map<String, User&>::const_iterator cit2;
-
-  for (std::size_t i = 0; i + 1 < client_map.size(); ++i, ++cit1) {
-    cit2 = operator_map.find(cit1->first);
-    if (cit2 != operator_map.end()) {
-      trail += (OPERATOR_PREFIX + cit1->first);
-    } else {
-      trail += cit1->first;
-    }
-    trail += " ";
-  }
-  cit2 = operator_map.find(cit1->first);
-  if (cit2 != operator_map.end()) {
-    trail += (OPERATOR_PREFIX + cit1->first);
-  } else {
-    trail += cit1->first;
-  }
-  rpl.push_back(trail);
+  rpl.push_back(symbol);
+  rpl.push_back(channel);
+  rpl.push_back(":" + nicks);
 
   return rpl;
 }

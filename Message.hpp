@@ -189,7 +189,8 @@ class Message {
                          const String& server, const String& flags,
                          int hopcount);
   static Message rpl_353(const String& source, const String& client,
-                         const Channel& channel);
+                         const String& symbol, const String& channel,
+                         const String& nicks);
   static Message rpl_366(const String& source, const String& client,
                          const String& channel);
   static Message rpl_401(const String& source, const String& client,
