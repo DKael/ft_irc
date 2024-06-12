@@ -107,53 +107,53 @@ enum Command {
 
 class Message {
  private:
-  static std::map<Command, std::string> etos;
-  static std::map<std::string, Command> stoe;
+  static std::map<Command, String> etos;
+  static std::map<String, Command> stoe;
 
-  const std::string raw_msg;
+  const String raw_msg;
   const int socket_fd;
-  std::string source;
-  std::string raw_cmd;
-  std::string cmd;
+  String source;
+  String raw_cmd;
+  String cmd;
   Command cmd_type;
-  std::vector<std::string> params;
+  std::vector<String> params;
 
-  std::string numeric;
+  String numeric;
 
  public:
   static void map_init(void);
   Message();
-  Message(int socket_fd, const std::string& _raw_msg);
+  Message(int socket_fd, const String& _raw_msg);
 
-  void set_source(const std::string& input);
-  void set_cmd(const std::string& input);
+  void set_source(const String& input);
+  void set_cmd(const String& input);
   void set_cmd_type(const Command input);
-  void push_back(const std::string& input);
+  void push_back(const String& input);
   void clear(void);
-  void set_numeric(const std::string& input);
+  void set_numeric(const String& input);
 
-  const std::string& get_raw_msg(void) const;
+  const String& get_raw_msg(void) const;
   int get_socket_fd(void) const;
-  const std::string& get_source(void) const;
-  const std::string& get_raw_cmd(void) const;
-  const std::string& get_cmd(void) const;
+  const String& get_source(void) const;
+  const String& get_raw_cmd(void) const;
+  const String& get_cmd(void) const;
   Command get_cmd_type(void) const;
-  const std::vector<std::string>& get_params(void) const;
+  const std::vector<String>& get_params(void) const;
   std::size_t get_params_size(void) const;
-  const std::string& operator[](const int idx) const;
-  const std::string& get_numeric(void) const;
+  const String& operator[](const int idx) const;
+  const String& get_numeric(void) const;
 
-  std::string to_raw_msg(void);
+  String to_raw_msg(void);
 
-  static Message rpl_432(const std::string& source, const std::string& client,
-                         const std::string& nick);
-  static Message rpl_433(const std::string& source, const std::string& client,
-                         const std::string& nick);
-  static Message rpl_451(const std::string& source, const std::string& client);
-  static Message rpl_461(const std::string& source, const std::string& client,
-                         const std::string& cmd);
-  static Message rpl_462(const std::string& source, const std::string& client);
-  static Message rpl_464(const std::string& source, const std::string& client);
+  static Message rpl_432(const String& source, const String& client,
+                         const String& nick);
+  static Message rpl_433(const String& source, const String& client,
+                         const String& nick);
+  static Message rpl_451(const String& source, const String& client);
+  static Message rpl_461(const String& source, const String& client,
+                         const String& cmd);
+  static Message rpl_462(const String& source, const String& client);
+  static Message rpl_464(const String& source, const String& client);
 };
 
 std::ostream& operator<<(std::ostream& out, Message msg);

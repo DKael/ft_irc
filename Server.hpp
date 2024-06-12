@@ -59,14 +59,14 @@ typedef std::string String;
 class Server {
  private:
   int port;
-  std::string str_port;
-  std::string serv_name;
-  std::string serv_version;
-  std::string chantypes;
+  String str_port;
+  String serv_name;
+  String serv_version;
+  String chantypes;
   std::time_t created_time;
-  std::string created_time_str;
+  String created_time_str;
 
-  std::string password;
+  String password;
   int serv_socket;
   sockaddr_in serv_addr;
   bool enable_ident_protocol;
@@ -74,12 +74,12 @@ class Server {
   pollfd observe_fd[MAX_USER];
   std::map<in_addr_t, int> ip_list;
   std::map<int, User> tmp_user_list;
-  std::map<std::string, int> tmp_nick_to_soc;
+  std::map<String, int> tmp_nick_to_soc;
   std::map<int, User> user_list;
-  std::map<std::string, int> nick_to_soc;
+  std::map<String, int> nick_to_soc;
 
   // CHANNEL
-  std::map<std::string, Channel> channel_list;
+  std::map<String, Channel> channel_list;
 
   // private functions
   int client_socket_init(void);
@@ -87,11 +87,11 @@ class Server {
   void ft_send(pollfd& p_val);
   void ft_sendd(pollfd& p_val);
   int send_msg_at_queue(int socket_fd);
-  int send_msg_block(int socket_fd, const std::string& blk);
+  int send_msg_block(int socket_fd, const String& blk);
   void revent_pollout(pollfd& p_val);
   void revent_pollin(pollfd& p_val);
-  void auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
-  void not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list);
+  void auth_user(pollfd& p_val, std::vector<String>& msg_list);
+  void not_auth_user(pollfd& p_val, std::vector<String>& msg_list);
   void auth_complete(pollfd& p_val);
 
   // not use
@@ -106,12 +106,12 @@ class Server {
   void listen(void);
 
   int get_port(void) const;
-  const std::string& get_str_port(void) const;
-  const std::string& get_serv_name(void) const;
-  const std::string& get_serv_version(void) const;
-  const std::string& get_password(void) const;
+  const String& get_str_port(void) const;
+  const String& get_serv_name(void) const;
+  const String& get_serv_version(void) const;
+  const String& get_password(void) const;
   const std::time_t& get_created_time(void) const;
-  const std::string& get_created_time_str(void) const;
+  const String& get_created_time_str(void) const;
   int get_serv_socket(void) const;
   const sockaddr_in& get_serv_addr(void) const;
   int get_tmp_user_cnt(void) const;
@@ -122,14 +122,13 @@ class Server {
   void add_tmp_user(pollfd& pfd, const sockaddr_in& addr);
   void move_tmp_user_to_user_list(int socket_fd);
   void remove_user(const int socket_fd);
-  void remove_user(const std::string& nickname);
-  void change_nickname(const std::string& old_nick,
-                       const std::string& new_nick);
+  void remove_user(const String& nickname);
+  void change_nickname(const String& old_nick, const String& new_nick);
   void tmp_user_timeout_chk(void);
   void user_ping_chk(void);
 
   User& operator[](int socket_fd);
-  int operator[](const std::string& nickname);
+  int operator[](const String& nickname);
 
   void add_channel(Channel& new_chan);
 
@@ -168,11 +167,11 @@ class Server {
   }
 
   void visualizeChannelList(void) {
-    std::map<std::string, Channel>::const_iterator it;
+    std::map<String, Channel>::const_iterator it;
 
     std::cout << RED << "[Channel Lists in the server] :: ";
     for (it = channel_list.begin(); it != channel_list.end(); ++it) {
-      const std::string& chan_name = it->first;
+      const String& chan_name = it->first;
       const Channel& channel = it->second;
 
       std::cout << chan_name << " => ";

@@ -9,8 +9,8 @@
 :irc.example.net 005 kael CHANNELLEN=50 NICKLEN=9 TOPICLEN=490 AWAYLEN=127 KICKLEN=400 MODES=5 MAXLIST=beI:50 EXCEPTS=e INVEX=I PENALTY FNC :are supported on this server\r
 */
 
-Message Message::rpl_001(const std::string& source, const std::string& client,
-                         const std::string& client_source) {
+Message Message::rpl_001(const String& source, const String& client,
+                         const String& client_source) {
   Message rpl;
 
   rpl.source = source;
@@ -21,9 +21,9 @@ Message Message::rpl_001(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_002(const std::string& source, const std::string& client,
-                         const std::string& server_name,
-                         const std::string& server_version) {
+Message Message::rpl_002(const String& source, const String& client,
+                         const String& server_name,
+                         const String& server_version) {
   Message rpl;
 
   rpl.source = source;
@@ -35,8 +35,8 @@ Message Message::rpl_002(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_003(const std::string& source, const std::string& client,
-                         const std::string& server_created_time) {
+Message Message::rpl_003(const String& source, const String& client,
+                         const String& server_created_time) {
   Message rpl;
 
   rpl.source = source;
@@ -47,11 +47,11 @@ Message Message::rpl_003(const std::string& source, const std::string& client,
 
   return rpl;
 }
-Message Message::rpl_004(const std::string& source, const std::string& client,
-                         const std::string& server_name,
-                         const std::string& server_version,
-                         const std::string& available_user_modes,
-                         const std::string& available_channel_modes) {
+Message Message::rpl_004(const String& source, const String& client,
+                         const String& server_name,
+                         const String& server_version,
+                         const String& available_user_modes,
+                         const String& available_channel_modes) {
   Message rpl;
 
   rpl.source = source;
@@ -64,8 +64,8 @@ Message Message::rpl_004(const std::string& source, const std::string& client,
 
   return rpl;
 }
-Message Message::rpl_005(const std::string& source, const std::string& client,
-                         std::vector<std::string> specs) {
+Message Message::rpl_005(const String& source, const String& client,
+                         std::vector<String> specs) {
   Message rpl;
 
   rpl.source = source;
@@ -79,8 +79,21 @@ Message Message::rpl_005(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_331(const std::string& source, const std::string& client,
-                         const std::string& channel) {
+Message Message::rpl_315(const String& source, const String& client,
+                         const String& mask) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("315");
+  rpl.push_back(client);
+  rpl.push_back(mask);
+  rpl.push_back(":End of WHO list");
+
+  return rpl;
+}
+
+Message Message::rpl_331(const String& source, const String& client,
+                         const String& channel) {
   Message rpl;
 
   rpl.source = source;
@@ -92,8 +105,8 @@ Message Message::rpl_331(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_332(const std::string& source, const std::string& client,
-                         const std::string& channel, const std::string& topic) {
+Message Message::rpl_332(const String& source, const String& client,
+                         const String& channel, const String& topic) {
   Message rpl;
 
   rpl.source = source;
@@ -105,9 +118,9 @@ Message Message::rpl_332(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_333(const std::string& source, const std::string& client,
-                         const std::string& channel, const std::string& nick,
-                         const std::string& setat) {
+Message Message::rpl_333(const String& source, const String& client,
+                         const String& channel, const String& nick,
+                         const String& setat) {
   Message rpl;
 
   rpl.source = source;
@@ -121,8 +134,8 @@ Message Message::rpl_333(const std::string& source, const std::string& client,
 }
 
 // reply message functions
-Message Message::rpl_341(const std::string& source, const std::string& client,
-                         const std::string& nick, const std::string& channel) {
+Message Message::rpl_341(const String& source, const String& client,
+                         const String& nick, const String& channel) {
   Message rpl;
 
   rpl.source = source;
@@ -146,22 +159,23 @@ WHO kkk\r
 :irc.example.net 352 ccc * ~test_user localhost irc.example.net kkk H :0 Hyungdo Kim\r
 :irc.example.net 315 ccc kkk :End of WHO list\r
 */
-Message Message::rpl_352(const std::string& source, const std::string& client,
-                         const std::string& channel, const User& _u,
-                         const std::string& flags,
-                         const std::string& hopcount) {
+Message Message::rpl_352(const String& source, const String& client,
+                         const String& channel, const User& _u,
+                         const String& server, const String& flags,
+                         int hopcount) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("352");
   rpl.push_back(client);
   rpl.push_back(channel);
-  rpl.push_back(channel);
-  rpl.push_back(client);
-  rpl.push_back(client);
-  rpl.push_back(client);
-  rpl.push_back(client);
-  rpl.push_back(client);
+  rpl.push_back(_u.get_user_name());
+  rpl.push_back(_u.get_host_ip());
+  rpl.push_back(server);
+  rpl.push_back(_u.get_nick_name());
+  rpl.push_back(flags);
+  rpl.push_back(":" + ft_itos(hopcount));
+  rpl.push_back(_u.get_real_name());
 
   return rpl;
 }
@@ -175,27 +189,25 @@ Message Message::rpl_352(const std::string& source, const std::string& client,
   :irc.example.net 353 lfkn = #b :@lfkn\r
   :irc.example.net 366 lfkn #b :End of NAMES list\r
 */
-Message Message::rpl_353(const std::string& source, const std::string& client,
+Message Message::rpl_353(const String& source, const String& client,
                          const Channel& channel) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("353");
   rpl.push_back(client);
-  if (channel.chk_mode(FLAG_S) == true) {
+  if (channel.chk_mode(CHAN_FLAG_S) == true) {
     rpl.push_back("@");
   } else {
     rpl.push_back("=");
   }
   rpl.push_back(channel.get_channel_name());
 
-  std::string trail = ":";
-  const std::map<std::string, User&>& client_map = channel.get_client_list();
-  const std::map<std::string, User&>& operator_map =
-      channel.get_operator_list();
-  std::map<std::string, User&>::const_reverse_iterator cit1 =
-      client_map.rbegin();
-  std::map<std::string, User&>::const_iterator cit2;
+  String trail = ":";
+  const std::map<String, User&>& client_map = channel.get_client_list();
+  const std::map<String, User&>& operator_map = channel.get_operator_list();
+  std::map<String, User&>::const_reverse_iterator cit1 = client_map.rbegin();
+  std::map<String, User&>::const_iterator cit2;
 
   for (std::size_t i = 0; i + 1 < client_map.size(); ++i, ++cit1) {
     cit2 = operator_map.find(cit1->first);
@@ -217,8 +229,8 @@ Message Message::rpl_353(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_366(const std::string& source, const std::string& client,
-                         const std::string& channel) {
+Message Message::rpl_366(const String& source, const String& client,
+                         const String& channel) {
   // :irc.example.net 366 lfkn__ #a :End of NAMES list\r
   Message rpl;
 
@@ -226,12 +238,12 @@ Message Message::rpl_366(const std::string& source, const std::string& client,
   rpl.set_numeric("366");
   rpl.push_back(client);
   rpl.push_back(channel);
-  rpl.push_back(std::string(":End of NAMES list"));
+  rpl.push_back(String(":End of NAMES list"));
   return rpl;
 }
 
-Message Message::rpl_401(const std::string& source, const std::string& client,
-                         const std::string& nickname) {
+Message Message::rpl_401(const String& source, const String& client,
+                         const String& nickname) {
   /*
   ERR_NOSUCHNICK (401)
   "<client> <nickname> :No such nick/channel"
@@ -252,8 +264,8 @@ Message Message::rpl_401(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_403(const std::string& source, const std::string& client,
-                         const std::string& channel) {
+Message Message::rpl_403(const String& source, const String& client,
+                         const String& channel) {
   /* ERR_NOSUCHCHANNEL (403)
     "<client> <channel> :No such channel"
     Indicates that no channel can be found for the supplied channel name.
@@ -267,24 +279,24 @@ Message Message::rpl_403(const std::string& source, const std::string& client,
   rpl.set_numeric("403");
   rpl.push_back(client);
   rpl.push_back(channel);
-  rpl.push_back(std::string(":No such channel"));
+  rpl.push_back(String(":No such channel"));
 
   return rpl;
 }
 
-Message Message::rpl_409(const std::string& source, const std::string& client) {
+Message Message::rpl_409(const String& source, const String& client) {
   Message rpl;
 
   rpl.set_source(source);
   rpl.set_numeric("409");
   rpl.push_back(client);
-  rpl.push_back(std::string(":No origin specified"));
+  rpl.push_back(String(":No origin specified"));
 
   return rpl;
 }
 
-Message Message::rpl_421(const std::string& source, const std::string& client,
-                         const std::string& command) {
+Message Message::rpl_421(const String& source, const String& client,
+                         const String& command) {
   Message rpl;
 
   rpl.source = source;
@@ -296,8 +308,8 @@ Message Message::rpl_421(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_432(const std::string& source, const std::string& client,
-                         const std::string& nick) {
+Message Message::rpl_432(const String& source, const String& client,
+                         const String& nick) {
   Message rpl;
 
   rpl.source = source;
@@ -309,8 +321,8 @@ Message Message::rpl_432(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_433(const std::string& source, const std::string& client,
-                         const std::string& nick) {
+Message Message::rpl_433(const String& source, const String& client,
+                         const String& nick) {
   Message rpl;
 
   rpl.source = source;
@@ -322,8 +334,8 @@ Message Message::rpl_433(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_441(const std::string& source, const std::string& client,
-                         const std::string& nick, const std::string& channel) {
+Message Message::rpl_441(const String& source, const String& client,
+                         const String& nick, const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -331,13 +343,13 @@ Message Message::rpl_441(const std::string& source, const std::string& client,
   rpl.push_back(client);
   rpl.push_back(nick);
   rpl.push_back(channel);
-  rpl.push_back(std::string(":They aren't on that channel"));
+  rpl.push_back(String(":They aren't on that channel"));
 
   return rpl;
 }
 
-Message Message::rpl_442(const std::string& source, const std::string& client,
-                         const std::string& channel) {
+Message Message::rpl_442(const String& source, const String& client,
+                         const String& channel) {
   /*
     ERR_NOTONCHANNEL (442)
     "<client> <channel> :You're not on that channel"
@@ -354,13 +366,13 @@ Message Message::rpl_442(const std::string& source, const std::string& client,
   rpl.set_numeric("442");
   rpl.push_back(client);
   rpl.push_back(channel);
-  rpl.push_back(std::string(":You're not on that channel"));
+  rpl.push_back(String(":You're not on that channel"));
 
   return rpl;
 }
 
-Message Message::rpl_443(const std::string& source, const std::string& client,
-                         const std::string& nick, const std::string& channel) {
+Message Message::rpl_443(const String& source, const String& client,
+                         const String& nick, const String& channel) {
   // :irc.example.net 443 dy dy #test :is already on channel\r
   Message rpl;
 
@@ -374,7 +386,7 @@ Message Message::rpl_443(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_451(const std::string& source, const std::string& client) {
+Message Message::rpl_451(const String& source, const String& client) {
   Message rpl;
 
   rpl.source = source;
@@ -385,8 +397,8 @@ Message Message::rpl_451(const std::string& source, const std::string& client) {
   return rpl;
 }
 
-Message Message::rpl_461(const std::string& source, const std::string& client,
-                         const std::string& command) {
+Message Message::rpl_461(const String& source, const String& client,
+                         const String& command) {
   Message rpl;
 
   rpl.source = source;
@@ -398,7 +410,7 @@ Message Message::rpl_461(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_462(const std::string& source, const std::string& client) {
+Message Message::rpl_462(const String& source, const String& client) {
   Message rpl;
 
   rpl.source = source;
@@ -409,7 +421,7 @@ Message Message::rpl_462(const std::string& source, const std::string& client) {
   return rpl;
 }
 
-Message Message::rpl_464(const std::string& source, const std::string& client) {
+Message Message::rpl_464(const String& source, const String& client) {
   Message rpl;
 
   rpl.source = source;
@@ -420,8 +432,8 @@ Message Message::rpl_464(const std::string& source, const std::string& client) {
   return rpl;
 }
 
-Message Message::rpl_471(const std::string& source, const std::string& client,
-                         const std::string& channel) {
+Message Message::rpl_471(const String& source, const String& client,
+                         const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -433,8 +445,8 @@ Message Message::rpl_471(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_473(const std::string& source, const std::string& client,
-                         const std::string& channel) {
+Message Message::rpl_473(const String& source, const String& client,
+                         const String& channel) {
   // :irc.example.net 473 dy_ #test :Cannot join channel (+i) -- Invited users
   // only\r
   Message rpl;
@@ -448,8 +460,8 @@ Message Message::rpl_473(const std::string& source, const std::string& client,
   return rpl;
 }
 
-Message Message::rpl_482(const std::string& source, const std::string& client,
-                         const std::string& channel) {
+Message Message::rpl_482(const String& source, const String& client,
+                         const String& channel) {
   /*
     ERR_CHANOPRIVSNEEDED (482)
     "<client> <channel> :You're not channel operator"

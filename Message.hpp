@@ -115,109 +115,111 @@ enum Command {
 
 class Message {
  private:
-  static std::map<Command, std::string> etos;
-  static std::map<std::string, Command> stoe;
+  static std::map<Command, String> etos;
+  static std::map<String, Command> stoe;
 
-  const std::string raw_msg;
+  const String raw_msg;
   const int socket_fd;
-  std::string source;
-  std::string raw_cmd;
-  std::string cmd;
+  String source;
+  String raw_cmd;
+  String cmd;
   Command cmd_type;
-  std::vector<std::string> params;
+  std::vector<String> params;
   bool trailing_exist;
 
-  std::string numeric;
+  String numeric;
 
  public:
   static void map_init(void);
 
   Message();
-  Message(int socket_fd, const std::string& _raw_msg);
+  Message(int socket_fd, const String& _raw_msg);
 
-  void set_source(const std::string& input);
-  void set_cmd(const std::string& input);
+  void set_source(const String& input);
+  void set_cmd(const String& input);
   void set_cmd_type(const Command input);
-  void push_back(const std::string& input);
+  void push_back(const String& input);
   void clear(void);
-  void set_numeric(const std::string& input);
+  void set_numeric(const String& input);
   void set_trailing_exist(bool input);
 
-  const std::string& get_raw_msg(void) const;
+  const String& get_raw_msg(void) const;
   int get_socket_fd(void) const;
-  const std::string& get_source(void) const;
-  const std::string& get_raw_cmd(void) const;
-  const std::string& get_cmd(void) const;
+  const String& get_source(void) const;
+  const String& get_raw_cmd(void) const;
+  const String& get_cmd(void) const;
   Command get_cmd_type(void) const;
-  const std::vector<std::string>& get_params(void) const;
+  const std::vector<String>& get_params(void) const;
   std::size_t get_params_size(void) const;
-  const std::string& get_numeric(void) const;
+  const String& get_numeric(void) const;
   bool get_trailing_exist(void) const;
 
-  std::string& Message::operator[](const int idx);
-  const std::string& operator[](const int idx) const;
+  String& Message::operator[](const int idx);
+  const String& operator[](const int idx) const;
 
-  std::string to_raw_msg(void);
+  String to_raw_msg(void);
 
-  static Message rpl_001(const std::string& source, const std::string& client,
-                         const std::string& client_source);
-  static Message rpl_002(const std::string& source, const std::string& client,
-                         const std::string& server_name,
-                         const std::string& server_version);
-  static Message rpl_003(const std::string& source, const std::string& client,
-                         const std::string& server_created_time);
-  static Message rpl_004(const std::string& source, const std::string& client,
-                         const std::string& server_name,
-                         const std::string& server_version,
-                         const std::string& available_user_modes,
-                         const std::string& available_channel_modes);
-  static Message rpl_005(const std::string& source, const std::string& client,
-                         std::vector<std::string> specs);
-  static Message rpl_331(const std::string& source, const std::string& client,
-                         const std::string& channel);
-  static Message rpl_332(const std::string& source, const std::string& client,
-                         const std::string& channel, const std::string& topic);
-  static Message rpl_333(const std::string& source, const std::string& client,
-                         const std::string& channel, const std::string& nick,
-                         const std::string& setat);
-  static Message rpl_341(const std::string& source, const std::string& client,
-                         const std::string& nick, const std::string& channel);
-  static Message rpl_352(const std::string& source, const std::string& client,
-                         const std::string& channel, const User& _u,
-                         const std::string& flags, const std::string& hopcount);
-  static Message rpl_353(const std::string& source, const std::string& client,
+  static Message rpl_001(const String& source, const String& client,
+                         const String& client_source);
+  static Message rpl_002(const String& source, const String& client,
+                         const String& server_name,
+                         const String& server_version);
+  static Message rpl_003(const String& source, const String& client,
+                         const String& server_created_time);
+  static Message rpl_004(const String& source, const String& client,
+                         const String& server_name,
+                         const String& server_version,
+                         const String& available_user_modes,
+                         const String& available_channel_modes);
+  static Message rpl_005(const String& source, const String& client,
+                         std::vector<String> specs);
+  static Message rpl_315(const String& source, const String& client,
+                         const String& mask);
+  static Message rpl_331(const String& source, const String& client,
+                         const String& channel);
+  static Message rpl_332(const String& source, const String& client,
+                         const String& channel, const String& topic);
+  static Message rpl_333(const String& source, const String& client,
+                         const String& channel, const String& nick,
+                         const String& setat);
+  static Message rpl_341(const String& source, const String& client,
+                         const String& nick, const String& channel);
+  static Message rpl_352(const String& source, const String& client,
+                         const String& channel, const User& _u,
+                         const String& server, const String& flags,
+                         int hopcount);
+  static Message rpl_353(const String& source, const String& client,
                          const Channel& channel);
-  static Message rpl_366(const std::string& source, const std::string& client,
-                         const std::string& channel);
-  static Message rpl_401(const std::string& source, const std::string& client,
-                         const std::string& nickname);
-  static Message rpl_403(const std::string& source, const std::string& nickname,
-                         const std::string& channel);
-  static Message rpl_409(const std::string& source,
-                         const std::string& nickname);
-  static Message rpl_421(const std::string& source, const std::string& client,
-                         const std::string& command);
-  static Message rpl_432(const std::string& source, const std::string& client,
-                         const std::string& nick);
-  static Message rpl_433(const std::string& source, const std::string& client,
-                         const std::string& nick);
-  static Message rpl_441(const std::string& source, const std::string& client,
-                         const std::string& nick, const std::string& channel);
-  static Message rpl_442(const std::string& source, const std::string& client,
-                         const std::string& channel);
-  static Message rpl_443(const std::string& source, const std::string& client,
-                         const std::string& nick, const std::string& channel);
-  static Message rpl_451(const std::string& source, const std::string& client);
-  static Message rpl_461(const std::string& source, const std::string& client,
-                         const std::string& command);
-  static Message rpl_462(const std::string& source, const std::string& client);
-  static Message rpl_464(const std::string& source, const std::string& client);
-  static Message rpl_471(const std::string& source, const std::string& client,
-                         const std::string& channel);
-  static Message rpl_473(const std::string& source, const std::string& client,
-                         const std::string& channel);
-  static Message rpl_482(const std::string& source, const std::string& client,
-                         const std::string& channel);
+  static Message rpl_366(const String& source, const String& client,
+                         const String& channel);
+  static Message rpl_401(const String& source, const String& client,
+                         const String& nickname);
+  static Message rpl_403(const String& source, const String& nickname,
+                         const String& channel);
+  static Message rpl_409(const String& source, const String& nickname);
+  static Message rpl_421(const String& source, const String& client,
+                         const String& command);
+  static Message rpl_432(const String& source, const String& client,
+                         const String& nick);
+  static Message rpl_433(const String& source, const String& client,
+                         const String& nick);
+  static Message rpl_441(const String& source, const String& client,
+                         const String& nick, const String& channel);
+  static Message rpl_442(const String& source, const String& client,
+                         const String& channel);
+  static Message rpl_443(const String& source, const String& client,
+                         const String& nick, const String& channel);
+  static Message rpl_451(const String& source, const String& client);
+  static Message rpl_461(const String& source, const String& client,
+                         const String& command);
+  static Message rpl_462(const String& source, const String& client);
+  static Message rpl_464(const String& source, const String& client);
+  static Message rpl_471(const String& source, const String& client,
+                         const String& channel);
+  static Message rpl_473(const String& source, const String& client,
+                         const String& channel);
+  static Message rpl_482(const String& source, const String& client,
+                         const String& channel);
 };
 
 #ifdef DEBUG

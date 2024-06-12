@@ -1,8 +1,7 @@
 #include "util.hpp"
 
-void read_msg_from_socket(const int socket_fd,
-                          std::vector<std::string>& msg_list) {
-  static std::string remains = "";
+void read_msg_from_socket(const int socket_fd, std::vector<String>& msg_list) {
+  static String remains = "";
   static bool incomplete = false;
 
   char read_block[BLOCK_SIZE] = {
@@ -10,7 +9,7 @@ void read_msg_from_socket(const int socket_fd,
   };
   int read_cnt = 0;
   std::size_t idx;
-  std::vector<std::string> box;
+  std::vector<String> box;
 
   msg_list.clear();
   while (true) {
@@ -18,7 +17,7 @@ void read_msg_from_socket(const int socket_fd,
     if (0 < read_cnt && read_cnt <= BLOCK_SIZE - 1) {
       read_block[read_cnt] = '\0';
       box.clear();
-      ft_split(std::string(read_block), "\r\n", box);
+      ft_split(String(read_block), "\r\n", box);
       idx = 0;
       if (incomplete == true) {
         remains += box[0];
@@ -61,17 +60,17 @@ void read_msg_from_socket(const int socket_fd,
       // socket connection finish
       // 이 함수는 소켓으로부터 메세지만 읽어들이는 함수이니 여기서 close()
       // 함수를 부르지 말고 외부에서 부를 수 있게 메세지를 남기자
-      msg_list.push_back(std::string("connection finish"));
+      msg_list.push_back(String("connection finish"));
       break;
     }
   }
 }
 
 bool port_chk(const char* input_port) {
-  std::stringstream port_chk;
+  Stringstream port_chk;
   int port;
 
-  port_chk << std::string(input_port);
+  port_chk << String(input_port);
   port_chk >> port;
   if (port_chk.fail()) {
     return false;
@@ -82,18 +81,18 @@ bool port_chk(const char* input_port) {
 }
 
 bool ipv4_chk(const char* input_ipv4) {
-  std::string ipv4_tmp = input_ipv4;
-  std::string tmp_str;
+  String ipv4_tmp = input_ipv4;
+  String tmp_str;
   int tmp_int;
-  std::stringstream to_num;
+  Stringstream to_num;
   std::size_t idx1 = 0;
   std::size_t idx2 = 0;
 
   for (int i = 0; i < 3; i++) {
     idx1 = ipv4_tmp.find('.', idx1);
-    if (idx1 != std::string::npos) {
+    if (idx1 != String::npos) {
       tmp_str = ipv4_tmp.substr(idx2, idx1 - idx2);
-      if (tmp_str.find_first_not_of("0123456789") != std::string::npos) {
+      if (tmp_str.find_first_not_of("0123456789") != String::npos) {
         return false;
       }
       to_num.clear();
@@ -109,7 +108,7 @@ bool ipv4_chk(const char* input_ipv4) {
     }
   }
   tmp_str = ipv4_tmp.substr(idx2);
-  if (tmp_str.find_first_not_of("0123456789") != std::string::npos) {
+  if (tmp_str.find_first_not_of("0123456789") != String::npos) {
     return false;
   }
   to_num.clear();

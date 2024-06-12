@@ -22,7 +22,7 @@ Server::Server(const char* _port, const char* _password)
   serv_addr.sin_port = htons(port);
 
   int retry_cnt = 10;
-  std::stringstream port_tmp;
+  Stringstream port_tmp;
   while (::bind(serv_socket, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
     if (retry_cnt == 0) {
       throw std::exception();
@@ -231,13 +231,13 @@ int Server::send_msg_at_queue(int socket_fd) {
   bool error_flag;
 
   while (to_send_num > 0) {
-    const std::string& msg = user_tmp.get_front_msg();
+    const String& msg = user_tmp.get_front_msg();
     msg_len = msg.length();
     idx = 0;
     error_flag = false;
 
     while (idx < msg_len) {
-      std::string msg_blk = msg.substr(idx, SOCKET_BUFFER_SIZE);
+      String msg_blk = msg.substr(idx, SOCKET_BUFFER_SIZE);
       bytes_sent = send_msg_block(socket_fd, msg_blk);
       if (bytes_sent == msg_blk.length()) {
         idx += msg_blk.length();
@@ -256,7 +256,7 @@ int Server::send_msg_at_queue(int socket_fd) {
   return 0;
 }
 
-int Server::send_msg_block(int socket_fd, const std::string& blk) {
+int Server::send_msg_block(int socket_fd, const String& blk) {
   const char* c_blk = blk.c_str();
   size_t blk_len = blk.length();
   ssize_t bytes_sent = 0;
@@ -283,7 +283,7 @@ void Server::revent_pollout(pollfd& p_val) {
 
 void Server::revent_pollin(pollfd& p_val) {
   User& event_user = (*this)[p_val.fd];
-  std::vector<std::string> msg_list;
+  std::vector<String> msg_list;
 
   try {
     read_msg_from_socket(p_val.fd, msg_list);
@@ -299,7 +299,7 @@ void Server::revent_pollin(pollfd& p_val) {
                  "or another things require additional memory\n";
   } catch (const std::length_error& e) {
     std::cerr << e.what() << '\n';
-    std::cerr << "Maybe index out of range error or std::string is too "
+    std::cerr << "Maybe index out of range error or String is too "
                  "long to store\n";
   } catch (const std::exception& e) {
     // error handling
@@ -309,11 +309,11 @@ void Server::revent_pollin(pollfd& p_val) {
   }
 }
 
-void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
+void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
   for (int j = 0; j < msg_list.size(); j++) {
-    if (msg_list[j] == std::string("connection finish")) {
+    if (msg_list[j] == String("connection finish")) {
       std::clog << "Connection close at " << p_val.fd << '\n';
       connection_fin(p_val);
       msg_list.clear();
@@ -379,11 +379,11 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
   event_user.set_last_ping(std::time(NULL));
 }
 
-void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
+void Server::not_auth_user(pollfd& p_val, std::vector<String>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
   for (int j = 0; j < msg_list.size(); j++) {
-    if (msg_list[j] == std::string("connection finish")) {
+    if (msg_list[j] == String("connection finish")) {
       std::clog << "Connection close at " << p_val.fd << '\n';
       connection_fin(p_val);
       msg_list.clear();
@@ -445,7 +445,7 @@ void Server::auth_complete(pollfd& p_val) {
   move_tmp_user_to_user_list(p_val.fd);
   User& event_user = (*this)[p_val.fd];
   event_user.set_is_authenticated(OK);
-  const std::string& client = event_user.get_nick_name();
+  const String& client = event_user.get_nick_name();
 
   event_user.push_back_msg(
       Message::rpl_001(serv_name, client, event_user.make_source(1))
@@ -461,20 +461,20 @@ void Server::auth_complete(pollfd& p_val) {
                                .to_raw_msg());
 
   static bool specs_created = false;
-  static std::vector<std::string> specs1;
-  static std::vector<std::string> specs2;
+  static std::vector<String> specs1;
+  static std::vector<String> specs2;
 
   if (specs_created == false) {
     specs_created = true;
 
     specs1.push_back(IRC_PROTOCOL);
-    specs1.push_back("IRCD=" + std::string(IRCD));
-    specs1.push_back("CHARSET=" + std::string(CHARSET));
-    specs1.push_back("CASEMAPPING=" + std::string(CASEMAPPING));
-    specs1.push_back("PREFIX=" + std::string(PREFIX));
-    specs1.push_back("CHANTYPES=" + std::string(CHANTYPES));
-    specs1.push_back("CHANMODES=" + std::string(CHANMODES));
-    specs1.push_back("CHANLIMIT=" + std::string(CHANLIMIT));
+    specs1.push_back("IRCD=" + String(IRCD));
+    specs1.push_back("CHARSET=" + String(CHARSET));
+    specs1.push_back("CASEMAPPING=" + String(CASEMAPPING));
+    specs1.push_back("PREFIX=" + String(PREFIX));
+    specs1.push_back("CHANTYPES=" + String(CHANTYPES));
+    specs1.push_back("CHANMODES=" + String(CHANMODES));
+    specs1.push_back("CHANLIMIT=" + String(CHANLIMIT));
 
     specs2.push_back("CHANNELLEN=" + ft_itos(CHANNELLEN));
     specs2.push_back("NICKLEN=" + ft_itos(NICKLEN));
@@ -492,15 +492,15 @@ void Server::auth_complete(pollfd& p_val) {
 
 int Server::get_port(void) const { return port; }
 
-const std::string& Server::get_str_port(void) const { return str_port; }
+const String& Server::get_str_port(void) const { return str_port; }
 
-const std::string& Server::get_serv_name(void) const { return serv_name; }
+const String& Server::get_serv_name(void) const { return serv_name; }
 
-const std::string& Server::get_password(void) const { return password; }
+const String& Server::get_password(void) const { return password; }
 
 const std::time_t& Server::get_created_time(void) const { return created_time; }
 
-const std::string& Server::get_created_time_str(void) const {
+const String& Server::get_created_time_str(void) const {
   return created_time_str;
 }
 
@@ -519,7 +519,7 @@ int Server::get_channel_num(void) const { return channel_list.size(); };
 
 void Server::add_tmp_user(pollfd& pfd, const sockaddr_in& user_addr) {
   User tmp(pfd, user_addr);
-  std::string tmp_nick = tmp.get_nick_name_no_chk();
+  String tmp_nick = tmp.get_nick_name_no_chk();
 
   while (tmp_nick_to_soc.find(tmp_nick) != tmp_nick_to_soc.end()) {
     tmp_nick = make_random_string(20);
@@ -540,8 +540,8 @@ void Server::move_tmp_user_to_user_list(int socket_fd) {
 
 void Server::remove_user(const int socket_fd) {
   std::map<int, User>::iterator it1;
-  std::map<std::string, int>::iterator it2;
-  std::string tmp;
+  std::map<String, int>::iterator it2;
+  String tmp;
 
   it1 = user_list.find(socket_fd);
   if (it1 != user_list.end()) {
@@ -566,8 +566,8 @@ void Server::remove_user(const int socket_fd) {
   }
 }
 
-void Server::remove_user(const std::string& nickname) {
-  std::map<std::string, int>::iterator it1;
+void Server::remove_user(const String& nickname) {
+  std::map<String, int>::iterator it1;
   std::map<int, User>::iterator it2;
   int tmp;
 
@@ -623,7 +623,7 @@ User& Server::operator[](int socket_fd) {
   }
 }
 
-int Server::operator[](const std::string& nickname) {
+int Server::operator[](const String& nickname) {
   if (nick_to_soc.find(nickname) != nick_to_soc.end()) {
     return nick_to_soc.at(nickname);
   } else if (tmp_nick_to_soc.find(nickname) != tmp_nick_to_soc.end()) {
@@ -634,6 +634,6 @@ int Server::operator[](const std::string& nickname) {
 }
 
 void Server::add_channel(Channel& new_channel) {
-  channel_list.insert(std::pair<std::string, Channel>(
-      new_channel.get_channel_name(), new_channel));
+  channel_list.insert(
+      std::pair<String, Channel>(new_channel.get_channel_name(), new_channel));
 }
