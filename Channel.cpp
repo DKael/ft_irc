@@ -1,13 +1,21 @@
 #include "Channel.hpp"
 
-// OCCF
 Channel::Channel(const std::string& _channel_name, char _channel_type)
     : channel_name(_channel_name),
-      channel_type(_channel_type),
       created_time(std::time(NULL)),
       invite_only(false),
       mode(0),
-      client_limit(INIT_CLIENT_LIMIT) {}
+      client_limit(INIT_CLIENT_LIMIT) {
+  if (_channel_name.length() == 0 ||
+      std::string(CHANTYPES).find(_channel_name[0]) == std::string::npos) {
+    throw std::exception();
+  }
+  if (_channel_name[0] == REGULAR_CHANNEL_PREFIX[0]) {
+    channel_type = REGULAR_CHANNEL;
+  } else {
+    channel_type = LOCAL_CHANNEL;
+  }
+}
 
 Channel::Channel(const Channel& other)
     : channel_name(other.channel_name),
@@ -24,18 +32,8 @@ Channel::Channel(const Channel& other)
 Channel::~Channel() {}
 
 // GETTER && SETTER
-const std::string& Channel::get_raw_channel_name(void) const {
+const std::string& Channel::get_channel_name(void) const {
   return channel_name;
-}
-
-const std::string Channel::get_channel_name(void) const {
-  if (channel_type == REGULAR_CHANNEL) {
-    return std::string(REGULAR_CHANNEL_PREFIX) + channel_name;
-  } else if (channel_type == LOCAL_CHANNEL) {
-    return std::string(LOCAL_CHANNEL_PREFIX) + channel_name;
-  } else {
-    return channel_name;
-  }
 }
 
 char Channel::get_channel_type(void) const { return channel_type; }
@@ -47,6 +45,21 @@ int Channel::get_client_limit(void) const { return client_limit; }
 bool Channel::get_invite_only(void) const { return invite_only; };
 
 const std::string& Channel::get_topic(void) const { return topic; };
+
+const std::string& Channel::get_topic_set_nick(void) const {
+  return topic_set_nick;
+}
+std::time_t Channel::get_topic_set_time(void) const { return topic_set_time; }
+
+std::map<std::string, User&>& Channel::get_client_list(void) {
+  return client_list;
+}
+std::map<std::string, User&>& Channel::get_banned_list(void) {
+  return banned_list;
+}
+std::map<std::string, User&>& Channel::get_operator_list(void) {
+  return operator_list;
+}
 
 const std::map<std::string, User&>& Channel::get_client_list(void) const {
   return client_list;
@@ -69,6 +82,11 @@ void Channel::set_client_limit(int _client_limit) {
 void Channel::set_invite_only(bool _invite_only) { invite_only = _invite_only; }
 
 void Channel::set_topic(const std::string& _topic) { topic = _topic; }
+
+void Channel::set_topic_set_nick(const std::string& _nick) {
+  topic_set_nick = _nick;
+}
+void Channel::set_topic_set_time(std::time_t _t) { topic_set_time = _t; }
 
 // METHOD FUNCTIONS
 void Channel::add_client(User& newClient) {

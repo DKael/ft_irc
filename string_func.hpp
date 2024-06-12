@@ -7,6 +7,8 @@
 #include <sstream>
 #include <string>
 
+typedef std::string String;
+
 #if !defined(M_NO_BLANK) && !defined(M_BLANK)
 #define M_NO_BLANK 0
 #define M_BLANK 1
@@ -15,7 +17,8 @@
 #define STR_COMP \
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-std::string ft_itos(const int input);
+std::string ft_itos(int input);
+std::string ft_ltos(long input);
 std::string ft_strip(const std::string& origin);
 std::string make_random_string(std::size_t len,
                                const std::string comp = STR_COMP);

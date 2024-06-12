@@ -2,6 +2,7 @@
 #define USER_HPP
 
 #include <arpa/inet.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -11,6 +12,13 @@
 #include <string>
 
 #include "string_func.hpp"
+
+typedef std::string String;
+
+#define NICKLEN 9
+#define USERLEN 12
+
+#define INIT_PING_OFFSET 60
 
 #define BLACK "\033[0;30m"
 #define RED "\033[0;31m"
@@ -33,6 +41,7 @@ enum chk_status {
 class User {
  private:
   const std::string dummy;
+  pollfd& pfd;
   const int user_socket;
   const sockaddr_in user_addr;
   const std::time_t created_time;
@@ -45,6 +54,8 @@ class User {
   chk_status password_chk;
   chk_status is_authenticated;
   bool have_to_disconnect;
+  bool have_to_ping_chk;
+  std::time_t last_ping;
   std::list<std::string> to_send;
   std::map<std::string, int> invited_channels;
   std::map<std::string, int> channels;
@@ -55,7 +66,7 @@ class User {
 
  public:
   // constructors & desturctor
-  User(int _user_socket, const sockaddr_in& _user_addr);
+  User(pollfd& _pfd, const sockaddr_in& _user_addr);
   User(const User& origin);
   ~User();
 
@@ -67,10 +78,13 @@ class User {
   void set_user_init_chk(const chk_status input);
   void set_password_chk(const chk_status input);
   void set_is_authenticated(const chk_status input);
-  void set_have_to_disconnect(const bool input);
+  void set_have_to_disconnect(bool input);
+  void set_have_to_ping_chk(bool input);
+  void set_last_ping(std::time_t input);
   void change_nickname(const std::string& new_nick);
 
   // getter functions
+  pollfd& get_pfd(void) const;
   int get_user_socket(void) const;
   const sockaddr_in& get_user_addr(void) const;
   time_t get_created_time(void) const;
@@ -83,6 +97,8 @@ class User {
   chk_status get_password_chk(void) const;
   chk_status get_is_authenticated(void) const;
   bool get_have_to_disconnect(void) const;
+  bool get_have_to_ping_chk(void) const;
+  std::time_t get_last_ping(void) const;
   const std::map<std::string, int>& get_invited_channels(void) const;
   const std::map<std::string, int>& get_channels(void) const;
   std::string make_source(int mode);

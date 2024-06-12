@@ -81,6 +81,7 @@ void Server::listen(void) {
   int event_cnt = 0;
 
   while (true) {
+    tmp_user_timeout_chk();
     event_cnt = poll(observe_fd, MAX_USER, POLL_TIMEOUT * 1000);
     if (event_cnt == 0) {
       continue;
@@ -126,6 +127,24 @@ int Server::client_socket_init(void) {
       return -1;
     }
 
+    std::map<unsigned int, int>::iterator ip_it =
+        ip_list.find(user_addr.sin_addr.s_addr);
+    if (ip_it != ip_list.end()) {
+      if (ip_it->second > 9) {
+        std::cerr << "To many connection at " << inet_ntoa(user_addr.sin_addr)
+                  << '\n';
+        send(user_socket, "ERROR :Too many connection at your ipv4",
+             std::strlen("ERROR :Too many connection at your ipv4"),
+             MSG_DONTWAIT);
+        close(user_socket);
+        return -1;
+      } else {
+        ip_it->second++;
+      }
+    } else {
+      ip_list.insert(std::pair<in_addr_t, int>(user_addr.sin_addr.s_addr, 0));
+    }
+
     if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
       // error_handling
       perror("fcntl() error");
@@ -159,18 +178,32 @@ int Server::client_socket_init(void) {
       return -1;
     }
 
-    (*this).add_tmp_user(user_socket, user_addr);
-    for (int i = 1; i < MAX_USER; i++) {
+    int i = 1;
+    for (; i < MAX_USER; i++) {
       if (observe_fd[i].fd == -1) {
         observe_fd[i].fd = user_socket;
         observe_fd[i].events = POLLIN;
         break;
       }
     }
+    (*this).add_tmp_user(observe_fd[i], user_addr);
+
     std::clog << "Connection established at " << user_socket << '\n';
     connection_limit--;
   }
   return 0;
+}
+
+void Server::connection_fin(pollfd& p_val) {
+  std::map<unsigned int, int>::iterator ip_it =
+      ip_list.find((*this)[p_val.fd].get_user_addr().sin_addr.s_addr);
+
+  ip_it->second--;
+  if (ip_it->second == 0) {
+    ip_list.erase(ip_it);
+  }
+  (*this).remove_user(p_val.fd);
+  p_val.fd = -1;
 }
 
 void Server::ft_send(pollfd& p_val) {
@@ -185,8 +218,7 @@ void Server::ft_sendd(pollfd& p_val) {
   if (send_msg_at_queue(p_val.fd) == -1) {
     p_val.events = POLLOUT;
   } else {
-    (*this).remove_user(p_val.fd);
-    p_val.fd = -1;
+    connection_fin(p_val);
   }
 }
 
@@ -282,9 +314,8 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
 
   for (int j = 0; j < msg_list.size(); j++) {
     if (msg_list[j] == std::string("connection finish")) {
-      (*this).remove_user(p_val.fd);
       std::clog << "Connection close at " << p_val.fd << '\n';
-      p_val.fd = -1;
+      connection_fin(p_val);
       msg_list.clear();
       break;
     }
@@ -319,9 +350,9 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     } else if (cmd_type == MODE) {
       cmd_mode(p_val.fd, msg);
     } else if (cmd_type == PING) {
+      cmd_ping(p_val.fd, msg);
+    } else if (cmd_type == PONG) {
       cmd_pong(p_val.fd, msg);
-    } else if (cmd_type == PRIVMSG) {
-      cmd_privmsg(p_val.fd, msg);
     } else if (cmd_type == ERROR) {
       event_user.push_back_msg(msg.to_raw_msg());
     } else if (cmd_type == CAP) {
@@ -330,6 +361,8 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       cmd_quit(p_val, msg);
       msg_list.clear();
       break;
+    } else if (cmd_type == PRIVMSG) {
+      cmd_privmsg(p_val.fd, msg);
     } else if (cmd_type == JOIN) {
       cmd_join(p_val.fd, msg);
     } else if (cmd_type == WHO) {
@@ -343,6 +376,7 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
     }
     ft_send(p_val);
   }
+  event_user.set_last_ping(std::time(NULL));
 }
 
 void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
@@ -350,9 +384,8 @@ void Server::not_auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
 
   for (int j = 0; j < msg_list.size(); j++) {
     if (msg_list[j] == std::string("connection finish")) {
-      (*this).remove_user(p_val.fd);
       std::clog << "Connection close at " << p_val.fd << '\n';
-      p_val.fd = -1;
+      connection_fin(p_val);
       msg_list.clear();
       break;
     }
@@ -484,16 +517,16 @@ bool Server::get_enable_ident_protocol(void) const {
 }
 int Server::get_channel_num(void) const { return channel_list.size(); };
 
-void Server::add_tmp_user(int user_socket, const sockaddr_in& user_addr) {
-  User tmp(user_socket, user_addr);
+void Server::add_tmp_user(pollfd& pfd, const sockaddr_in& user_addr) {
+  User tmp(pfd, user_addr);
   std::string tmp_nick = tmp.get_nick_name_no_chk();
 
   while (tmp_nick_to_soc.find(tmp_nick) != tmp_nick_to_soc.end()) {
     tmp_nick = make_random_string(20);
     tmp.set_nick_name(tmp_nick);
   }
-  tmp_nick_to_soc.insert(std::make_pair(tmp_nick, user_socket));
-  tmp_user_list.insert(std::make_pair(user_socket, tmp));
+  tmp_nick_to_soc.insert(std::make_pair(tmp_nick, pfd.fd));
+  tmp_user_list.insert(std::make_pair(pfd.fd, tmp));
 }
 
 void Server::move_tmp_user_to_user_list(int socket_fd) {
@@ -562,24 +595,25 @@ void Server::remove_user(const std::string& nickname) {
 }
 
 void Server::tmp_user_timeout_chk(void) {
-  time_t current_time = time(NULL);
   std::map<int, User>::iterator it1 = tmp_user_list.begin();
   std::map<int, User>::iterator it2 = tmp_user_list.end();
-  std::string tmp_nick;
+  time_t current_time = time(NULL);
 
   while (it1 != it2) {
     if (current_time >
         (it1->second).get_created_time() + AUTHENTICATE_TIMEOUT) {
-      tmp_nick = (it1->second).get_nick_name();
+      User& tmp_user = it1->second;
       it1++;
-      remove_user(tmp_nick);
+      connection_fin(tmp_user.get_pfd());
     } else {
       it1++;
     }
   }
 }
 
-User& Server::operator[](const int socket_fd) {
+void Server::user_ping_chk(void) {}
+
+User& Server::operator[](int socket_fd) {
   if (user_list.find(socket_fd) != user_list.end()) {
     return user_list.at(socket_fd);
   } else if (tmp_user_list.find(socket_fd) != tmp_user_list.end()) {
@@ -602,14 +636,4 @@ int Server::operator[](const std::string& nickname) {
 void Server::add_channel(Channel& new_channel) {
   channel_list.insert(std::pair<std::string, Channel>(
       new_channel.get_channel_name(), new_channel));
-}
-
-std::map<std::string, Channel>::iterator Server::get_channel_iterator(
-    const std::string& chan_name) {
-  return channel_list.find(chan_name);
-}
-
-Channel& Server::get_channel(
-    std::map<std::string, Channel>::iterator iterator) {
-  return iterator->second;
 }

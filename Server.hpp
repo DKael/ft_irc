@@ -19,9 +19,13 @@
 #include "custom_exception.hpp"
 #include "util.hpp"
 
+typedef std::string String;
+
 #define MAX_USER 256
 #define POLL_TIMEOUT 5
 #define AUTHENTICATE_TIMEOUT 20
+#define PING_INTERVAL 60
+#define PING_TIMEOUT 20
 #define SOCKET_BUFFER_SIZE 8192
 
 #define SERVER_NAME "ft_irc.net"
@@ -34,15 +38,6 @@
 #define CHARSET "UTF-8"
 #define CASEMAPPING "ascii"
 #define PREFIX "@%+"
-#define CHANTYPES "#&"
-#define CHANMODES "k,l,ist"
-#define CHANLIMIT "#&:10"
-#define CHANNELLEN 50
-#define NICKLEN 9
-#define USERLEN 12
-#define TOPICLEN 490
-#define AWAYLEN 127
-#define KICKLEN 400
 #define CHANNELNUM 20
 
 // MODE FLAG
@@ -77,6 +72,7 @@ class Server {
   bool enable_ident_protocol;
 
   pollfd observe_fd[MAX_USER];
+  std::map<in_addr_t, int> ip_list;
   std::map<int, User> tmp_user_list;
   std::map<std::string, int> tmp_nick_to_soc;
   std::map<int, User> user_list;
@@ -84,10 +80,10 @@ class Server {
 
   // CHANNEL
   std::map<std::string, Channel> channel_list;
-  std::map<std::string, Channel>::iterator channel_iterator;
 
   // private functions
   int client_socket_init(void);
+  void connection_fin(pollfd& p_val);
   void ft_send(pollfd& p_val);
   void ft_sendd(pollfd& p_val);
   int send_msg_at_queue(int socket_fd);
@@ -123,20 +119,19 @@ class Server {
   bool get_enable_ident_protocol(void) const;
   int get_channel_num(void) const;
 
-  std::map<std::string, Channel>::iterator get_channel_iterator(
-      const std::string& chan_name);
-  Channel& get_channel(std::map<std::string, Channel>::iterator iterator);
-
-  void add_tmp_user(const int socket_fd, const sockaddr_in& addr);
+  void add_tmp_user(pollfd& pfd, const sockaddr_in& addr);
   void move_tmp_user_to_user_list(int socket_fd);
   void remove_user(const int socket_fd);
   void remove_user(const std::string& nickname);
   void change_nickname(const std::string& old_nick,
                        const std::string& new_nick);
   void tmp_user_timeout_chk(void);
+  void user_ping_chk(void);
 
-  User& operator[](const int socket_fd);
+  User& operator[](int socket_fd);
   int operator[](const std::string& nickname);
+
+  void add_channel(Channel& new_chan);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
@@ -144,15 +139,13 @@ class Server {
   void cmd_nick(int recv_fd, const Message& msg);
   void cmd_user(int recv_fd, const Message& msg);
   void cmd_mode(int recv_fd, const Message& msg);
+  void cmd_ping(int recv_fd, const Message& msg);
   void cmd_pong(int recv_fd, const Message& msg);
-  void cmd_quit(pollfd& p_val, const Message& msg);
+  void cmd_quit(int recv_fd, const Message& msg);
 
   void cmd_privmsg(int recv_fd, const Message& msg);
   void cmd_join(int recv_fd, const Message& msg);
   void cmd_kick(int recv_fd, const Message& msg);
-  void kick_client(const std::string& nickname, const std::string& chan_name);
-  void kick_client(User& opUser, User& outUser, Channel& chan_name,
-                   const Message& msg);
 
   void cmd_invite(int recv_fd, const Message& msg);
   void cmd_topic(int recv_fd, const Message& msg);
@@ -160,8 +153,6 @@ class Server {
   void cmd_names(int recv_fd, const Message& msg);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  void add_channel(Channel& newChannel);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
   // [DEBUG] PURPOSE ONLY

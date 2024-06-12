@@ -8,6 +8,15 @@
 #include "User.hpp"
 #include "custom_exception.hpp"
 
+typedef std::string String;
+
+#define CHANTYPES "#&"
+#define CHANMODES "k,l,ist"
+#define CHANLIMIT "#&:10"
+#define CHANNELLEN 50
+#define TOPICLEN 490
+#define KICKLEN 400
+
 #define FLAG_I (1 << 0)
 #define FLAG_T (1 << 1)
 #define FLAG_K (1 << 2)
@@ -29,12 +38,14 @@
 class Channel {
  private:
   const std::string channel_name;
-  const char channel_type;
+  char channel_type;
   const std::time_t created_time;
   std::string pwd;
   int client_limit;
   bool invite_only;
   std::string topic;
+  std::string topic_set_nick;
+  std::time_t topic_set_time;
   std::map<std::string, User&> client_list;
   std::map<std::string, User&> banned_list;
   std::map<std::string, User&> operator_list;
@@ -57,13 +68,17 @@ class Channel {
   ~Channel();
 
   // GETTER && SETTER
-  const std::string& get_raw_channel_name(void) const;
-  const std::string get_channel_name(void) const;
+  const std::string& get_channel_name(void) const;
   char get_channel_type(void) const;
   const std::string& get_password(void) const;
   int get_client_limit(void) const;
   bool get_invite_only(void) const;
   const std::string& get_topic(void) const;
+  const std::string& get_topic_set_nick(void) const;
+  std::time_t get_topic_set_time(void) const;
+  std::map<std::string, User&>& get_client_list(void);
+  std::map<std::string, User&>& get_banned_list(void);
+  std::map<std::string, User&>& get_operator_list(void);
   const std::map<std::string, User&>& get_client_list(void) const;
   const std::map<std::string, User&>& get_banned_list(void) const;
   const std::map<std::string, User&>& get_operator_list(void) const;
@@ -72,6 +87,8 @@ class Channel {
   void set_client_limit(int _client_limit);
   void set_invite_only(bool _invite_only);
   void set_topic(const std::string& _topic);
+  void set_topic_set_nick(const std::string& _nick);
+  void set_topic_set_time(std::time_t _t);
 
   // METHOD FUNCTIONS
   void add_client(User& user);

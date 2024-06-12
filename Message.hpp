@@ -59,7 +59,12 @@ NOTES:
 #include <vector>
 
 #include "Channel.hpp"
+#include "User.hpp"
 #include "string_func.hpp"
+
+typedef std::string String;
+
+#define AWAYLEN 127
 
 class Channel;
 
@@ -120,6 +125,7 @@ class Message {
   std::string cmd;
   Command cmd_type;
   std::vector<std::string> params;
+  bool trailing_exist;
 
   std::string numeric;
 
@@ -135,6 +141,7 @@ class Message {
   void push_back(const std::string& input);
   void clear(void);
   void set_numeric(const std::string& input);
+  void set_trailing_exist(bool input);
 
   const std::string& get_raw_msg(void) const;
   int get_socket_fd(void) const;
@@ -144,8 +151,11 @@ class Message {
   Command get_cmd_type(void) const;
   const std::vector<std::string>& get_params(void) const;
   std::size_t get_params_size(void) const;
-  const std::string& operator[](const int idx) const;
   const std::string& get_numeric(void) const;
+  bool get_trailing_exist(void) const;
+
+  std::string& Message::operator[](const int idx);
+  const std::string& operator[](const int idx) const;
 
   std::string to_raw_msg(void);
 
@@ -163,8 +173,18 @@ class Message {
                          const std::string& available_channel_modes);
   static Message rpl_005(const std::string& source, const std::string& client,
                          std::vector<std::string> specs);
+  static Message rpl_331(const std::string& source, const std::string& client,
+                         const std::string& channel);
+  static Message rpl_332(const std::string& source, const std::string& client,
+                         const std::string& channel, const std::string& topic);
+  static Message rpl_333(const std::string& source, const std::string& client,
+                         const std::string& channel, const std::string& nick,
+                         const std::string& setat);
   static Message rpl_341(const std::string& source, const std::string& client,
                          const std::string& nick, const std::string& channel);
+  static Message rpl_352(const std::string& source, const std::string& client,
+                         const std::string& channel, const User& _u,
+                         const std::string& flags, const std::string& hopcount);
   static Message rpl_353(const std::string& source, const std::string& client,
                          const Channel& channel);
   static Message rpl_366(const std::string& source, const std::string& client,
@@ -173,12 +193,16 @@ class Message {
                          const std::string& nickname);
   static Message rpl_403(const std::string& source, const std::string& nickname,
                          const std::string& channel);
+  static Message rpl_409(const std::string& source,
+                         const std::string& nickname);
   static Message rpl_421(const std::string& source, const std::string& client,
                          const std::string& command);
   static Message rpl_432(const std::string& source, const std::string& client,
                          const std::string& nick);
   static Message rpl_433(const std::string& source, const std::string& client,
                          const std::string& nick);
+  static Message rpl_441(const std::string& source, const std::string& client,
+                         const std::string& nick, const std::string& channel);
   static Message rpl_442(const std::string& source, const std::string& client,
                          const std::string& channel);
   static Message rpl_443(const std::string& source, const std::string& client,
@@ -188,6 +212,8 @@ class Message {
                          const std::string& command);
   static Message rpl_462(const std::string& source, const std::string& client);
   static Message rpl_464(const std::string& source, const std::string& client);
+  static Message rpl_471(const std::string& source, const std::string& client,
+                         const std::string& channel);
   static Message rpl_473(const std::string& source, const std::string& client,
                          const std::string& channel);
   static Message rpl_482(const std::string& source, const std::string& client,

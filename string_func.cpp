@@ -1,6 +1,16 @@
 #include "string_func.hpp"
 
-std::string ft_itos(const int input) {
+std::string ft_itos(int input) {
+  std::stringstream ss_tmp;
+  std::string ret;
+
+  ss_tmp << input;
+  ss_tmp >> ret;
+
+  return ret;
+}
+
+std::string ft_ltos(long input) {
   std::stringstream ss_tmp;
   std::string ret;
 

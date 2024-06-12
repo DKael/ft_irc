@@ -12,6 +12,8 @@
 
 #include "string_func.hpp"
 
+typedef std::string String;
+
 void read_msg_from_socket(const int socket_fd,
                           std::vector<std::string>& msg_list);
 bool port_chk(const char* input_port);

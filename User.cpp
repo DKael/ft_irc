@@ -1,7 +1,8 @@
 #include "User.hpp"
 
-User::User(int _user_socket, const sockaddr_in& _user_addr)
-    : user_socket(_user_socket),
+User::User(pollfd& _pfd, const sockaddr_in& _user_addr)
+    : pfd(_pfd),
+      user_socket(_pfd.fd),
       user_addr(_user_addr),
       created_time(std::time(NULL)),
       nick_name(make_random_string(20)),
@@ -12,10 +13,13 @@ User::User(int _user_socket, const sockaddr_in& _user_addr)
       password_chk(NOT_YET),
       is_authenticated(NOT_YET),
       have_to_disconnect(false),
+      have_to_ping_chk(false),
+      last_ping(std::time(NULL) + INIT_PING_OFFSET),
       dummy("*") {}
 
 User::User(const User& origin)
-    : user_socket(origin.user_socket),
+    : pfd(origin.pfd),
+      user_socket(origin.user_socket),
       user_addr(origin.user_addr),
       created_time(origin.created_time),
       nick_name(origin.nick_name),
@@ -26,6 +30,8 @@ User::User(const User& origin)
       password_chk(origin.password_chk),
       is_authenticated(origin.is_authenticated),
       have_to_disconnect(origin.have_to_disconnect),
+      have_to_ping_chk(origin.have_to_ping_chk),
+      last_ping(origin.last_ping),
       to_send(origin.to_send),
       invited_channels(origin.invited_channels),
       channels(origin.channels),
@@ -51,9 +57,11 @@ void User::set_is_authenticated(const chk_status input) {
   is_authenticated = input;
 }
 
-void User::set_have_to_disconnect(const bool input) {
-  have_to_disconnect = input;
-}
+void User::set_have_to_disconnect(bool input) { have_to_disconnect = input; }
+
+void User::set_have_to_ping_chk(bool input) { have_to_ping_chk = input; }
+
+void User::set_last_ping(std::time_t input) { last_ping = input; }
 
 void User::change_nickname(const std::string& new_nick) {
   nick_name = new_nick;
@@ -61,6 +69,8 @@ void User::change_nickname(const std::string& new_nick) {
 }
 
 // getter functions
+
+pollfd& User::get_pfd(void) const { return pfd; }
 
 int User::get_user_socket(void) const { return user_socket; }
 
@@ -91,6 +101,10 @@ chk_status User::get_password_chk(void) const { return password_chk; }
 chk_status User::get_is_authenticated(void) const { return is_authenticated; }
 
 bool User::get_have_to_disconnect(void) const { return have_to_disconnect; }
+
+bool User::get_have_to_ping_chk(void) const { return have_to_ping_chk; }
+
+std::time_t User::get_last_ping(void) const { return last_ping; }
 
 const std::map<std::string, int>& User::get_invited_channels(void) const {
   return invited_channels;
