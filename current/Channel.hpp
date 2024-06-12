@@ -15,6 +15,8 @@
 #define FLAG_O (1 << 3)
 #define FLAG_L (1 << 4)
 
+#define INIT_CLIENT_LIMIT "50"
+
 class Channel {
  private:
   // CHANNEL NAME
@@ -81,14 +83,18 @@ class Channel {
   void updateTopic(std::string topic);
 
   bool isOperator(User& user);
+  bool isOperator(std::string nickName);
   void removeOperator(User& user);
   bool foundClient(std::string nickName);
+  User& findClient(std::string nickName);
   void changeClientNickName(std::string old_nick, std::string new_nick);
 
   /* MODE */
   void setMode(int flag);
   void unsetMode(int flag);
   const bool isMode(int flag) const;
+  void setLimit(std::string value);
+
 
   // FOR DEBUG PURPOSE ONLY [VISUALIZE]
   void visualizeClientList(void);

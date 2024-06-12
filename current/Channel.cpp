@@ -131,6 +131,17 @@ bool Channel::isOperator(User& user) {
   return false;
 }
 
+bool Channel::isOperator(std::string nickName) {
+  std::map<int, std::string>::iterator it;
+  std::string candidate;
+
+  for (it = ops.begin(); it != ops.end(); ++it) {
+    candidate = it->second;
+    if (candidate == nickName) return true;
+  }
+  return false;
+}
+
 void Channel::removeOperator(User& user) {
   int fd = user.get_user_socket();
 
@@ -195,8 +206,8 @@ void Channel::unsetMode(int flag) { mode &= ~flag; }
 // 채널 모드 확인
 const bool Channel::isMode(int flag) const { return mode & flag; }
 
-
-
-
-
-
+// 채널 limit 설정
+void Channel::setLimit(std::string value) { 
+  int limit = atoi(value.c_str());
+  client_limit = limit;
+}

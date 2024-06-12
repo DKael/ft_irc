@@ -1,0 +1,33 @@
+// 오퍼레이터 권한 주는 방법
+/mode #example +o l
+
+operator :: dy
+normal user :: dy_
+
+[/mode +o dy_]
+> 2024/06/12 12:30:52.000517352  length=19 from=340 to=358
+MODE #test +o dy_\r
+< 2024/06/12 12:30:52.000517586  length=43 from=2951 to=2993
+:dy!~memememe@localhost MODE #test +o dy_\r
+
+[/mode dy_ +o]
+> 2024/06/12 12:32:12.000884684  length=13 from=381 to=393
+MODE dy_ +o\r
+< 2024/06/12 12:32:12.000884970  length=61 from=3127 to=3187
+:irc.example.net 502 dy :Can't set/get mode for other users\r
+
+[/mode +o sdf]
+> 2024/06/12 12:36:02.000779675  length=19 from=508 to=526
+MODE #test +o sdf\r
+< 2024/06/12 12:36:02.000779960  length=59 from=3530 to=3588
+:irc.example.net 401 dy sdf :No such nick or channel name\r
+
+[/mode ]
+> 2024/06/12 12:36:21.000318937  length=13 from=527 to=539
+MODE sdf +o\r
+< 2024/06/12 12:36:21.000319220  length=59 from=3589 to=3647
+:irc.example.net 401 dy sdf :No such nick or channel name\r
+
+[]
+
+

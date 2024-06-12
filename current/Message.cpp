@@ -207,6 +207,19 @@ std::string Message::to_raw_msg(void) {
   return raw_msg;
 }
 
+bool Message::starts_with(const std::string& str, const std::string& prefix) const {
+    if (str.length() < prefix.length()) {
+        return (false);
+    }
+    for (size_t i = 0; i < prefix.length(); ++i) {
+        if (str[i] != prefix[i]) {
+            return (false);
+        }
+    }
+    return (true);
+}
+
+
 std::ostream& operator<<(std::ostream& out, Message msg) {
   std::size_t i = 0;
 
@@ -236,6 +249,19 @@ Message Message::rpl_401_invitation(const std::string& source, const std::string
   rpl.set_numeric("401");
   rpl.push_back(invitingClientNickName);
   rpl.push_back(joiningClientNickName);
+  rpl.push_back(":No such nick or channel name");
+
+  return rpl;
+}
+
+Message Message::rpl_401_mode_operator(const std::string& source, const std::string& requestingClientNickName, 
+                                    const std::string& targetClientNickName) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("401");
+  rpl.push_back(requestingClientNickName);
+  rpl.push_back(targetClientNickName);
   rpl.push_back(":No such nick or channel name");
 
   return rpl;
@@ -532,3 +558,24 @@ Message Message::rpl_473(const std::string& source, std::string joiningClientNam
   
 //   return rpl;
 // }
+
+Message Message::rpl_441(const std::string& source, const Message& msg) {
+  // < 2024/06/12 16:19:38.000655856  length=65 from=19794 to=19858
+  // :irc.example.net 441 dy_ dy__ #zzz :They aren't on that channel\r
+
+  Message rpl;
+
+  std::string channelName = msg.get_params()[0];
+  std::string requestingClientNickName = msg.get_params()[1];
+  std::string targetClientNickName = msg.get_params()[2];
+  rpl.set_source(source);
+  rpl.set_numeric("441");
+  rpl.push_back(requestingClientNickName);
+  rpl.push_back(targetClientNickName);
+  rpl.push_back(channelName);
+  rpl.push_back(":");
+  rpl.push_back(":");
+  rpl.push_back("They aren't on that channel");
+
+  return (rpl);
+}

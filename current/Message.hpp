@@ -164,6 +164,8 @@ class Message {
 
   std::string to_raw_msg(void);
 
+  bool starts_with(const std::string& str, const std::string& prefix) const;
+
   static Message rpl_401(const std::string& source, const std::string& client,
                          const Message& msg);
   static Message rpl_432(const std::string& source, const std::string& client,
@@ -191,10 +193,14 @@ class Message {
   // INVITE
   static Message rpl_341(const std::string& source, User& user, const Message& msg);
   static Message rpl_443(const std::string& source, User& user, const Message& msg);
+  
   // MODE +i
   static Message rpl_473(const std::string& source, std::string clientName, const Message& msg);
 
-
+  // MODE +o
+  static Message rpl_401_mode_operator(const std::string& source, const std::string& requestingClientNickName, 
+                                          const std::string& targetClientNickName);
+  static Message rpl_441(const std::string& source, const Message& msg);
 };
 
 std::ostream& operator<<(std::ostream& out, Message msg);

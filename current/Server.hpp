@@ -12,6 +12,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <cstdlib> // atoi
 
 #include "Channel.hpp"
 #include "Message.hpp"
@@ -48,6 +49,10 @@
 // MODE FLAG
 #define INVITE_MODE_ON "+i"
 #define INVITE_MODE_OFF "-i"
+#define OPERATING_MODE_ON "+o"
+#define OPERATING_MODE_OFF "-o"
+#define LIMIT_ON "+l"
+#define LIMIT_OFF "-l"
 
 #define BLACK "\033[0;30m"
 #define RED "\033[0;31m"
