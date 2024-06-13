@@ -114,7 +114,7 @@ void Bot::step_auth(void) {
         } else if (msg.get_numeric() == String("005")) {
           auth_flag |= NUMERIC_005;
         } else if (msg.get_numeric() == String("433")) {
-          Stringstream int_to_str;
+          std::stringstream int_to_str;
           String tmp;
 
           nick_retry_cnt++;

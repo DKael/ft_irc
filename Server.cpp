@@ -22,7 +22,7 @@ Server::Server(const char* _port, const char* _password)
   serv_addr.sin_port = htons(port);
 
   int retry_cnt = 10;
-  Stringstream port_tmp;
+  std::stringstream port_tmp;
   while (::bind(serv_socket, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
     if (retry_cnt == 0) {
       throw std::exception();
@@ -358,7 +358,7 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
     } else if (cmd_type == CAP) {
       continue;
     } else if (cmd_type == QUIT) {
-      cmd_quit(p_val, msg);
+      cmd_quit(p_val.fd, msg);
       msg_list.clear();
       break;
     } else if (cmd_type == PRIVMSG) {
@@ -417,7 +417,7 @@ void Server::not_auth_user(pollfd& p_val, std::vector<String>& msg_list) {
     } else if (cmd_type == ERROR) {
       event_user.push_back_msg(msg.to_raw_msg());
     } else if (cmd_type == QUIT) {
-      cmd_quit(p_val, msg);
+      cmd_quit(p_val.fd, msg);
       msg_list.clear();
       break;
     } else {

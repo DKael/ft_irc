@@ -67,7 +67,7 @@ void read_msg_from_socket(const int socket_fd, std::vector<String>& msg_list) {
 }
 
 bool port_chk(const char* input_port) {
-  Stringstream port_chk;
+  std::stringstream port_chk;
   int port;
 
   port_chk << String(input_port);
@@ -84,7 +84,7 @@ bool ipv4_chk(const char* input_ipv4) {
   String ipv4_tmp = input_ipv4;
   String tmp_str;
   int tmp_int;
-  Stringstream to_num;
+  std::stringstream to_num;
   std::size_t idx1 = 0;
   std::size_t idx2 = 0;
 

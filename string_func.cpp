@@ -1,7 +1,7 @@
 #include "string_func.hpp"
 
 String ft_itos(int input) {
-  Stringstream ss_tmp;
+  std::stringstream ss_tmp;
   String ret;
 
   ss_tmp << input;
@@ -11,7 +11,7 @@ String ft_itos(int input) {
 }
 
 String ft_ltos(long input) {
-  Stringstream ss_tmp;
+  std::stringstream ss_tmp;
   String ret;
 
   ss_tmp << input;
