@@ -220,7 +220,7 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       }
     }
 #endif
-    ////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 
     Message msg(p_val.fd, msg_list[j]);
 
@@ -256,6 +256,8 @@ void Server::auth_user(pollfd& p_val, std::vector<std::string>& msg_list) {
       }
     } else if (cmd_type == JOIN) {
       cmd_join(p_val.fd, msg);
+    } else if (cmd_type == PART) {
+      cmd_part(p_val.fd, msg);
     } else if (cmd_type == WHO) {
       cmd_who(p_val.fd, msg);
     } else if (cmd_type == KICK) {
@@ -742,3 +744,96 @@ void Server::kickClient(User& opUser, User& outUser, Channel& channelName,
     // :irc.example.net 401 lfkn slkfdn :No such nick or channel name\r
   }
 }
+
+
+/* 
+      [IRSSI REQUEST] :: MODE #o +l 20
+      < Message contents > 
+      fd              : 4
+      source          : 
+      command         : MODE
+      params          : #o, +l, 20
+      numeric         : 
+      [SERVER SENDING...] [:dy!~memememe@localhost MODE #o +l 20
+      ]
+      [IRSSI REQUEST] :: WHO l
+      < Message contents > 
+      fd              : 4
+      source          : 
+      command         : WHO
+      params          : l
+      numeric         : 
+      =>> Server Channel List :: [i, o, test, ]
+
+      [channel name] :: ���� �
+      ����������������ZoBP[y
+      [client limit] :: -455421048
+      [invite mode] :: OFF
+      =================================================================
+      ==67278==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7ffee4dabad8 at pc 0x00010b04ab5f bp 0x7ffee4daabd0 sp 0x7ffee4daa398
+      READ of size 68 at 0x7ffee4dabad8 thread T0
+          #0 0x10b04ab5e in wrap_memchr+0x18e (libclang_rt.asan_osx_dynamic.dylib:x86_64h+0x1eb5e)
+          #1 0x7fff732a87b4 in __sfvwrite+0x261 (libsystem_c.dylib:x86_64+0x3b7b4)
+          #2 0x7fff732a8b49 in fwrite+0x87 (libsystem_c.dylib:x86_64+0x3bb49)
+          #3 0x10b04bc22 in wrap_fwrite+0x52 (libclang_rt.asan_osx_dynamic.dylib:x86_64h+0x1fc22)
+          #4 0x10ae55516 in std::__1::basic_streambuf<char, std::__1::char_traits<char> >::sputn(char const*, long)+0xa6 (ircserv:x86_64+0x100003516)
+          #5 0x10ae54d2a in std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> > std::__1::__pad_and_output<char, std::__1::char_traits<char> >(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> >, char const*, char const*, char const*, std::__1::ios_base&, char)+0x74a (ircserv:x86_64+0x100002d2a)
+          #6 0x10ae541d7 in std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long)+0x447 (ircserv:x86_64+0x1000021d7)
+          #7 0x10ae58d30 in std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::operator<<<char, std::__1::char_traits<char>, std::__1::allocator<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&)+0x40 (ircserv:x86_64+0x100006d30)
+          #8 0x10ae595a3 in operator<<(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, Channel&)+0x323 (ircserv:x86_64+0x1000075a3)
+          #9 0x10ae9edc5 in Server::cmd_who(int, Message const&)+0x8d5 (ircserv:x86_64+0x10004cdc5)
+          #10 0x10aecc7b2 in Server::auth_user(pollfd&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > >&)+0xe12 (ircserv:x86_64+0x10007a7b2)
+          #11 0x10aec9ff7 in Server::revent_pollin(pollfd&)+0x267 (ircserv:x86_64+0x100077ff7)
+          #12 0x10aec962d in Server::listen()+0x23d (ircserv:x86_64+0x10007762d)
+          #13 0x10ae538b2 in main+0x732 (ircserv:x86_64+0x1000018b2)
+          #14 0x7fff7321dcc8 in start+0x0 (libdyld.dylib:x86_64+0x1acc8)
+
+      Address 0x7ffee4dabad8 is located in stack of thread T0 at offset 56 in frame
+          #0 0x10ae5928f in operator<<(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, Channel&)+0xf (ircserv:x86_64+0x10000728f)
+
+        This frame has 7 object(s):
+          [32, 56) 'ref.tmp' (line 98)
+          [96, 120) 'operators' (line 102) <== Memory access at offset 56 partially underflows this variable
+          [160, 168) 'cit' (line 105)
+          [192, 200) 'ref.tmp31' (line 109)
+          [224, 232) 'ref.tmp34' (line 109)
+          [256, 264) 'it' (line 119)
+          [288, 296) 'ref.tmp65' (line 120)
+      HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+            (longjmp and C++ exceptions *are* supported)
+      SUMMARY: AddressSanitizer: stack-buffer-overflow (libclang_rt.asan_osx_dynamic.dylib:x86_64h+0x1eb5e) in wrap_memchr+0x18e
+      Shadow bytes around the buggy address:
+        0x1fffdc9b5700: 00 00 00 00 00 00 00 00 f1 f1 f1 f1 00 00 f2 f2
+        0x1fffdc9b5710: 00 f2 f2 f2 00 f3 f3 f3 00 00 00 00 00 00 00 00
+        0x1fffdc9b5720: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+        0x1fffdc9b5730: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+        0x1fffdc9b5740: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      =>0x1fffdc9b5750: 00 00 00 00 f1 f1 f1 f1 00 00 00[f2]f2 f2 f2 f2
+        0x1fffdc9b5760: f8 f8 f8 f2 f2 f2 f2 f2 f8 f2 f2 f2 f8 f2 f2 f2
+        0x1fffdc9b5770: f8 f2 f2 f2 f8 f2 f2 f2 f8 f3 f3 f3 00 00 00 00
+        0x1fffdc9b5780: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+        0x1fffdc9b5790: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+        0x1fffdc9b57a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      Shadow byte legend (one shadow byte represents 8 application bytes):
+        Addressable:           00
+        Partially addressable: 01 02 03 04 05 06 07 
+        Heap left redzone:       fa
+        Freed heap region:       fd
+        Stack left redzone:      f1
+        Stack mid redzone:       f2
+        Stack right redzone:     f3
+        Stack after return:      f5
+        Stack use after scope:   f8
+        Global redzone:          f9
+        Global init order:       f6
+        Poisoned by user:        f7
+        Container overflow:      fc
+        Array cookie:            ac
+        Intra object redzone:    bb
+        ASan internal:           fe
+        Left alloca redzone:     ca
+        Right alloca redzone:    cb
+        Shadow gap:              cc
+      ==67278==ABORTING
+      [1]    67278 abort      ./ircserv 8080 1234
+*/

@@ -31,6 +31,15 @@ void Channel::addClient(User& newClient) {
   // newClient.get_nick_name()));
 }
 
+void Channel::removeClient(User& user) {
+  std::map<std::string, User&>::iterator it = channel_client_list.find(user.get_nick_name());
+  if (it != channel_client_list.end()) {
+    std::map<std::string, User&>::iterator nextIt = std::next(it);
+    channel_client_list.erase(it);
+    it = nextIt;
+  }
+}
+
 // void	Channel::addOperator(User& Client) {
 // 	ops.push_back(Client);
 // }

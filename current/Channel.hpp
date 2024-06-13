@@ -79,6 +79,7 @@ class Channel {
 
   // METHOD FUNCTIONS
   void addClient(User& user);
+  void removeClient(User& user);
   void addOperator(User& user);
   void updateTopic(std::string topic);
 
@@ -88,6 +89,8 @@ class Channel {
   bool foundClient(std::string nickName);
   User& findClient(std::string nickName);
   void changeClientNickName(std::string old_nick, std::string new_nick);
+
+  bool isEmptyChannel(void);
 
   /* MODE */
   void setMode(int flag);

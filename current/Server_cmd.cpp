@@ -964,14 +964,10 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
                 }
               }
 
-
-
-
     } else if (msg.get_params_size() > 1 && msg.starts_with(msg.get_params()[1], LIMIT_OFF) == true) {
       get_channel(get_channel_iterator(targetChannelStr)).unsetMode(FLAG_L);
       get_channel(get_channel_iterator(targetChannelStr)).setLimit(INIT_CLIENT_LIMIT);
-      
-      
+
       // > 2024/06/12 22:44:04.000925650  length=15 from=3053 to=3067
       // MODE #test -l\r
       // < 2024/06/12 22:44:04.000925974  length=39 from=18253 to=18291
@@ -1181,5 +1177,61 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
     tmp->events = POLLIN | POLLOUT;
   } else {
     tmp->events = POLLIN;
+  }
+}
+
+void Server::cmd_part(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+  Message rpl;
+
+  std::string targetChannelStr = msg.get_params()[0];
+  std::string::size_type pos = targetChannelStr.find('#');
+  if (pos != std::string::npos) {
+    targetChannelStr.erase(pos, 1);
+  }
+  channel_iterator = get_channel_iterator(targetChannelStr);
+  if (channel_iterator == channel_list.end()) {
+    Message rpl = Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
+    event_user.push_msg(rpl.to_raw_msg());
+    return ;
+  }
+
+  rpl.set_source(event_user.get_nick_name() + std::string("!~") + event_user.get_user_name() + std::string("@localhost"));
+  rpl.set_cmd_type(PART);
+  rpl.push_back(msg.get_params()[0] + std::string(" :"));
+  if (msg.get_params_size() > 1)
+    rpl.push_back(msg.get_params().back());
+  // BROADCASTING
+  get_channel(get_channel_iterator(targetChannelStr)).removeClient(event_user);
+  get_channel(get_channel_iterator(targetChannelStr)).removeOperator(event_user);
+  event_user.push_msg(rpl.to_raw_msg());
+  std::map<std::string, User&>::iterator it;
+  for (it =
+            get_channel(get_channel_iterator(targetChannelStr))
+                .get_channel_client_list()
+                .begin();
+        it !=
+        get_channel(get_channel_iterator(targetChannelStr))
+            .get_channel_client_list()
+            .end();
+        ++it) {
+    std::string clientNickName = it->second.get_nick_name();
+    it->second.push_msg(rpl.to_raw_msg());
+    pollfd* tmp;
+    for (int i = 0; i < MAX_USER; i++) {
+      if (observe_fd[i].fd == (it->second).get_user_socket()) {
+        tmp = &(observe_fd[i]);
+      }
+    }
+    // broadcasting 하는건데 event_user는 윗단에서 poll처리를 해줌으로
+    // 여기서는 continue를 해줌
+    if (clientNickName == event_user.get_nick_name()) {
+      continue;
+    }
+    if ((*this).send_msg_at_queue((it->second).get_user_socket()) == -1) {
+      tmp->events = POLLIN | POLLOUT;
+    } else {
+      tmp->events = POLLIN;
+    }
   }
 }

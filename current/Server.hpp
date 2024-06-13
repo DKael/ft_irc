@@ -152,6 +152,8 @@ class Server {
   void cmd_who(int recv_fd, const Message& msg);
   void cmd_names(int recv_fd, const Message& msg);
 
+  void cmd_part(int recv_fd, const Message& msg);
+  
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
   void addChannel(Channel& newChannel);
