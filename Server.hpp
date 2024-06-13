@@ -132,6 +132,9 @@ class Server {
 
   void add_channel(Channel& new_chan);
 
+  bool chk_user_in_channel(const String& nickname,
+                           const String& chan_name) const;
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
   void cmd_pass(int recv_fd, const Message& msg);

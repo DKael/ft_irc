@@ -637,3 +637,14 @@ void Server::add_channel(Channel& new_channel) {
   channel_list.insert(
       std::pair<String, Channel>(new_channel.get_channel_name(), new_channel));
 }
+
+bool Server::chk_user_in_channel(const String& nickname,
+                                 const String& chan_name) const {
+  std::map<String, int>::const_iterator user_chan_it =
+      event_user_chan.find(tmp_chan_name);
+  if (user_chan_it == event_user_chan.end()) {
+    event_user_in_chan = false;
+  } else {
+    event_user_in_chan = true;
+  }
+}

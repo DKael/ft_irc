@@ -487,32 +487,31 @@ void Server::cmd_quit(int recv_fd, const Message& msg) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-/*
-NAMES #chan_a,#chan_b
-:irc.example.net 353 sss = #chan_a :sss kkk ccc @test
-:irc.example.net 366 sss #chan_a :End of NAMES list
-:irc.example.net 353 sss = #chan_b :@jjjj
-:irc.example.net 366 sss #chan_b :End of NAMES list
-
-NAMES
-:irc.example.net 353 sss = #chan_b :@jjjj
-:irc.example.net 353 sss = #chan_a :ccc @test
-:irc.example.net 353 sss = #kick_test :ccc test
-:irc.example.net 353 sss = #test :@ccc
-:irc.example.net 353 sss = #chan :ccc @test
-:irc.example.net 353 sss * * :sss
-:irc.example.net 366 sss * :End of NAMES list
-
-NAMES
-:irc.example.net 353 sss = #chan_b :@jjjj
-:irc.example.net 353 sss = #chan_a :sss kkk ccc @test
-:irc.example.net 353 sss = #kick_test :ccc test
-:irc.example.net 353 sss = #test :@ccc
-:irc.example.net 353 sss = #chan :ccc @test
-:irc.example.net 366 sss * :End of NAMES list
-*/
-
 void Server::cmd_names(int recv_fd, const Message& msg) {
+  /*
+  NAMES #chan_a,#chan_b
+  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
+  :irc.example.net 366 sss #chan_a :End of NAMES list
+  :irc.example.net 353 sss = #chan_b :@jjjj
+  :irc.example.net 366 sss #chan_b :End of NAMES list
+
+  NAMES
+  :irc.example.net 353 sss = #chan_b :@jjjj
+  :irc.example.net 353 sss = #chan_a :ccc @test
+  :irc.example.net 353 sss = #kick_test :ccc test
+  :irc.example.net 353 sss = #test :@ccc
+  :irc.example.net 353 sss = #chan :ccc @test
+  :irc.example.net 353 sss * * :sss
+  :irc.example.net 366 sss * :End of NAMES list
+
+  NAMES
+  :irc.example.net 353 sss = #chan_b :@jjjj
+  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
+  :irc.example.net 353 sss = #kick_test :ccc test
+  :irc.example.net 353 sss = #test :@ccc
+  :irc.example.net 353 sss = #chan :ccc @test
+  :irc.example.net 366 sss * :End of NAMES list
+  */
   User& event_user = (*this)[recv_fd];
   const std::map<String, int>& event_user_chan = event_user.get_channels();
   const String& event_user_nick = event_user.get_nick_name();
@@ -524,11 +523,19 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
 
     for (; chan_it != channel_list.end(); ++chan_it) {
       Channel& tmp_chan = chan_it->second;
-      String tmp_chan_name = tmp_chan.get_channel_name();
+      const String& tmp_chan_name = tmp_chan.get_channel_name();
+      bool event_user_in_chan;
+
+      std::map<String, int>::const_iterator user_chan_it =
+          event_user_chan.find(tmp_chan_name);
+      if (user_chan_it == event_user_chan.end()) {
+        event_user_in_chan = false;
+      } else {
+        event_user_in_chan = true;
+      }
+
       if (tmp_chan.chk_mode(CHAN_FLAG_S) == true) {
-        std::map<String, int>::const_iterator user_chan_it =
-            event_user_chan.find(tmp_chan_name);
-        if (user_chan_it == event_user_chan.end()) {
+        if (event_user_in_chan = false) {
           continue;
         } else {
           symbol = "@";
@@ -536,6 +543,7 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
       } else {
         symbol = "=";
       }
+
       String nicks = "";
       const std::map<String, User&>& client_map = tmp_chan.get_client_list();
       const std::map<String, User&>& operator_map =
@@ -544,7 +552,11 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
           client_map.rbegin();
       std::map<String, User&>::const_iterator cit2;
 
-      for (std::size_t i = 0; i + 1 < client_map.size(); ++i, ++cit1) {
+      for (; cit1 != client_map.rend(); ++cit1) {
+        if (cit1->second.chk_mode(USER_FLAG_I) == true &&
+            event_user_in_chan == false) {
+          continue;
+        }
         cit2 = operator_map.find(cit1->first);
         if (cit2 != operator_map.end()) {
           nicks += (OPERATOR_PREFIX + cit1->first);
@@ -553,29 +565,49 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
         }
         nicks += " ";
       }
-      cit2 = operator_map.find(cit1->first);
-      if (cit2 != operator_map.end()) {
-        nicks += (OPERATOR_PREFIX + cit1->first);
-      } else {
-        nicks += cit1->first;
+      if (nicks.length() > 0) {
+        nicks.erase(nicks.length() - 1);
+        event_user.push_back_msg(Message::rpl_353(serv_name, event_user_nick,
+                                                  symbol, tmp_chan_name, nicks)
+                                     .to_raw_msg());
       }
     }
 
-    rpl.push_back(nicks);
-  } else {
+    std::map<int, User>::reverse_iterator user_it = user_list.rbegin();
+    String nicks = "";
+    for (; user_it < user_list.rend(); ++user_it) {
+      if (user_it->second.chk_mode(USER_FLAG_I) == true) {
+        continue;
+      }
+      if (user_it->second.get_channels().size() == 0) {
+        nicks += user_it->second.get_nick_name();
+        nicks += " ";
+      }
+    }
+    if (nicks.length() > 0) {
+      nicks.erase(nicks.length() - 1);
+      event_user.push_back_msg(
+          Message::rpl_353(serv_name, event_user_nick, "*", "*", nicks)
+              .to_raw_msg());
+    }
+
     event_user.push_back_msg(
-        Message::rpl_366(serv_name, event_user_nick, chan_it->first)
-            .to_raw_msg());
-  }
+        Message::rpl_366(serv_name, event_user_nick, "*").to_raw_msg());
+  } else {
+    std::vector<String> chan_name_vec;
+    ft_split(msg[1], ",", chan_name_vec);
 
-  std::map<String, Channel>::const_iterator it;
-  std::cout << "[FT_IRC Server] <Channel Status> :: [";
-
-  for (it = channel_list.begin(); it != channel_list.end(); ++it) {
-    const String& chan_name = it->first;
-    std::cout << chan_name << "=> ";
+    for (size_t i = 0; i < chan_name_vec.size(); ++i) {
+      // 채널 존재하는지 확인
+      std::map<String, Channel>::iterator chan_it =
+          channel_list.find(chan_name_vec[i]);
+      if (chan_it != channel_list.end()) {
+      }
+      event_user.push_back_msg(
+          Message::rpl_366(serv_name, event_user_nick, chan_name_vec[i])
+              .to_raw_msg());
+    }
   }
-  std::cout << "]" << std::endl << std::endl;
 }
 
 void Server::cmd_privmsg(int recv_fd, const Message& msg) {
