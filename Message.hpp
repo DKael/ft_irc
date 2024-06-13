@@ -224,6 +224,8 @@ class Message {
                          const String& channel);
   static Message rpl_473(const String& source, const String& user,
                          const String& channel);
+  static Message rpl_475(const String& source, const String& user,
+                         const String& channel);
   static Message rpl_482(const String& source, const String& user,
                          const String& channel);
 };

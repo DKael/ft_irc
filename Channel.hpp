@@ -63,7 +63,7 @@ class Channel {
 
  public:
   // OCCF
-  Channel(const String& _channel_name, char _channel_type);
+  Channel(const String& _channel_name);
   Channel(const Channel& other);
   ~Channel();
 

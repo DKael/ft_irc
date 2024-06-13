@@ -1,6 +1,6 @@
 #include "Channel.hpp"
 
-Channel::Channel(const String& _channel_name, char _channel_type)
+Channel::Channel(const String& _channel_name)
     : channel_name(_channel_name),
       created_time(std::time(NULL)),
       invite_only(false),
@@ -84,6 +84,7 @@ const String& Channel::get_user_list_str(bool is_joined) const {
     }
     nicks += " ";
   }
+  nicks.erase(nicks.length() - 1);
   return nicks;
 }
 

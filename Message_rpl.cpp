@@ -471,6 +471,19 @@ Message Message::rpl_473(const String& source, const String& user,
   return rpl;
 }
 
+Message Message::rpl_475(const String& source, const String& user,
+                         const String& channel) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("475");
+  rpl.push_back(user);
+  rpl.push_back(channel);
+  rpl.push_back(":Cannot join channel (+k)");
+
+  return rpl;
+}
+
 Message Message::rpl_482(const String& source, const String& user,
                          const String& channel) {
   /*
