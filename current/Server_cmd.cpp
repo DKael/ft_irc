@@ -1204,6 +1204,11 @@ void Server::cmd_part(int recv_fd, const Message& msg) {
   // BROADCASTING
   get_channel(get_channel_iterator(targetChannelStr)).removeClient(event_user);
   get_channel(get_channel_iterator(targetChannelStr)).removeOperator(event_user);
+  if (get_channel(get_channel_iterator(targetChannelStr)).isEmptyChannel() == true) {
+    (*this).removeChannel(targetChannelStr);
+    event_user.push_msg(rpl.to_raw_msg());
+    return ;
+  }
   event_user.push_msg(rpl.to_raw_msg());
   std::map<std::string, User&>::iterator it;
   for (it =

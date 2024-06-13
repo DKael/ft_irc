@@ -676,6 +676,13 @@ void Server::addChannel(Channel& newChannel) {
   // Channel&>(newChannel.get_channel_name(), newChannel));
 }
 
+void Server::removeChannel(std::string& channelName) {
+  std::map<std::string, Channel>::iterator it = channel_list.find(channelName);
+  if (it != channel_list.end()) {
+    channel_list.erase(it);
+  }
+}
+
 std::map<std::string, Channel>::iterator Server::get_channel_iterator(
     std::string targetChannelStr) {
   channel_iterator = channel_list.begin();

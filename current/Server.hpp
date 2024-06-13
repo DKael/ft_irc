@@ -157,7 +157,7 @@ class Server {
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
   void addChannel(Channel& newChannel);
-
+  void removeChannel(std::string& channelName);
   // std::map<std::string, Channel> channelLst;
 
   User& operator[](const int socket_fd);
