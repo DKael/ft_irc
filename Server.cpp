@@ -666,3 +666,14 @@ void Server::send_msg_to_channel_except_sender(Channel& chan,
     }
   }
 }
+
+void Server::send_msg_to_connected_user(const User& u, const String& msg) {
+  std::map<String, int>::const_iterator it = u.get_connected_list().begin();
+
+  for (; it != u.get_connected_list().end(); ++it) {
+    User& tmp_u = (*this)[it->second];
+
+    tmp_u.push_back_msg(msg);
+    ft_send(tmp_u.get_pfd());
+  }
+}

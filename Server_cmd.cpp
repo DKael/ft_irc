@@ -355,9 +355,9 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
            ++user_chan_it) {
         channel_list[user_chan_it->first].change_user_nickname(old_nick,
                                                                new_nick);
-        send_msg_to_channel(channel_list[user_chan_it->first],
-                            rpl.to_raw_msg());
       }
+      send_msg_to_connected_user(event_user, rpl.to_raw_msg());
+
       return;
     } else {
       (*this).change_nickname(event_user_nick, new_nick);
@@ -453,12 +453,67 @@ void Server::cmd_pong(int recv_fd, const Message& msg) {
 }
 
 void Server::cmd_quit(int recv_fd, const Message& msg) {
+  /*
+zzz
+
+> quit
+< :irc.example.net NOTICE zzz :Connection statistics: client 0.0 kb, server 1.2 kb.\r
+< ERROR :Closing connection\r
+
+> quit :quit message test
+< :irc.example.net NOTICE zzz :Connection statistics: client 0.1 kb, server 1.3 kb.\r
+< ERROR :"quit message test"\r
+
+aaa
+< :zzz!~zzz@localhost QUIT :"quit message test"\r
+
+bbb
+< :zzz!~zzz@localhost QUIT :"quit message test"\r
+*/
+
   User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
   pollfd& tmp_pfd = event_user.get_pfd();
+
+  // 인자 개수 확인. 0 ~ 1개가 정상적.
+  if (msg.get_params_size() > 1) {
+    event_user.push_back_msg(
+        Message::rpl_461(serv_name, event_user_nick, msg.get_raw_cmd())
+            .to_raw_msg());
+    return;
+  }
+
+  String trailing;
+  if (msg.get_params_size() == 0) {
+    trailing = ":Closing connection";
+  } else {
+    trailing = ":\"" + msg[0] + "\"";
+  }
+
   Message rpl;
 
+  rpl.set_source(event_user.make_source(1));
+  rpl.set_cmd_type(QUIT);
+  rpl.push_back(trailing);
+  send_msg_to_connected_user(event_user, rpl.to_raw_msg());
+
+  std::map<String, int>::const_iterator con_it =
+      event_user.get_connected_list().begin();
+  for (; con_it != event_user.get_connected_list().end(); ++con_it) {
+    (*this)[con_it->second].remove_connected(event_user_nick);
+  }
+
+  rpl.clear();
+  rpl.set_source(serv_name);
+  rpl.set_cmd_type(NOTICE);
+  rpl.push_back(event_user_nick);
+  rpl.push_back(":Connection statistics: client - kb, server - kb.");
+  event_user.push_back_msg(rpl.to_raw_msg());
+
+  rpl.clear();
+  rpl.set_source("");
   rpl.set_cmd_type(ERROR);
-  rpl.push_back(":Closing connection");
+  rpl.push_back(trailing);
   event_user.push_back_msg(rpl.to_raw_msg());
 
   std::clog << "Connection close at " << recv_fd << '\n';
@@ -734,6 +789,13 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
 
       try {
         chan.add_user(event_user);
+
+        std::map<String, User&>::iterator chan_user_it =
+            chan.get_user_list().begin();
+        for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
+          event_user.add_connected(chan_user_it->first,
+                                   chan_user_it->second.get_user_socket());
+        }
 
         String symbol;
         if (chan.chk_mode(CHAN_FLAG_S) == true) {

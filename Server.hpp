@@ -135,6 +135,7 @@ class Server {
   void send_msg_to_channel(Channel& chan, const String& msg);
   void send_msg_to_channel_except_sender(Channel& chan, const String& sender,
                                          const String& msg);
+  void send_msg_to_connected_user(const User& u, const String& msg);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
