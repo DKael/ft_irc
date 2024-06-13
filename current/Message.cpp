@@ -579,3 +579,35 @@ Message Message::rpl_441(const std::string& source, const Message& msg) {
 
   return (rpl);
 }
+
+Message Message::rpl_472(const std::string& source, const std::string nickName, char c, const Message& msg) { 
+  // :irc.example.net 472 dy 1 :is unknown mode char for #test\r
+
+  Message rpl;
+  std::string character;
+  character = c;
+  std::string channelName = msg.get_params()[0];
+  rpl.set_source(source);
+  rpl.set_numeric("472");
+  rpl.push_back(nickName);
+  rpl.push_back(character);
+  rpl.push_back(":");
+  rpl.push_back("is unknown mode char for ");
+  rpl.push_back(channelName);
+
+  return (rpl);
+}
+
+Message Message::rpl_471(const std::string& source, const std::string nickName, const std::string channelName) {
+  // :irc.example.net 471 dy___ #test :Cannot join channel (+l) -- Channel is full, try later\r
+  Message rpl;
+  
+  rpl.set_source(source);
+  rpl.set_numeric("471");
+  rpl.push_back(nickName);
+  rpl.push_back(channelName);
+  rpl.push_back(":");
+  rpl.push_back("Cannot join channel (+l) -- Channel is full, try later");
+
+  return rpl;
+}

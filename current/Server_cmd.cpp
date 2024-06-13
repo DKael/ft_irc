@@ -219,6 +219,9 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
   // [TO DO] :: channel 목록 capacity를 넘으면 더이상 받지 않기 => RFC 에서
   // 어떻게 리스폰스를 주는지 확인해볼것
 
+  // < 2024/06/13 15:29:35.000364884  length=91 from=4905 to=4995
+  // :irc.example.net 471 dy____ #test :Cannot join channel (+l) -- Channel is full, try later\r
+
   try {
     // mode +l 이 켜져있다면의 조건을 추가해야함
     // if (get_current_channel_num() > get_max_channel_num())  // && channel이
@@ -233,10 +236,6 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
 
     Message response;
     User& incomingClient = (*this)[recv_fd];
-    response.set_source(incomingClient.get_nick_name() + std::string("!") +
-                        std::string("@localhost"));
-    response.set_cmd_type(JOIN);
-    response.push_back(msg.get_params()[0]);
 
     // 서버에 채널은 등록이 되어있고
     if (channel_iterator != channel_list.end()) {
@@ -245,9 +244,26 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
               .isMode(FLAG_I)) {
         if ((*this)[recv_fd].isInvited(targetChannelStr)) {
           incomingClient.push_msg(response.to_raw_msg());
+          try {
+            get_channel(get_channel_iterator(targetChannelStr))
+                .addClient((*this)[recv_fd]);
+          } catch (const channel_client_capacity_error &e) {
+            incomingClient.push_msg(
+              Message::rpl_471(
+                    serv_name,
+                    incomingClient.get_nick_name(),
+                    msg.get_params()[0])
+                  .to_raw_msg());
+            return ;
+          }
 
-          get_channel(get_channel_iterator(targetChannelStr))
-              .addClient((*this)[recv_fd]);
+          // [STEP 1]
+          response.set_source(incomingClient.get_nick_name() + std::string("!") +
+                              std::string("@localhost"));
+          response.set_cmd_type(JOIN);
+          response.push_back(msg.get_params()[0]);
+
+          // [STEP 2]
           incomingClient.push_msg(
               Message::rpl_353(
                   serv_name,
@@ -296,17 +312,26 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
         }
       } else {
         // 들어가려는 채널이 초대 제한이 없는 경우
-        Message response;
         User& incomingClient = (*this)[recv_fd];
+
+        try {
+          get_channel(get_channel_iterator(targetChannelStr))
+              .addClient((*this)[recv_fd]);
+        } catch (const channel_client_capacity_error &e) {
+          incomingClient.push_msg(
+            Message::rpl_471(
+                  serv_name,
+                  incomingClient.get_nick_name(),
+                  msg.get_params()[0])
+                .to_raw_msg());
+          return ;
+        }
+
         response.set_source(incomingClient.get_nick_name() + std::string("!") +
                             std::string("@localhost"));
         response.set_cmd_type(JOIN);
         response.push_back(msg.get_params()[0]);
         incomingClient.push_msg(response.to_raw_msg());
-
-        get_channel(get_channel_iterator(targetChannelStr))
-            .addClient((*this)[recv_fd]);
-
         std::map<std::string, User&> clients =
             get_channel(get_channel_iterator(targetChannelStr))
                 .get_channel_client_list();
@@ -680,7 +705,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
     // ##################################### [ /mode +o ]
     // ###############################################
     // ##################################################################################################
-    if (msg.get_params()[1] == OPERATING_MODE_ON) {
+    if (msg.get_params_size() > 1 && msg.get_params()[1] == OPERATING_MODE_ON) {
       // check for privilege
       if (get_channel(channel_iterator).isOperator(event_user) ==
           false) {
@@ -780,7 +805,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
     // ##################################### [ /mode -o ]
     // ###############################################
     // ##################################################################################################
-    if (msg.get_params()[1] == OPERATING_MODE_OFF) {
+    if (msg.get_params_size() > 1 && msg.get_params()[1] == OPERATING_MODE_OFF) {
       // check for privilege
       if (get_channel(channel_iterator).isOperator(event_user) ==
           false) {
@@ -880,13 +905,17 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
     // ###############################################
     // ##################################################################################################
     // default -> limit number 65535
-    if (msg.get_params()[1] == LIMIT_ON) {
+    if (msg.get_params_size() > 2 && msg.get_params()[1] == LIMIT_ON) {
       /*
         > 2024/06/12 21:25:16.000268737  length=21 from=416 to=436
         MODE #test +l 12111\r
         < 2024/06/12 21:25:16.000269041  length=45 from=2307 to=2351
         :dy!~memememe@localhost MODE #test +l 12111\r 
       */
+
+      if (atoi(msg.get_params()[2].c_str()) == 0) {
+        return ;
+      }
       get_channel(get_channel_iterator(targetChannelStr)).setMode(FLAG_L);
       get_channel(get_channel_iterator(targetChannelStr)).setLimit(msg.get_params()[2]);
 
@@ -934,13 +963,39 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
                   tmp->events = POLLIN;
                 }
               }
-    } else if (msg.starts_with(msg.get_params()[1], LIMIT_OFF) == true) {
+
+
+
+
+    } else if (msg.get_params_size() > 1 && msg.starts_with(msg.get_params()[1], LIMIT_OFF) == true) {
       get_channel(get_channel_iterator(targetChannelStr)).unsetMode(FLAG_L);
       get_channel(get_channel_iterator(targetChannelStr)).setLimit(INIT_CLIENT_LIMIT);
+      
+      
       // > 2024/06/12 22:44:04.000925650  length=15 from=3053 to=3067
       // MODE #test -l\r
       // < 2024/06/12 22:44:04.000925974  length=39 from=18253 to=18291
       // :dy!~memememe@localhost MODE #test -l\r
+
+      /* 
+
+        -l123123 이런 경우 k l i s t 가 아닌것들은 
+        :irc.example.net 472 dy 1 :is unknown mode char for #test\r
+        :irc.example.net 472 dy 2 :is unknown mode char for #test\r
+        :irc.example.net 472 dy 3 :is unknown mode char for #test\r
+      */
+
+      std::string::const_iterator iterator = msg.get_params()[1].begin() + 2;
+      for (; iterator != msg.get_params()[1].end(); ++iterator) {
+        std::cout << *iterator << std::endl;
+        char chanmodes[5] = { 'k', 'l', 'i', 's', 't' };
+        if (std::find(chanmodes, chanmodes + 5, *iterator) == chanmodes + 5) {
+          // :irc.example.net 472 dy 1 :is unknown mode char for #test\r
+          Message rpl;
+          event_user.push_msg(Message::rpl_472(serv_name, event_user.get_nick_name(), *iterator, msg)
+                                    .to_raw_msg());
+        }
+      }
 
       // RESPONSE
       Message rpl;
@@ -949,7 +1004,6 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
       rpl.set_cmd_type(MODE);
       rpl.push_back(msg.get_params()[0]);
       rpl.push_back(LIMIT_OFF);
-      rpl.push_back(msg.get_params()[2]);
 
       // BROADCASTING
       std::map<std::string, User&>::iterator it;
@@ -990,6 +1044,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
   // event_user.push_msg(rpl.to_raw_msg());
  }
 }
+
 void Server::cmd_pong(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
   Message rpl;

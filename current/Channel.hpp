@@ -95,7 +95,6 @@ class Channel {
   const bool isMode(int flag) const;
   void setLimit(std::string value);
 
-
   // FOR DEBUG PURPOSE ONLY [VISUALIZE]
   void visualizeClientList(void);
   void visualizeBannedClientList(void);

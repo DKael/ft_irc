@@ -183,6 +183,9 @@ class Message {
   static Message rpl_366(const std::string& source, const std::string& client,
                          const std::string& channelName);
 
+  // JOIN
+  static Message rpl_471(const std::string& source, const std::string nickName, const std::string channelName);
+
   // KICK
   static Message rpl_401_invitation(const std::string& source, const std::string& invitingClientNickName, const std::string& joiningClientNickName);
   static Message rpl_403(const std::string& source, const std::string& nickName,
@@ -201,6 +204,9 @@ class Message {
   static Message rpl_401_mode_operator(const std::string& source, const std::string& requestingClientNickName, 
                                           const std::string& targetClientNickName);
   static Message rpl_441(const std::string& source, const Message& msg);
+
+  // MODE -l
+  static Message rpl_472(const std::string& source, const std::string nickName, char c, const Message& msg);
 };
 
 std::ostream& operator<<(std::ostream& out, Message msg);
