@@ -114,12 +114,12 @@ class User {
   void pop_front_msg(void);
   std::size_t get_to_send_size(void);
 
-  void push_invitation(String& chan_name);
-  void remove_invitation(String& chan_name);
+  void push_invitation(const String& chan_name);
+  void remove_invitation(const String& chan_name);
   void remove_all_invitations(void);
-  bool is_invited(String& chan_name) const;
-  void join_channel(String& chan_name);
-  void part_channel(String& chan_name);
+  bool is_invited(const String& chan_name) const;
+  void join_channel(const String& chan_name);
+  void part_channel(const String& chan_name);
 
   void set_mode(int flag);
   void unset_mode(int flag);

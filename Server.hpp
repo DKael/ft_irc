@@ -82,7 +82,7 @@ class Server {
   std::map<String, Channel> channel_list;
 
   // private functions
-  int client_socket_init(void);
+  int user_socket_init(void);
   void connection_fin(pollfd& p_val);
   void ft_send(pollfd& p_val);
   void ft_sendd(pollfd& p_val);
@@ -131,9 +131,10 @@ class Server {
   int operator[](const String& nickname);
 
   void add_channel(Channel& new_chan);
-
-  bool chk_user_in_channel(const String& nickname,
-                           const String& chan_name) const;
+  bool chk_channel_exist(const String& chan_name) const;
+  void send_msg_to_channel(Channel& chan, const String& msg);
+  void send_msg_to_channel_except_sender(Channel& chan, const String& sender,
+                                         const String& msg);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   /* IMPLEMENTATIONS OF COMMANDS */
@@ -158,7 +159,7 @@ class Server {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
   // [DEBUG] PURPOSE ONLY
-  // CLIENT LIST
+  // user LIST
 
   std::vector<User> getUserList(void) const {
     std::vector<User> users;

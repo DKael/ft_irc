@@ -158,7 +158,7 @@ void User::pop_front_msg(void) { to_send.pop_front(); }
 
 std::size_t User::get_to_send_size(void) { return to_send.size(); }
 
-void User::push_invitation(String& chan_name) {
+void User::push_invitation(const String& chan_name) {
   std::map<String, int>::iterator it = invited_channels.find(chan_name);
 
   if (it == invited_channels.end()) {
@@ -166,7 +166,7 @@ void User::push_invitation(String& chan_name) {
   }
 }
 
-void User::remove_invitation(String& chan_name) {
+void User::remove_invitation(const String& chan_name) {
   std::map<String, int>::iterator it = invited_channels.find(chan_name);
 
   if (it != invited_channels.end()) {
@@ -176,7 +176,7 @@ void User::remove_invitation(String& chan_name) {
 
 void User::remove_all_invitations(void) { invited_channels.clear(); }
 
-bool User::is_invited(String& chan_name) const {
+bool User::is_invited(const String& chan_name) const {
   std::map<String, int>::const_iterator cit = invited_channels.find(chan_name);
 
   if (cit != invited_channels.end()) {
@@ -186,7 +186,7 @@ bool User::is_invited(String& chan_name) const {
   }
 }
 
-void User::join_channel(String& chan_name) {
+void User::join_channel(const String& chan_name) {
   std::map<String, int>::iterator it = channels.find(chan_name);
 
   if (it == channels.end()) {
@@ -197,7 +197,7 @@ void User::join_channel(String& chan_name) {
   }
 }
 
-void User::part_channel(String& chan_name) {
+void User::part_channel(const String& chan_name) {
   std::map<String, int>::iterator it = channels.find(chan_name);
 
   if (it != channels.end()) {
@@ -214,15 +214,15 @@ bool User::chk_mode(int flag) const { return mode & flag; }
 #ifdef DEBUG
 
 std::ostream& operator<<(std::ostream& out, const User& user) {
-  out << GREEN << "\n\t[Client Information]" << WHITE << std::endl
+  out << GREEN << "\n\t[user Information]" << WHITE << std::endl
       << "\tNICKNAME :: " << user.get_nick_name() << std::endl
       << "\tUSERNAME :: " << user.get_user_name() << std::endl
       << "\tREALNAME :: " << user.get_real_name()
       << std::endl
-      // << "Client Socket(fd) :: " << user.get_user_socket() << std::endl
-      // << "Client address(sockaddr_in) :: " << &user.get_user_addr() <<
+      // << "user Socket(fd) :: " << user.get_user_socket() << std::endl
+      // << "user address(sockaddr_in) :: " << &user.get_user_addr() <<
       // std::endl
-      // << "Client created time :: " << user.get_created_time() << std::endl;
+      // << "user created time :: " << user.get_created_time() << std::endl;
       // if (user.get_password_chk() == OK)
       //   out << "STATUS PASSWORD :: OK" << std::endl;
       // else if (user.get_password_chk() == FAIL)

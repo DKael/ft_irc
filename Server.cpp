@@ -90,7 +90,7 @@ void Server::listen(void) {
       return;
     } else {
       if (observe_fd[0].revents & POLLIN) {
-        client_socket_init();
+        user_socket_init();
         event_cnt--;
       }
       for (int i = 1; i < MAX_USER && event_cnt > 0; i++) {
@@ -110,7 +110,7 @@ void Server::listen(void) {
   }
 }
 
-int Server::client_socket_init(void) {
+int Server::user_socket_init(void) {
   int connection_limit = 10;
   socklen_t user_addr_len;
   sockaddr_in user_addr;
@@ -166,7 +166,7 @@ int Server::client_socket_init(void) {
     }
 
     if ((tmp_user_list.size() + user_list.size()) > MAX_USER) {
-      // todo : send some error message to client
+      // todo : send some error message to user
       // 근데 이거 클라이언트한테 메세지 보내려면 소켓을 연결해야 하는데
       // 에러 메세지 답장 안 보내고 연결요청 무시하려면 되려나
       // 아니면 예비소켓 하나 남겨두고 잠시 연결했다 바로 연결 종료하는
@@ -327,7 +327,7 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
     std::cout << RED << "\n[IRSSI REQUEST] :: " << YELLOW << msg_list[j]
               << WHITE << std::endl;
 
-    // SHOW THE LIST OF CLIENTS
+    // SHOW THE LIST OF userS
     // [DEBUG]
     if (msg_list[0] == "lusers") {
       std::map<int, User>::iterator it = user_list.begin();
@@ -445,17 +445,16 @@ void Server::auth_complete(pollfd& p_val) {
   move_tmp_user_to_user_list(p_val.fd);
   User& event_user = (*this)[p_val.fd];
   event_user.set_is_authenticated(OK);
-  const String& client = event_user.get_nick_name();
+  const String& user = event_user.get_nick_name();
 
   event_user.push_back_msg(
-      Message::rpl_001(serv_name, client, event_user.make_source(1))
+      Message::rpl_001(serv_name, user, event_user.make_source(1))
           .to_raw_msg());
   event_user.push_back_msg(
-      Message::rpl_002(serv_name, client, serv_name, serv_version)
-          .to_raw_msg());
+      Message::rpl_002(serv_name, user, serv_name, serv_version).to_raw_msg());
   event_user.push_back_msg(
-      Message::rpl_003(serv_name, client, created_time_str).to_raw_msg());
-  event_user.push_back_msg(Message::rpl_004(serv_name, client, serv_name,
+      Message::rpl_003(serv_name, user, created_time_str).to_raw_msg());
+  event_user.push_back_msg(Message::rpl_004(serv_name, user, serv_name,
                                             serv_version, AVAILABLE_USER_MODES,
                                             AVAILABLE_CHANNEL_MODES)
                                .to_raw_msg());
@@ -483,9 +482,9 @@ void Server::auth_complete(pollfd& p_val) {
     specs2.push_back("KICKLEN=" + ft_itos(KICKLEN));
   }
   event_user.push_back_msg(
-      Message::rpl_005(serv_name, client, specs1).to_raw_msg());
+      Message::rpl_005(serv_name, user, specs1).to_raw_msg());
   event_user.push_back_msg(
-      Message::rpl_005(serv_name, client, specs2).to_raw_msg());
+      Message::rpl_005(serv_name, user, specs2).to_raw_msg());
 
   ft_send(p_val);
 }
@@ -638,13 +637,32 @@ void Server::add_channel(Channel& new_channel) {
       std::pair<String, Channel>(new_channel.get_channel_name(), new_channel));
 }
 
-bool Server::chk_user_in_channel(const String& nickname,
-                                 const String& chan_name) const {
-  std::map<String, int>::const_iterator user_chan_it =
-      event_user_chan.find(tmp_chan_name);
-  if (user_chan_it == event_user_chan.end()) {
-    event_user_in_chan = false;
+bool Server::chk_channel_exist(const String& chan_name) const {
+  std::map<String, Channel>::const_iterator chan_it =
+      channel_list.find(chan_name);
+  if (chan_it != channel_list.end()) {
+    return true;
   } else {
-    event_user_in_chan = true;
+    return false;
+  }
+}
+
+void Server::send_msg_to_channel(Channel& chan, const String& msg) {
+  std::map<String, User&>::iterator chan_user_it = chan.get_user_list().begin();
+  for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
+    chan_user_it->second.push_back_msg(msg);
+    ft_send(chan_user_it->second.get_pfd());
+  }
+}
+
+void Server::send_msg_to_channel_except_sender(Channel& chan,
+                                               const String& sender,
+                                               const String& msg) {
+  std::map<String, User&>::iterator chan_user_it = chan.get_user_list().begin();
+  for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
+    if (chan_user_it->first != sender) {
+      chan_user_it->second.push_back_msg(msg);
+      ft_send(chan_user_it->second.get_pfd());
+    }
   }
 }

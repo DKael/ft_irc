@@ -49,8 +49,8 @@ NOTES:
 
   6)    Use of the extended prefix (['!' <user> ] ['@' <host> ]) must
         not be used in server to server communications and is only
-        intended for server to client messages in order to provide
-        clients with more useful information about who a message is
+        intended for server to user messages in order to provide
+        users with more useful information about who a message is
         from without the need for additional queries.
 */
 
@@ -145,15 +145,15 @@ class Message {
 
   String to_raw_msg(void);
 
-  static Message rpl_432(const String& source, const String& client,
+  static Message rpl_432(const String& source, const String& user,
                          const String& nick);
-  static Message rpl_433(const String& source, const String& client,
+  static Message rpl_433(const String& source, const String& user,
                          const String& nick);
-  static Message rpl_451(const String& source, const String& client);
-  static Message rpl_461(const String& source, const String& client,
+  static Message rpl_451(const String& source, const String& user);
+  static Message rpl_461(const String& source, const String& user,
                          const String& cmd);
-  static Message rpl_462(const String& source, const String& client);
-  static Message rpl_464(const String& source, const String& client);
+  static Message rpl_462(const String& source, const String& user);
+  static Message rpl_464(const String& source, const String& user);
 };
 
 std::ostream& operator<<(std::ostream& out, Message msg);

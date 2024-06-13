@@ -225,68 +225,68 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
   return out;
 }
 
-Message Message::rpl_432(const String& source, const String& client,
+Message Message::rpl_432(const String& source, const String& user,
                          const String& nick) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("432");
-  rpl.push_back(client);
+  rpl.push_back(user);
   rpl.push_back(nick);
   rpl.push_back(":Erroneous nickname");
   return rpl;
 }
 
-Message Message::rpl_433(const String& source, const String& client,
+Message Message::rpl_433(const String& source, const String& user,
                          const String& nick) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("433");
-  rpl.push_back(client);
+  rpl.push_back(user);
   rpl.push_back(nick);
   rpl.push_back(":Nickname is already in use");
   return rpl;
 }
 
-Message Message::rpl_451(const String& source, const String& client) {
+Message Message::rpl_451(const String& source, const String& user) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("451");
-  rpl.push_back(client);
+  rpl.push_back(user);
   rpl.push_back(":Connection not registered");
   return rpl;
 }
 
-Message Message::rpl_461(const String& source, const String& client,
+Message Message::rpl_461(const String& source, const String& user,
                          const String& cmd) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("461");
-  rpl.push_back(client);
+  rpl.push_back(user);
   rpl.push_back(cmd);
   rpl.push_back(":Not enough parameters");
   return rpl;
 }
 
-Message Message::rpl_462(const String& source, const String& client) {
+Message Message::rpl_462(const String& source, const String& user) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("462");
-  rpl.push_back(client);
+  rpl.push_back(user);
   rpl.push_back(":Connection already registered");
   return rpl;
 }
 
-Message Message::rpl_464(const String& source, const String& client) {
+Message Message::rpl_464(const String& source, const String& user) {
   Message rpl;
 
   rpl.source = source;
   rpl.set_numeric("464");
-  rpl.push_back(client);
+  rpl.push_back(user);
   rpl.push_back(":Password incorrect");
   return rpl;
 }

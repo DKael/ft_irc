@@ -49,8 +49,8 @@ NOTES:
 
   6)    Use of the extended prefix (['!' <user> ] ['@' <host> ]) must
         not be used in server to server communications and is only
-        intended for server to client messages in order to provide
-        clients with more useful information about who a message is
+        intended for server to user messages in order to provide
+        users with more useful information about who a message is
         from without the need for additional queries.
 */
 
@@ -159,67 +159,72 @@ class Message {
 
   String to_raw_msg(void);
 
-  static Message rpl_001(const String& source, const String& client,
-                         const String& client_source);
-  static Message rpl_002(const String& source, const String& client,
+  static Message rpl_001(const String& source, const String& user,
+                         const String& user_source);
+  static Message rpl_002(const String& source, const String& user,
                          const String& server_name,
                          const String& server_version);
-  static Message rpl_003(const String& source, const String& client,
+  static Message rpl_003(const String& source, const String& user,
                          const String& server_created_time);
-  static Message rpl_004(const String& source, const String& client,
+  static Message rpl_004(const String& source, const String& user,
                          const String& server_name,
                          const String& server_version,
                          const String& available_user_modes,
                          const String& available_channel_modes);
-  static Message rpl_005(const String& source, const String& client,
+  static Message rpl_005(const String& source, const String& user,
                          std::vector<String> specs);
-  static Message rpl_315(const String& source, const String& client,
+  static Message rpl_315(const String& source, const String& user,
                          const String& mask);
-  static Message rpl_331(const String& source, const String& client,
+  static Message rpl_331(const String& source, const String& user,
                          const String& channel);
-  static Message rpl_332(const String& source, const String& client,
+  static Message rpl_332(const String& source, const String& user,
                          const String& channel, const String& topic);
-  static Message rpl_333(const String& source, const String& client,
+  static Message rpl_333(const String& source, const String& user,
                          const String& channel, const String& nick,
                          const String& setat);
-  static Message rpl_341(const String& source, const String& client,
+  static Message rpl_341(const String& source, const String& user,
                          const String& nick, const String& channel);
-  static Message rpl_352(const String& source, const String& client,
+  static Message rpl_352(const String& source, const String& user,
                          const String& channel, const User& _u,
                          const String& server, const String& flags,
                          int hopcount);
-  static Message rpl_353(const String& source, const String& client,
+  static Message rpl_353(const String& source, const String& user,
                          const String& symbol, const String& channel,
                          const String& nicks);
-  static Message rpl_366(const String& source, const String& client,
+  static Message rpl_366(const String& source, const String& user,
                          const String& channel);
-  static Message rpl_401(const String& source, const String& client,
+  static Message rpl_401(const String& source, const String& user,
                          const String& nickname);
   static Message rpl_403(const String& source, const String& nickname,
                          const String& channel);
+  static Message rpl_404(const String& source, const String& user,
+                         const String& channel);
   static Message rpl_409(const String& source, const String& nickname);
-  static Message rpl_421(const String& source, const String& client,
+  static Message rpl_411(const String& source, const String& user,
                          const String& command);
-  static Message rpl_432(const String& source, const String& client,
-                         const String& nick);
-  static Message rpl_433(const String& source, const String& client,
-                         const String& nick);
-  static Message rpl_441(const String& source, const String& client,
-                         const String& nick, const String& channel);
-  static Message rpl_442(const String& source, const String& client,
-                         const String& channel);
-  static Message rpl_443(const String& source, const String& client,
-                         const String& nick, const String& channel);
-  static Message rpl_451(const String& source, const String& client);
-  static Message rpl_461(const String& source, const String& client,
+  static Message rpl_412(const String& source, const String& user);
+  static Message rpl_421(const String& source, const String& user,
                          const String& command);
-  static Message rpl_462(const String& source, const String& client);
-  static Message rpl_464(const String& source, const String& client);
-  static Message rpl_471(const String& source, const String& client,
+  static Message rpl_432(const String& source, const String& user,
+                         const String& nick);
+  static Message rpl_433(const String& source, const String& user,
+                         const String& nick);
+  static Message rpl_441(const String& source, const String& user,
+                         const String& nick, const String& channel);
+  static Message rpl_442(const String& source, const String& user,
                          const String& channel);
-  static Message rpl_473(const String& source, const String& client,
+  static Message rpl_443(const String& source, const String& user,
+                         const String& nick, const String& channel);
+  static Message rpl_451(const String& source, const String& user);
+  static Message rpl_461(const String& source, const String& user,
+                         const String& command);
+  static Message rpl_462(const String& source, const String& user);
+  static Message rpl_464(const String& source, const String& user);
+  static Message rpl_471(const String& source, const String& user,
                          const String& channel);
-  static Message rpl_482(const String& source, const String& client,
+  static Message rpl_473(const String& source, const String& user,
+                         const String& channel);
+  static Message rpl_482(const String& source, const String& user,
                          const String& channel);
 };
 

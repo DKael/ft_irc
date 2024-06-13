@@ -24,16 +24,16 @@ typedef std::string String;
 #define CHAN_FLAG_L (1 << 4)
 #define CHAN_FLAG_S (1 << 5)
 
-#define OPERATOR_PREFIX "@"
-#define HALFOP_PREFIX "%"
-#define VOICE_PREFIX "+"
+#define OPERATOR_PREFIX '@'
+#define HALFOP_PREFIX '%'
+#define VOICE_PREFIX '+'
 
 #define REGULAR_CHANNEL 0
-#define REGULAR_CHANNEL_PREFIX "#"
+#define REGULAR_CHANNEL_PREFIX '#'
 #define LOCAL_CHANNEL 1
-#define LOCAL_CHANNEL_PREFIX "&"
+#define LOCAL_CHANNEL_PREFIX '&'
 
-#define INIT_CLIENT_LIMIT 50
+#define INIT_USER_LIMIT 50
 
 class Channel {
  private:
@@ -41,12 +41,12 @@ class Channel {
   char channel_type;
   const std::time_t created_time;
   String pwd;
-  int client_limit;
+  int user_limit;
   bool invite_only;
   String topic;
   String topic_set_nick;
   std::time_t topic_set_time;
-  std::map<String, User&> client_list;
+  std::map<String, User&> user_list;
   std::map<String, User&> banned_list;
   std::map<String, User&> operator_list;
   /* <MODE>
@@ -71,34 +71,36 @@ class Channel {
   const String& get_channel_name(void) const;
   char get_channel_type(void) const;
   const String& get_password(void) const;
-  int get_client_limit(void) const;
+  int get_user_limit(void) const;
   bool get_invite_only(void) const;
   const String& get_topic(void) const;
   const String& get_topic_set_nick(void) const;
   std::time_t get_topic_set_time(void) const;
-  std::map<String, User&>& get_client_list(void);
+  std::map<String, User&>& get_user_list(void);
   std::map<String, User&>& get_banned_list(void);
   std::map<String, User&>& get_operator_list(void);
-  const std::map<String, User&>& get_client_list(void) const;
+  const std::map<String, User&>& get_user_list(void) const;
   const std::map<String, User&>& get_banned_list(void) const;
   const std::map<String, User&>& get_operator_list(void) const;
 
+  const String& get_user_list_str(bool is_joined) const;
+
   void set_password(const String& _pwd);
-  void set_client_limit(int _client_limit);
+  void set_user_limit(int _user_limit);
   void set_invite_only(bool _invite_only);
   void set_topic(const String& _topic);
   void set_topic_set_nick(const String& _nick);
   void set_topic_set_time(std::time_t _t);
 
   // METHOD FUNCTIONS
-  void add_client(User& user);
+  void add_user(User& user);
   void add_operator(User& user);
 
   bool is_operator(const String& nickname) const;
-  void remove_client(const String& nickname);
+  void remove_user(const String& nickname);
   void remove_operator(const String& nickname);
-  bool chk_client_join(const String& nickname) const;
-  void change_client_nickname(const String& old_nick, const String& new_nick);
+  bool chk_user_join(const String& nickname) const;
+  void change_user_nickname(const String& old_nick, const String& new_nick);
 
   /* MODE */
   void set_mode(int flag);
