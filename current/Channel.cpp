@@ -204,8 +204,14 @@ void Channel::changeClientNickName(std::string old_nick, std::string new_nick) {
     if (candidate == old_nick) 
       ops_it->second = new_nick;
   }
+}
 
-
+bool Channel::isEmptyChannel(void) {
+  unsigned int size = channel_client_list.size();
+  if (size == EMPTY) {
+    return (true);
+  }
+  return (false);
 }
 
 // 채널 모드 세팅

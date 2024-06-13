@@ -16,6 +16,7 @@
 #define FLAG_L (1 << 4)
 
 #define INIT_CLIENT_LIMIT "50"
+#define EMPTY 0
 
 class Channel {
  private:
