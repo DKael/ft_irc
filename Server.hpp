@@ -142,19 +142,20 @@ class Server {
   void cmd_pass(int recv_fd, const Message& msg);
   void cmd_nick(int recv_fd, const Message& msg);
   void cmd_user(int recv_fd, const Message& msg);
-  void cmd_mode(int recv_fd, const Message& msg);
   void cmd_ping(int recv_fd, const Message& msg);
   void cmd_pong(int recv_fd, const Message& msg);
   void cmd_quit(int recv_fd, const Message& msg);
-
   void cmd_privmsg(int recv_fd, const Message& msg);
   void cmd_join(int recv_fd, const Message& msg);
   void cmd_kick(int recv_fd, const Message& msg);
-
   void cmd_invite(int recv_fd, const Message& msg);
   void cmd_topic(int recv_fd, const Message& msg);
   void cmd_who(int recv_fd, const Message& msg);
   void cmd_names(int recv_fd, const Message& msg);
+
+  void cmd_mode(int recv_fd, const Message& msg);
+  void cmd_part(int recv_fd, const Message& msg);
+  void cmd_list(int recv_fd, const Message& msg);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
