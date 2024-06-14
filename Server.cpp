@@ -82,6 +82,7 @@ void Server::listen(void) {
 
   while (true) {
     tmp_user_timeout_chk();
+    user_ping_chk();
     event_cnt = poll(observe_fd, MAX_USER, POLL_TIMEOUT * 1000);
     if (event_cnt == 0) {
       continue;
@@ -130,11 +131,14 @@ int Server::user_socket_init(void) {
     std::map<unsigned int, int>::iterator ip_it =
         ip_list.find(user_addr.sin_addr.s_addr);
     if (ip_it != ip_list.end()) {
-      if (ip_it->second > 9) {
-        std::cerr << "To many connection at " << inet_ntoa(user_addr.sin_addr)
+      if (ip_it->second > MAXCONNECTIONSIP) {
+        std::clog << "To many connection at " << inet_ntoa(user_addr.sin_addr)
                   << '\n';
-        send(user_socket, "ERROR :Too many connection at your ipv4",
-             std::strlen("ERROR :Too many connection at your ipv4"),
+        send(user_socket,
+             "ERROR :Connection refused, too many connections from your IP "
+             "address\r\n",
+             std::strlen("ERROR :Connection refused, too many connections from "
+                         "your IP address\r\n"),
              MSG_DONTWAIT);
         close(user_socket);
         return -1;
@@ -148,8 +152,8 @@ int Server::user_socket_init(void) {
     if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
       // error_handling
       perror("fcntl() error");
-      send(user_socket, "ERROR :socket setting error",
-           std::strlen("ERROR :socket setting error"), MSG_DONTWAIT);
+      send(user_socket, "ERROR :socket setting error\r\n",
+           std::strlen("ERROR :socket setting error\r\n"), MSG_DONTWAIT);
       close(user_socket);
       return -1;
     }
@@ -158,8 +162,8 @@ int Server::user_socket_init(void) {
     socklen_t len = sizeof(bufSize);
     if (setsockopt(user_socket, SOL_SOCKET, SO_SNDBUF, &bufSize,
                    sizeof(bufSize)) == -1) {
-      send(user_socket, "ERROR :socket setting error",
-           std::strlen("ERROR :socket setting error"), MSG_DONTWAIT);
+      send(user_socket, "ERROR :socket setting error\r\n",
+           std::strlen("ERROR :socket setting error\r\n"), MSG_DONTWAIT);
       perror("setsockopt() error");
       close(user_socket);
       return -1;
@@ -172,8 +176,8 @@ int Server::user_socket_init(void) {
       // 아니면 예비소켓 하나 남겨두고 잠시 연결했다 바로 연결 종료하는
       // 용도로 사용하는 것도 방법일 듯
       std::cerr << "User connection limit exceed!\n";
-      send(user_socket, "ERROR :Too many users on server",
-           std::strlen("ERROR :Too many users on server"), MSG_DONTWAIT);
+      send(user_socket, "ERROR :Too many users on server\r\n",
+           std::strlen("ERROR :Too many users on server\r\n"), MSG_DONTWAIT);
       close(user_socket);
       return -1;
     }
@@ -361,10 +365,6 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
       cmd_quit(p_val.fd, msg);
       msg_list.clear();
       break;
-    } else if (cmd_type == PRIVMSG) {
-      cmd_privmsg(p_val.fd, msg);
-    } else if (cmd_type == JOIN) {
-      cmd_join(p_val.fd, msg);
     } else if (cmd_type == WHO) {
       cmd_who(p_val.fd, msg);
     } else if (cmd_type == KICK) {
@@ -373,9 +373,24 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
       cmd_invite(p_val.fd, msg);
     } else if (cmd_type == TOPIC) {
       cmd_topic(p_val.fd, msg);
+    } else if (cmd_type == NAMES) {
+      cmd_names(p_val.fd, msg);
+    } else if (cmd_type == PRIVMSG) {
+      cmd_privmsg(p_val.fd, msg);
+    } else if (cmd_type == JOIN) {
+      cmd_join(p_val.fd, msg);
+    } else if (cmd_type == PART) {
+      cmd_part(p_val.fd, msg);
+    } else if (cmd_type == LIST) {
+      cmd_list(p_val.fd, msg);
+    } else {
+      event_user.push_back_msg(
+          Message::rpl_421(serv_name, event_user.get_nick_name(), msg.get_cmd())
+              .to_raw_msg());
     }
     ft_send(p_val);
   }
+  event_user.set_have_to_ping_chk(false);
   event_user.set_last_ping(std::time(NULL));
 }
 
@@ -610,7 +625,56 @@ void Server::tmp_user_timeout_chk(void) {
   }
 }
 
-void Server::user_ping_chk(void) {}
+void Server::user_ping_chk(void) {
+  std::map<int, User>::iterator user_it = user_list.begin();
+  std::time_t now = std::time(NULL);
+
+  for (; user_it != user_list.end(); ++user_it) {
+    User& tmp_user = user_it->second;
+    const String& tmp_user_nick = tmp_user.get_nick_name();
+
+    if (tmp_user.get_have_to_ping_chk() == true) {
+      if (now - tmp_user.get_last_ping() > PINGTIMEOUT + PONGTIMEOUT) {
+        Message rpl;
+
+        rpl.set_source(tmp_user.make_source(1));
+        rpl.set_cmd_type(QUIT);
+        rpl.push_back(":Ping timeout: 20 seconds");
+        send_msg_to_connected_user(tmp_user, rpl.to_raw_msg());
+
+        std::map<String, int>::const_iterator con_it =
+            tmp_user.get_connected_list().begin();
+        for (; con_it != tmp_user.get_connected_list().end(); ++con_it) {
+          (*this)[con_it->second].remove_connected(tmp_user_nick);
+        }
+
+        rpl.clear();
+        rpl.set_source(serv_name);
+        rpl.set_cmd_type(NOTICE);
+        rpl.push_back(tmp_user_nick);
+        rpl.push_back(":Connection statistics: client - kb, server - kb.");
+        tmp_user.push_back_msg(rpl.to_raw_msg());
+        tmp_user.push_back_msg("ERROR :Ping timeout: 20 seconds\r\n");
+
+        std::clog << "Connection close at " << tmp_user.get_user_socket()
+                  << '\n';
+        tmp_user.set_have_to_disconnect(true);
+        ft_sendd(tmp_user.get_pfd());
+      }
+    } else {
+      if (now - tmp_user.get_last_ping() > PINGTIMEOUT) {
+        tmp_user.set_have_to_ping_chk(true);
+        Message ping;
+
+        ping.set_cmd_type(PING);
+        ping.push_back(":" + serv_name);
+
+        tmp_user.push_back_msg(ping.to_raw_msg());
+        ft_send(tmp_user.get_pfd());
+      }
+    }
+  }
+}
 
 User& Server::operator[](int socket_fd) {
   if (user_list.find(socket_fd) != user_list.end()) {

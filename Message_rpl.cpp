@@ -92,6 +92,43 @@ Message Message::rpl_315(const String& source, const String& user,
   return rpl;
 }
 
+Message Message::rpl_321(const String& source, const String& user) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("321");
+  rpl.push_back(user);
+  rpl.push_back("Channel :Users  Name");
+
+  return rpl;
+}
+
+Message Message::rpl_322(const String& source, const String& user,
+                         const String& channel, const String& client_count,
+                         const String& topic) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("322");
+  rpl.push_back(user);
+  rpl.push_back(channel);
+  rpl.push_back(client_count);
+  rpl.push_back(":" + topic);
+
+  return rpl;
+}
+
+Message Message::rpl_323(const String& source, const String& user) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("323");
+  rpl.push_back(user);
+  rpl.push_back(":End of LIST");
+
+  return rpl;
+}
+
 Message Message::rpl_331(const String& source, const String& user,
                          const String& channel) {
   Message rpl;
@@ -268,6 +305,19 @@ Message Message::rpl_404(const String& source, const String& user,
   rpl.push_back(user);
   rpl.push_back(channel);
   rpl.push_back(":Cannot send to channel");
+
+  return rpl;
+}
+
+Message Message::rpl_405(const String& source, const String& user,
+                         const String& channel) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("405");
+  rpl.push_back(user);
+  rpl.push_back(channel);
+  rpl.push_back(":You have joined too many channels");
 
   return rpl;
 }

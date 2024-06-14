@@ -21,23 +21,23 @@
 
 typedef std::string String;
 
+#define MAXCONNECTIONSIP 5
 #define MAX_USER 256
 #define POLL_TIMEOUT 5
 #define AUTHENTICATE_TIMEOUT 20
-#define PING_INTERVAL 60
-#define PING_TIMEOUT 20
+#define PINGTIMEOUT 120
+#define PONGTIMEOUT 20
 #define SOCKET_BUFFER_SIZE 8192
 
 #define SERVER_NAME "ft_irc.net"
 #define SERVER_VERSION "ft_irc-1.0"
-#define AVAILABLE_USER_MODES "i"
-#define AVAILABLE_CHANNEL_MODES "iklost"
 
 #define IRC_PROTOCOL "RFC2812"
 #define IRCD "ngIRCd"
 #define CHARSET "UTF-8"
 #define CASEMAPPING "ascii"
 #define PREFIX "@%+"
+#define AWAYLEN 127
 #define CHANNELNUM 20
 
 // MODE FLAG

@@ -64,8 +64,6 @@ NOTES:
 
 typedef std::string String;
 
-#define AWAYLEN 127
-
 class Channel;
 
 enum Command {
@@ -175,6 +173,11 @@ class Message {
                          std::vector<String> specs);
   static Message rpl_315(const String& source, const String& user,
                          const String& mask);
+  static Message rpl_321(const String& source, const String& user);
+  static Message rpl_322(const String& source, const String& user,
+                         const String& channel, const String& client_count,
+                         const String& topic);
+  static Message rpl_323(const String& source, const String& user);
   static Message rpl_331(const String& source, const String& user,
                          const String& channel);
   static Message rpl_332(const String& source, const String& user,
@@ -198,6 +201,8 @@ class Message {
   static Message rpl_403(const String& source, const String& nickname,
                          const String& channel);
   static Message rpl_404(const String& source, const String& user,
+                         const String& channel);
+  static Message rpl_405(const String& source, const String& user,
                          const String& channel);
   static Message rpl_409(const String& source, const String& nickname);
   static Message rpl_411(const String& source, const String& user,

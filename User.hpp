@@ -15,8 +15,12 @@
 
 typedef std::string String;
 
+#define CHANLIMIT "#&:10"
+#define USERCHANLIMIT 10
 #define NICKLEN 9
 #define USERLEN 12
+
+#define AVAILABLE_USER_MODES "i"
 
 #define USER_FLAG_I (1 << 0)
 

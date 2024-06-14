@@ -11,8 +11,8 @@
 typedef std::string String;
 
 #define CHANTYPES "#&"
-#define CHANMODES "k,l,ist"
-#define CHANLIMIT "#&:10"
+#define AVAILABLE_CHANNEL_MODES "iklost"
+#define CHANMODES "k,l,isto"
 #define CHANNELLEN 50
 #define TOPICLEN 490
 #define KICKLEN 400
