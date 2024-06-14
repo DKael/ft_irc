@@ -148,6 +148,7 @@ class Message {
   const String& get_cmd(void) const;
   Command get_cmd_type(void) const;
   const std::vector<String>& get_params(void) const;
+  std::vector<String>& get_params(void);
   std::size_t get_params_size(void) const;
   const String& get_numeric(void) const;
   bool get_trailing_exist(void) const;
@@ -171,6 +172,8 @@ class Message {
                          const String& available_channel_modes);
   static Message rpl_005(const String& source, const String& user,
                          std::vector<String> specs);
+  static Message rpl_221(const String& source, const String& user,
+                         const String& user_modes);
   static Message rpl_315(const String& source, const String& user,
                          const String& mask);
   static Message rpl_321(const String& source, const String& user);
@@ -178,6 +181,11 @@ class Message {
                          const String& channel, const String& client_count,
                          const String& topic);
   static Message rpl_323(const String& source, const String& user);
+  static Message rpl_324(const String& source, const String& user,
+                         const String& channel, const String& modestring,
+                         const std::vector<String> mode_arguments);
+  static Message rpl_329(const String& source, const String& user,
+                         const String& channel, const String& creationtime);
   static Message rpl_331(const String& source, const String& user,
                          const String& channel);
   static Message rpl_332(const String& source, const String& user,
@@ -227,12 +235,17 @@ class Message {
   static Message rpl_464(const String& source, const String& user);
   static Message rpl_471(const String& source, const String& user,
                          const String& channel);
+  static Message rpl_472(const String& source, const String& user,
+                         const String& modechar, const String& channel);
   static Message rpl_473(const String& source, const String& user,
                          const String& channel);
   static Message rpl_475(const String& source, const String& user,
                          const String& channel);
   static Message rpl_482(const String& source, const String& user,
                          const String& channel);
+  static Message rpl_501(const String& source, const String& user,
+                         const String& mode);
+  static Message rpl_502(const String& source, const String& user);
 };
 
 #ifdef DEBUG

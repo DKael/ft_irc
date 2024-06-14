@@ -11,22 +11,40 @@
 typedef std::string String;
 
 #define CHANTYPES "#&"
-#define AVAILABLE_CHANNEL_MODES "iklost"
-#define CHANMODES "k,l,isto"
+#define AVAILABLE_CHANNEL_MODES "biklost"
+#define CHANMODES "b,k,l,ist"
+#define CHANMODE_A "bo"
+#define CHANMODE_B "k"
+#define CHANMODE_C "l"
+#define CHANMODE_D "ist"
+#define CHANLIMIT "#&:10"
+#define PREFIX "(oh)@%"
 #define CHANNELLEN 50
-#define TOPICLEN 490
-#define KICKLEN 400
+#define TOPICLEN 307
+#define KICKLEN 307
 
-#define CHAN_FLAG_I (1 << 0)
-#define CHAN_FLAG_T (1 << 1)
-#define CHAN_FLAG_K (1 << 2)
-#define CHAN_FLAG_O (1 << 3)
-#define CHAN_FLAG_L (1 << 4)
-#define CHAN_FLAG_S (1 << 5)
+#define CHAN_FLAG_O_CHAR 'o'
+#define CHAN_FLAG_B_CHAR 'b'
 
+#define CHAN_FLAG_K_CHAR 'k'
+#define CHAN_FLAG_K (1 << 0)
+
+#define CHAN_FLAG_L_CHAR 'l'
+#define CHAN_FLAG_L (1 << 1)
+
+#define CHAN_FLAG_I_CHAR 'i'
+#define CHAN_FLAG_I (1 << 2)
+
+#define CHAN_FLAG_S_CHAR 's'
+#define CHAN_FLAG_S (1 << 3)
+
+#define CHAN_FLAG_T_CHAR 't'
+#define CHAN_FLAG_T (1 << 4)
+
+#define OPERATOR 0
 #define OPERATOR_PREFIX '@'
+#define HALFOP 1
 #define HALFOP_PREFIX '%'
-#define VOICE_PREFIX '+'
 
 #define REGULAR_CHANNEL 0
 #define REGULAR_CHANNEL_PREFIX '#'
@@ -71,11 +89,13 @@ class Channel {
   const String& get_channel_name(void) const;
   char get_channel_type(void) const;
   const String& get_password(void) const;
+  time_t get_created_time(void) const;
   int get_user_limit(void) const;
   bool get_invite_only(void) const;
   const String& get_topic(void) const;
   const String& get_topic_set_nick(void) const;
   std::time_t get_topic_set_time(void) const;
+  int get_mode(void) const;
   std::map<String, User&>& get_user_list(void);
   std::map<String, User&>& get_banned_list(void);
   std::map<String, User&>& get_operator_list(void);
@@ -106,6 +126,12 @@ class Channel {
   void set_mode(int flag);
   void unset_mode(int flag);
   bool chk_mode(int flag) const;
+  void set_mode(char flag);
+  void unset_mode(char flag);
+  bool chk_mode(char flag) const;
+  String make_mode_str(void);
+
+  static bool is_channel_name(const String& name);
 };
 
 #ifdef DEBUG

@@ -15,7 +15,7 @@ User::User(pollfd& _pfd, const sockaddr_in& _user_addr)
       have_to_disconnect(false),
       have_to_ping_chk(false),
       last_ping(std::time(NULL) + INIT_PING_OFFSET),
-      mode(USER_FLAG_I),
+      mode(0),
       dummy("*") {}
 
 User::User(const User& origin)
@@ -117,6 +117,8 @@ bool User::get_have_to_disconnect(void) const { return have_to_disconnect; }
 bool User::get_have_to_ping_chk(void) const { return have_to_ping_chk; }
 
 std::time_t User::get_last_ping(void) const { return last_ping; }
+
+int User::get_mode(void) const { return mode; }
 
 const std::map<String, int>& User::get_invited_channels(void) const {
   return invited_channels;
@@ -231,6 +233,32 @@ void User::set_mode(int flag) { mode |= flag; }
 void User::unset_mode(int flag) { mode &= ~flag; }
 
 bool User::chk_mode(int flag) const { return mode & flag; }
+
+void User::set_mode(char flag) {
+  if (flag == USER_FLAG_I_CHAR) {
+    mode |= USER_FLAG_I;
+  }
+}
+void User::unset_mode(char flag) {
+  if (flag == USER_FLAG_I_CHAR) {
+    mode &= ~USER_FLAG_I;
+  }
+}
+bool User::chk_mode(char flag) const {
+  if (flag == USER_FLAG_I_CHAR) {
+    return mode & USER_FLAG_I;
+  }
+}
+
+String User::make_mode_str(void) {
+  String mode_str = "";
+
+  if (mode & USER_FLAG_I) {
+    mode_str += "i";
+  }
+
+  return mode_str;
+}
 
 #ifdef DEBUG
 

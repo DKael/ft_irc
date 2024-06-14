@@ -67,7 +67,11 @@ void Server::cmd_topic(int recv_fd, const Message& msg) {
     */
     const String& new_topic = msg[1];
 
-    chan.set_topic(new_topic);
+    if (new_topic.length() > TOPICLEN) {
+      chan.set_topic(new_topic.substr(0, TOPICLEN) + "[CUT]");
+    } else {
+      chan.set_topic(new_topic);
+    }
 
     Message rpl;
 
@@ -208,7 +212,11 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
   rpl.push_back(event_user_nick);
   rpl.push_back("");
   if (msg.get_params_size() >= 3) {
-    rpl.push_back(":" + msg[2]);
+    if (msg[2].length() > KICKLEN) {
+      rpl.push_back(":" + msg[2].substr(0, KICKLEN) + "[CUT]");
+    } else {
+      rpl.push_back(":" + msg[2]);
+    }
   }
 
   for (size_t i = 0; i < name_vec.size(); ++i) {
@@ -248,8 +256,7 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
   }
 
   // 채널인지 유저인지 확인
-  if (msg[0][0] == REGULAR_CHANNEL_PREFIX ||
-      msg[0][0] == LOCAL_CHANNEL_PREFIX) {
+  if (Channel::is_channel_name(msg[0]) == true) {
     const String& chan_name = msg[0];
     std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
     if (chan_it != channel_list.end()) {
@@ -448,6 +455,13 @@ void Server::cmd_ping(int recv_fd, const Message& msg) {
 
 void Server::cmd_pong(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
+
+  // 인자 개수 확인. 1개가 정상적
+  if (msg.get_params_size() != 1) {
+    event_user.push_back_msg(
+        Message::rpl_409(serv_name, event_user.get_nick_name()).to_raw_msg());
+    return;
+  }
 
   event_user.set_have_to_ping_chk(false);
   event_user.set_last_ping(std::time(NULL));
@@ -699,8 +713,7 @@ void Server::cmd_privmsg(int recv_fd, const Message& msg) {
   rpl.push_back(":" + msg[1]);
 
   for (size_t i = 0; i < target_vec.size(); i++) {
-    if (target_vec[i][0] == REGULAR_CHANNEL_PREFIX ||
-        target_vec[i][0] == LOCAL_CHANNEL_PREFIX) {
+    if (Channel::is_channel_name(target_vec[i]) == true) {
       // 채널 존재하는지 확인
       const String& chan_name = target_vec[i];
       std::map<String, Channel>::iterator chan_it =
@@ -752,8 +765,8 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
   }
 
   for (size_t i = 0; i < chan_name_vec.size(); ++i) {
-    if (chan_name_vec[i][0] != REGULAR_CHANNEL_PREFIX &&
-        chan_name_vec[i][0] != LOCAL_CHANNEL_PREFIX) {
+    if ((Channel::is_channel_name(chan_name_vec[i])) ||
+        chan_name_vec[i].length() > CHANNELLEN) {
       event_user.push_back_msg(
           Message::rpl_403(serv_name, event_user_nick, chan_name_vec[i])
               .to_raw_msg());
@@ -913,8 +926,7 @@ zzz
   }
 
   for (size_t i = 0; i < chan_name_vec.size(); ++i) {
-    if (chan_name_vec[i][0] != REGULAR_CHANNEL_PREFIX &&
-        chan_name_vec[i][0] != LOCAL_CHANNEL_PREFIX) {
+    if (Channel::is_channel_name(chan_name_vec[i])) {
       event_user.push_back_msg(
           Message::rpl_403(serv_name, event_user_nick, chan_name_vec[i])
               .to_raw_msg());
@@ -999,507 +1011,321 @@ void Server::cmd_list(int recv_fd, const Message& msg) {
       Message::rpl_323(serv_name, event_user_nick).to_raw_msg());
 }
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
 void Server::cmd_mode(int recv_fd, const Message& msg) {
-  User& event_user = (*this)[recv_fd];
-  Message rpl;
-  // mode +i k l m t 등 서브젝트에서 요구한 구현 요청은 이 단계에서 처리후
-  // return ;
-  if (msg.get_params()[0][0] == '#') {
-    // #################################################################################################
-    // #################################################################################################
-    // #################################################################################################
-    // 전처리 과정
-    // 서버에 요청된 채널이 있다면..
-    std::string targetChannelStr = msg.get_params()[0];
-    std::string::size_type pos = targetChannelStr.find('#');
-    if (pos != std::string::npos) {
-      targetChannelStr.erase(pos, 1);
-    }
-    // 해당 채널 찾고
-    channel_iterator = get_channel_iterator(targetChannelStr);
+  /*
+  mode
+  :irc.example.net 461 zzz mode :Syntax error
+  mode aaa
+  :irc.example.net 401 zzz aaa :No such nick or channel name
+  mode bbb
+  :irc.example.net 502 zzz :Can't set/get mode for other users
+  mode bbb +z
+  :irc.example.net 502 zzz :Can't set/get mode for other users
+  mode zzz +z
+  :irc.example.net 501 zzz :Unknown mode "+z"
+  mode zzz -z
+  :irc.example.net 501 zzz :Unknown mode "-z"
+  mode zzz +1234567
+  :irc.example.net 501 zzz :Unknown mode "+1"
+  :irc.example.net 501 zzz :Unknown mode "+2"
+  :irc.example.net 501 zzz :Unknown mode "+3"
+  :irc.example.net 501 zzz :Unknown mode "+4"
+  :irc.example.net 501 zzz :Unknown mode "+5"
+  :irc.example.net 501 zzz :Unknown mode "+6"
+  :irc.example.net 501 zzz :Unknown mode "+7"
+  mode +i-i
+  :irc.example.net 401 zzz +i-i :No such nick or channel name
+  mode zzz +i-i
+  :zzz!~zzz@localhost MODE zzz :+i-i
+  mode zzz +ior
+  :irc.example.net 481 zzz :Permission denied
+  :zzz!~zzz@localhost MODE zzz :+ir
+  mode zzz +w-iro
+  :irc.example.net 484 zzz :Your connection is restricted
+  :zzz!~zzz@localhost MODE zzz :+w-i
+  mode zzz
+  :irc.example.net 221 zzz +rw
 
-    // 없으면 에러 RESPONSE 뱉어주기
-    if (channel_iterator == channel_list.end()) {
-      // ERR_NOSUCHCHANNEL (403)
-      User& event_user = (*this)[recv_fd];
-      Message rpl =
-          Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
-      event_user.push_back_msg(rpl.to_raw_msg());
+  mode zzz +iii-ii+i
+  :zzz!~zzz@localhost MODE zzz :+i-i+i
+  */
+  User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // 인자 개수 확인. 1 ~ 2개가 정상적
+  if (msg.get_params_size() < 1 || msg.get_params_size() > 2) {
+    event_user.push_back_msg(
+        Message::rpl_461(serv_name, event_user_nick, msg.get_raw_cmd())
+            .to_raw_msg());
+    return;
+  }
+
+  if (Channel::is_channel_name(msg[0]) == true) {
+    const String& chan_name = msg[0];
+    std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
+    if (chan_it == channel_list.end()) {
+      event_user.push_back_msg(
+          Message::rpl_401(serv_name, event_user_nick, chan_name).to_raw_msg());
       return;
     }
 
-    // ##################################################################################################
-    // ##################################### [ /mode +i ]
-    // ###############################################
-    // ##################################################################################################
-    if (msg.get_params_size() > 1 && msg.get_params()[1] == INVITE_MODE_ON) {
-      // [STEP 1]
-      // 일단 MODE 설정한 유저에게 응답 보내주기
+    Channel& chan = chan_it->second;
+    if (msg.get_params_size() == 1) {
+      std::vector<String> param_vec;
 
-      // 그런데 그 전에 operator가 아니면 권한이 없다고 말해주기
-      if (get_channel(channel_iterator).isOperator((*this)[recv_fd]) == false) {
-        User& event_user = (*this)[recv_fd];
-        Message rpl =
-            Message::rpl_482(serv_name, (*this)[recv_fd].get_nick_name(), msg);
-        event_user.push_back_msg(rpl.to_raw_msg());
-        return;
+      if (chan.chk_mode(CHAN_FLAG_K) == true) {
+        param_vec.push_back(chan.get_password());
+      }
+      if (chan.chk_mode(CHAN_FLAG_L) == true) {
+        param_vec.push_back(ft_itos(chan.get_user_limit()));
       }
 
-      std::string targetChannelStr = msg.get_params()[0];
-
-      // 채널명에서 #없애주기 => 순회하면서 채널명을 찾기위함 (채널리스트에서)
-      std::string::size_type pos = targetChannelStr.find('#');
-      if (pos != std::string::npos) {
-        targetChannelStr.erase(pos, 1);
-      }
-      channel_iterator = get_channel_iterator(targetChannelStr);
-      if (channel_iterator == channel_list.end()) {
-        // ERR_NOSUCHCHANNEL (403)
-        User& event_user = (*this)[recv_fd];
-        Message rpl =
-            Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
-        event_user.push_back_msg(rpl.to_raw_msg());
-        return;
-      }
-
-      // CHANNEL MODE 가 이미 +i 이면 중복 메세지 혹은 중복 세팅은 불피요 함으로
-      // return ; 으로 더 이상 진행 못하게 바꿔줌
-      if (get_channel(get_channel_iterator(targetChannelStr))
-              .isMode(CHAN_FLAG_I))
-        return;
-
-      // 여기서 어떤 모드인지에 따라 RESPONSE 메세지를 처리해줌
-      // 즉, 채널 속성값을 여기서 변경함
-
-      get_channel(get_channel_iterator(targetChannelStr)).setMode(CHAN_FLAG_I);
-
-      User& event_user = (*this)[recv_fd];
-
-      Message rpl;
-      rpl.set_source(event_user.get_nick_name() + std::string("!~") +
-                     event_user.get_user_name() + std::string("@localhost"));
-      rpl.set_cmd("MODE");
-      rpl.push_back(msg.get_params()[0]);
-      rpl.push_back(msg.get_params()[1]);
-
-      // 해당 채널에서 모드값 스위치 ON / OFF 해주기
-      get_channel(get_channel_iterator(targetChannelStr)).setMode(CHAN_FLAG_I);
-      // BROADCASTING
-      std::map<std::string, User&>::iterator it;
-      for (it = get_channel(get_channel_iterator(targetChannelStr))
-                    .get_channel_client_list()
-                    .begin();
-           it != get_channel(get_channel_iterator(targetChannelStr))
-                     .get_channel_client_list()
-                     .end();
-           ++it) {
-        std::string clientNickName = it->second.get_nick_name();
-        it->second.push_back_msg(rpl.to_raw_msg());
-        pollfd* tmp;
-        for (int i = 0; i < MAX_USER; i++) {
-          if (observe_fd[i].fd == (it->second).get_user_socket()) {
-            tmp = &(observe_fd[i]);
-          }
-        }
-
-        // broadcasting 하는건데 event_user는 윗단에서 poll처리를 해줌으로
-        // 여기서는 continue를 해줌
-        if (clientNickName == event_user.get_nick_name()) continue;
-        if ((*this).send_msg_at_queue((it->second).get_user_socket()) == -1) {
-          tmp->events = POLLIN | POLLOUT;
-        } else {
-          tmp->events = POLLIN;
-        }
-      }
-    }
-
-    // ##################################################################################################
-    // ##################################### [ /mode -i ]
-    // ###############################################
-    // ##################################################################################################
-    if (msg.get_params_size() > 1 && msg.get_params()[1] == INVITE_MODE_OFF) {
-      Message rpl;
-      rpl.set_source(event_user.get_nick_name() + std::string("!~") +
-                     event_user.get_user_name() + std::string("@localhost"));
-      rpl.set_cmd("MODE");
-      rpl.push_back(msg.get_params()[0]);
-      rpl.push_back(msg.get_params()[1]);
-
-      // CHANNEL MODE 가 이미 +i 이면 중복 메세지 혹은 중복 세팅은 불피요 함으로
-      // return ; 으로 더 이상 진행 못하게 바꿔줌
-      if (!get_channel(get_channel_iterator(targetChannelStr))
-               .isMode(CHAN_FLAG_I))
-        return;
-
-      // 해당 채널에서 모드값 스위치 ON / OFF 해주기
-      get_channel(get_channel_iterator(targetChannelStr))
-          .unsetMode(CHAN_FLAG_I);
-
-      // BROADCASTING
-      std::map<std::string, User&>::iterator it;
-      for (it = get_channel(get_channel_iterator(targetChannelStr))
-                    .get_channel_client_list()
-                    .begin();
-           it != get_channel(get_channel_iterator(targetChannelStr))
-                     .get_channel_client_list()
-                     .end();
-           ++it) {
-        std::string clientNickName = it->second.get_nick_name();
-        it->second.push_back_msg(rpl.to_raw_msg());
-        pollfd* tmp;
-        for (int i = 0; i < MAX_USER; i++) {
-          if (observe_fd[i].fd == (it->second).get_user_socket()) {
-            tmp = &(observe_fd[i]);
-          }
-        }
-        // broadcasting 하는건데 event_user는 윗단에서 poll처리를 해줌으로
-        // 여기서는 continue를 해줌
-        if (clientNickName == event_user.get_nick_name()) continue;
-        if ((*this).send_msg_at_queue((it->second).get_user_socket()) == -1) {
-          tmp->events = POLLIN | POLLOUT;
-        } else {
-          tmp->events = POLLIN;
-        }
-      }
-    }
-
-    // ##################################################################################################
-    // ##################################### [ /mode +o ]
-    // ###############################################
-    // ##################################################################################################
-    if (msg.get_params_size() > 1 && msg.get_params()[1] == OPERATING_MODE_ON) {
-      // check for privilege
-      if (get_channel(channel_iterator).isOperator(event_user) == false) {
-        Message rpl =
-            Message::rpl_482(serv_name, event_user.get_nick_name(), msg);
-        event_user.push_back_msg(rpl.to_raw_msg());
-        return;
-      }
-
-      // check for invalid channel
-      std::string targetChannelStr = msg.get_params()[0];
-      std::string::size_type pos = targetChannelStr.find('#');
-      if (pos != std::string::npos) {
-        targetChannelStr.erase(pos, 1);
-      }
-      channel_iterator = get_channel_iterator(targetChannelStr);
-      if (channel_iterator == channel_list.end()) {
-        // ERR_NOSUCHCHANNEL (403)
-        User& event_user = (*this)[recv_fd];
-        Message rpl =
-            Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
-        event_user.push_back_msg(rpl.to_raw_msg());
-        return;
-      }
-
-      // 서버에 등록되어 있지 않은 경우
-      try {
-        (*this)[msg.get_params()[2]];
-      } catch (std::invalid_argument& e) {
+      event_user.push_back_msg(Message::rpl_324(serv_name, event_user_nick,
+                                                chan_name, chan.make_mode_str(),
+                                                param_vec)
+                                   .to_raw_msg());
+      event_user.push_back_msg(
+          Message::rpl_329(serv_name, event_user_nick, chan_name,
+                           ft_ltos(chan.get_created_time()))
+              .to_raw_msg());
+    } else {
+      if (chan.is_operator(event_user_nick) == false) {
         event_user.push_back_msg(
-            Message::rpl_401_mode_operator(
-                serv_name, event_user.get_nick_name(), msg.get_params()[2])
+            Message::rpl_482(serv_name, event_user_nick, chan_name)
                 .to_raw_msg());
         return;
       }
 
-      // check for invalid nickname => 이 경우는 서버에는 등록되어 있는 유저이지만 채널에 없는 경우임
-      channel_iterator = get_channel_iterator(targetChannelStr);
-      if (get_channel(channel_iterator).foundClient(msg.get_params()[2]) ==
-          false) {
-        // < 2024/06/12 16:19:38.000655856  length=65 from=19794 to=19858
-        // :irc.example.net 441 dy_ dy__ #zzz :They aren't on that channel\r
-        event_user.push_back_msg(Message::rpl_441(serv_name, msg).to_raw_msg());
-        return;
-      }
+      const String& mode = msg[1];
+      size_t param_idx = 2;
+      bool set_mode = true;
+      int old_mode = chan.get_mode();
+      String done_set = "";
+      String result = "";
+      std::vector<String> param_vec;
 
-      // assign the target client into the OP list
+      for (size_t i = 0; i < mode.length(); i++) {
+        if (mode[i] == '+') {
+          if (set_mode = false && done_set.length() != 0) {
+            result += "-";
+            result += done_set;
+            done_set = "";
+          }
+          set_mode = true;
+        } else if (mode[i] == '-') {
+          if (set_mode = true && done_set.length() != 0) {
+            result += "+";
+            result += done_set;
+            done_set = "";
+          }
+          set_mode = false;
+        } else {
+          if (String(AVAILABLE_CHANNEL_MODES).find(mode[i]) == String::npos) {
+            event_user.push_back_msg(
+                Message::rpl_472(serv_name, event_user_nick,
+                                 String(set_mode ? "+" : "-") + mode[i],
+                                 chan_name)
+                    .to_raw_msg());
+            continue;
+          }
+          if (mode[i] == CHAN_FLAG_O_CHAR) {
+            String target_nick;
+            if (param_idx < msg.get_params_size()) {
+              target_nick = msg[param_idx];
+              ++param_idx;
+            } else {
+              continue;
+            }
+            if (chan.chk_user_join(target_nick) == false) {
+              event_user.push_back_msg(Message::rpl_441(serv_name,
+                                                        event_user_nick,
+                                                        target_nick, chan_name)
+                                           .to_raw_msg());
+              continue;
+            }
+            if (set_mode == true && chan.is_operator(target_nick) == false) {
+              chan.add_operator((*this)[(*this)[target_nick]]);
+              param_vec.push_back(target_nick);
+              done_set += mode[i];
+            } else if (set_mode == false &&
+                       chan.is_operator(target_nick) == true) {
+              chan.remove_operator(target_nick);
+              param_vec.push_back(target_nick);
+              done_set += mode[i];
+            }
+          } else if (mode[i] == CHAN_FLAG_B_CHAR) {
+            String target_nick;
+            if (param_idx < msg.get_params_size()) {
+              target_nick = msg[param_idx];
+              ++param_idx;
+            } else {
+              continue;
+            }
+          } else if (mode[i] == CHAN_FLAG_K_CHAR) {
+            String password;
+            if (param_idx < msg.get_params_size()) {
+              password = msg[param_idx];
+              ++param_idx;
+            } else {
+              continue;
+            }
+            if (set_mode == true && chan.chk_mode(mode[i]) == false) {
+              chan.set_mode(mode[i]);
+              chan.set_password(password);
+              param_vec.push_back(password);
+              done_set += mode[i];
+            } else if (set_mode == false && chan.chk_mode(mode[i]) == true) {
+              chan.unset_mode(mode[i]);
+              chan.set_password("");
+              param_vec.push_back("*");
+              done_set += mode[i];
+            }
+          } else if (mode[i] == CHAN_FLAG_L_CHAR) {
+            String user_limit;
+            if (set_mode == true) {
+              if (param_idx < msg.get_params_size()) {
+                user_limit = msg[param_idx];
+                ++param_idx;
+              } else {
+                continue;
+              }
+            }
+            std::stringstream convert_to_int;
+            int limit_num;
 
-      if (get_channel(channel_iterator).isOperator(msg.get_params()[2])) {
-        return;
-      } else {
-        int fd = (*this)[msg.get_params()[2]];
-        User& targetClient = (*this)[fd];
-        get_channel(channel_iterator).addOperator(targetClient);
-      }
+            convert_to_int << user_limit;
+            convert_to_int >> limit_num;
 
-      // RESPONSE
-      Message rpl;
-      rpl.set_source(event_user.get_nick_name() + std::string("!~") +
-                     event_user.get_user_name() + std::string("@localhost"));
-      rpl.set_cmd_type(MODE);
-      rpl.push_back(msg.get_params()[0]);
-      rpl.push_back(OPERATING_MODE_ON);
-      rpl.push_back(msg.get_params()[2]);
+            if (convert_to_int.fail()) {
+              continue;
+            }
 
-      // BROADCASTING
-      std::map<std::string, User&>::iterator it;
-      for (it = get_channel(get_channel_iterator(targetChannelStr))
-                    .get_channel_client_list()
-                    .begin();
-           it != get_channel(get_channel_iterator(targetChannelStr))
-                     .get_channel_client_list()
-                     .end();
-           ++it) {
-        std::string clientNickName = it->second.get_nick_name();
-        it->second.push_back_msg(rpl.to_raw_msg());
-        pollfd* tmp;
-        for (int i = 0; i < MAX_USER; i++) {
-          if (observe_fd[i].fd == (it->second).get_user_socket()) {
-            tmp = &(observe_fd[i]);
+            if (set_mode == true && chan.chk_mode(mode[i]) == false) {
+              chan.set_mode(mode[i]);
+              chan.set_user_limit(limit_num);
+              param_vec.push_back(user_limit);
+              done_set += mode[i];
+            } else if (set_mode == false && chan.chk_mode(mode[i]) == true) {
+              chan.unset_mode(mode[i]);
+              done_set += mode[i];
+            }
+            param_idx++;
+          } else if (mode[i] == CHAN_FLAG_I_CHAR ||
+                     mode[i] == CHAN_FLAG_S_CHAR ||
+                     mode[i] == CHAN_FLAG_T_CHAR) {
+            if (set_mode == true && chan.chk_mode(mode[i]) == false) {
+              chan.set_mode(mode[i]);
+              done_set += mode[i];
+            } else if (set_mode == false && chan.chk_mode(mode[i]) == true) {
+              chan.unset_mode(mode[i]);
+              done_set += mode[i];
+            }
           }
         }
+      }
+      if (old_mode != chan.get_mode() || param_vec.size() != 0) {
+        Message rpl;
 
-        // broadcasting 하는건데 event_user는 윗단에서 poll처리를 해줌으로
-        // 여기서는 continue를 해줌
-        if (clientNickName == event_user.get_nick_name()) continue;
-        if ((*this).send_msg_at_queue((it->second).get_user_socket()) == -1) {
-          tmp->events = POLLIN | POLLOUT;
-        } else {
-          tmp->events = POLLIN;
+        rpl.set_source(event_user.make_source(1));
+        rpl.set_cmd_type(MODE);
+        rpl.push_back(chan_name);
+        rpl.push_back(result);
+        for (size_t l = 0; l < param_vec.size(); ++l) {
+          rpl.push_back(param_vec[l]);
         }
+        std::vector<String>::iterator msg_it = rpl.get_params().end() - 1;
+        if (*msg_it == "*") {
+          rpl.get_params().erase(msg_it);
+        }
+        send_msg_to_channel(chan, rpl.to_raw_msg());
       }
     }
+  } else {
+    // 유저 존재하는지 확인
+    std::map<String, int>::iterator user_it = nick_to_soc.find(msg[0]);
+    if (user_it == nick_to_soc.end()) {
+      event_user.push_back_msg(
+          Message::rpl_401(serv_name, event_user_nick, msg[0]).to_raw_msg());
+      return;
+    }
 
-    // ##################################################################################################
-    // ##################################### [ /mode -o ]
-    // ###############################################
-    // ##################################################################################################
-    if (msg.get_params_size() > 1 &&
-        msg.get_params()[1] == OPERATING_MODE_OFF) {
-      // check for privilege
-      if (get_channel(channel_iterator).isOperator(event_user) == false) {
-        Message rpl =
-            Message::rpl_482(serv_name, event_user.get_nick_name(), msg);
-        event_user.push_back_msg(rpl.to_raw_msg());
-        return;
-      }
+    if (event_user_nick != msg[0]) {
+      event_user.push_back_msg(
+          Message::rpl_502(serv_name, event_user_nick).to_raw_msg());
+      return;
+    }
 
-      // check for invalid channel
-      std::string targetChannelStr = msg.get_params()[0];
-      std::string::size_type pos = targetChannelStr.find('#');
-      if (pos != std::string::npos) {
-        targetChannelStr.erase(pos, 1);
-      }
-      channel_iterator = get_channel_iterator(targetChannelStr);
-      if (channel_iterator == channel_list.end()) {
-        // ERR_NOSUCHCHANNEL (403)
-        User& event_user = (*this)[recv_fd];
-        Message rpl =
-            Message::rpl_403(serv_name, event_user.get_nick_name(), msg);
-        event_user.push_back_msg(rpl.to_raw_msg());
-        return;
-      }
+    if (msg.get_params_size() == 1) {
+      event_user.push_back_msg(Message::rpl_221(serv_name, event_user_nick,
+                                                event_user.make_mode_str())
+                                   .to_raw_msg());
+      return;
+    } else {
+      const String& mode = msg[1];
 
-      // 서버에 등록되어 있지 않은 경우
-      try {
-        (*this)[msg.get_params()[2]];
-      } catch (std::invalid_argument& e) {
+      bool set_mode;
+      if (msg[1][0] == '+') {
+        set_mode = true;
+      } else if (msg[1][0] == '-') {
+        set_mode = false;
+      } else {
         event_user.push_back_msg(
-            Message::rpl_401_mode_operator(
-                serv_name, event_user.get_nick_name(), msg.get_params()[2])
+            Message::rpl_501(serv_name, event_user_nick,
+                             String(set_mode ? "+" : "-") + mode[1])
                 .to_raw_msg());
         return;
       }
 
-      // check for invalid nickname => 이 경우는 서버에는 등록되어 있는 유저이지만 채널에 그 유저가 없는 경우
-      channel_iterator = get_channel_iterator(targetChannelStr);
-      if (get_channel(channel_iterator).foundClient(msg.get_params()[2]) ==
-          false) {
-        // < 2024/06/12 16:19:38.000655856  length=65 from=19794 to=19858
-        // :irc.example.net 441 dy_ dy__ #zzz :They aren't on that channel\r
-        event_user.push_back_msg(Message::rpl_441(serv_name, msg).to_raw_msg());
-        return;
-      }
-
-      // remove the target client from the OP list
-      if (get_channel(channel_iterator).isOperator(msg.get_params()[2]) ==
-          false) {
-        return;
-      } else {
-        int fd = (*this)[msg.get_params()[2]];
-        User& targetClient = (*this)[fd];
-        get_channel(channel_iterator).removeOperator(targetClient);
-      }
-
-      // RESPONSE
-      Message rpl;
-      rpl.set_source(event_user.get_nick_name() + std::string("!~") +
-                     event_user.get_user_name() + std::string("@localhost"));
-      rpl.set_cmd_type(MODE);
-      rpl.push_back(msg.get_params()[0]);
-      rpl.push_back(OPERATING_MODE_OFF);
-      rpl.push_back(msg.get_params()[2]);
-
-      // BROADCASTING
-      std::map<std::string, User&>::iterator it;
-      for (it = get_channel(get_channel_iterator(targetChannelStr))
-                    .get_channel_client_list()
-                    .begin();
-           it != get_channel(get_channel_iterator(targetChannelStr))
-                     .get_channel_client_list()
-                     .end();
-           ++it) {
-        std::string clientNickName = it->second.get_nick_name();
-        it->second.push_back_msg(rpl.to_raw_msg());
-        pollfd* tmp;
-        for (int i = 0; i < MAX_USER; i++) {
-          if (observe_fd[i].fd == (it->second).get_user_socket()) {
-            tmp = &(observe_fd[i]);
+      int old_mode = event_user.get_mode();
+      String done_set = "";
+      String result = "";
+      for (size_t i = 1; i < mode.length(); i++) {
+        if (mode[i] == '+') {
+          if (set_mode = false && done_set.length() != 0) {
+            result += "-";
+            result += done_set;
+            done_set = "";
+          }
+          set_mode = true;
+        } else if (mode[i] == '-') {
+          if (set_mode = true && done_set.length() != 0) {
+            result += "+";
+            result += done_set;
+            done_set = "";
+          }
+          set_mode = false;
+        } else {
+          if (String(AVAILABLE_USER_MODES).find(mode[i]) == String::npos) {
+            event_user.push_back_msg(
+                Message::rpl_501(serv_name, event_user_nick,
+                                 String(set_mode ? "+" : "-") + mode[i])
+                    .to_raw_msg());
+            continue;
+          }
+          if (set_mode == true && event_user.chk_mode(mode[i]) == false) {
+            event_user.set_mode(mode[i]);
+            done_set += mode[i];
+          } else if (set_mode == false &&
+                     event_user.chk_mode(mode[i]) == true) {
+            event_user.unset_mode(mode[i]);
+            done_set += mode[i];
           }
         }
+      }
+      if (old_mode != event_user.get_mode()) {
+        Message rpl;
 
-        // broadcasting 하는건데 event_user는 윗단에서 poll처리를 해줌으로
-        // 여기서는 continue를 해줌
-        if (clientNickName == event_user.get_nick_name()) continue;
-        if ((*this).send_msg_at_queue((it->second).get_user_socket()) == -1) {
-          tmp->events = POLLIN | POLLOUT;
-        } else {
-          tmp->events = POLLIN;
-        }
+        rpl.set_source(event_user.make_source(1));
+        rpl.set_cmd_type(MODE);
+        rpl.push_back(event_user_nick);
+        rpl.push_back(":" + result);
+        event_user.push_back_msg(rpl.to_raw_msg());
       }
     }
-
-    // ##################################################################################################
-    // ##################################### [ /mode +l ]
-    // ###############################################
-    // ##################################################################################################
-    // default -> limit number 65535
-    if (msg.get_params_size() > 2 && msg.get_params()[1] == LIMIT_ON) {
-      /*
-        > 2024/06/12 21:25:16.000268737  length=21 from=416 to=436
-        MODE #test +l 12111\r
-        < 2024/06/12 21:25:16.000269041  length=45 from=2307 to=2351
-        :dy!~memememe@localhost MODE #test +l 12111\r 
-      */
-
-      if (atoi(msg.get_params()[2].c_str()) == 0) {
-        return;
-      }
-      get_channel(get_channel_iterator(targetChannelStr)).setMode(CHAN_FLAG_L);
-      get_channel(get_channel_iterator(targetChannelStr))
-          .setLimit(msg.get_params()[2]);
-
-      // > 2024/06/12 22:44:00.000649604  length=18 from=3035 to=3052
-      // MODE #test +l 22\r
-      // < 2024/06/12 22:44:00.000649893  length=42 from=18211 to=18252
-      // :dy!~memememe@localhost MODE #test +l 22\r
-
-      // RESPONSE
-      Message rpl;
-      rpl.set_source(event_user.get_nick_name() + std::string("!~") +
-                     event_user.get_user_name() + std::string("@localhost"));
-      rpl.set_cmd_type(MODE);
-      rpl.push_back(msg.get_params()[0]);
-      rpl.push_back(LIMIT_ON);
-      rpl.push_back(msg.get_params()[2]);
-
-      // BROADCASTING
-      std::map<std::string, User&>::iterator it;
-      for (it = get_channel(get_channel_iterator(targetChannelStr))
-                    .get_channel_client_list()
-                    .begin();
-           it != get_channel(get_channel_iterator(targetChannelStr))
-                     .get_channel_client_list()
-                     .end();
-           ++it) {
-        std::string clientNickName = it->second.get_nick_name();
-        it->second.push_back_msg(rpl.to_raw_msg());
-        pollfd* tmp;
-        for (int i = 0; i < MAX_USER; i++) {
-          if (observe_fd[i].fd == (it->second).get_user_socket()) {
-            tmp = &(observe_fd[i]);
-          }
-        }
-
-        // broadcasting 하는건데 event_user는 윗단에서 poll처리를 해줌으로
-        // 여기서는 continue를 해줌
-        if (clientNickName == event_user.get_nick_name()) continue;
-        if ((*this).send_msg_at_queue((it->second).get_user_socket()) == -1) {
-          tmp->events = POLLIN | POLLOUT;
-        } else {
-          tmp->events = POLLIN;
-        }
-      }
-
-    } else if (msg.get_params_size() > 1 &&
-               msg.starts_with(msg.get_params()[1], LIMIT_OFF) == true) {
-      get_channel(get_channel_iterator(targetChannelStr))
-          .unsetMode(CHAN_FLAG_L);
-      get_channel(get_channel_iterator(targetChannelStr))
-          .setLimit(INIT_CLIENT_LIMIT);
-
-      // > 2024/06/12 22:44:04.000925650  length=15 from=3053 to=3067
-      // MODE #test -l\r
-      // < 2024/06/12 22:44:04.000925974  length=39 from=18253 to=18291
-      // :dy!~memememe@localhost MODE #test -l\r
-
-      /* 
-
-        -l123123 이런 경우 k l i s t 가 아닌것들은 
-        :irc.example.net 472 dy 1 :is unknown mode char for #test\r
-        :irc.example.net 472 dy 2 :is unknown mode char for #test\r
-        :irc.example.net 472 dy 3 :is unknown mode char for #test\r
-      */
-
-      std::string::const_iterator iterator = msg.get_params()[1].begin() + 2;
-      for (; iterator != msg.get_params()[1].end(); ++iterator) {
-        std::cout << *iterator << std::endl;
-        char chanmodes[5] = {'k', 'l', 'i', 's', 't'};
-        if (std::find(chanmodes, chanmodes + 5, *iterator) == chanmodes + 5) {
-          // :irc.example.net 472 dy 1 :is unknown mode char for #test\r
-          Message rpl;
-          event_user.push_back_msg(Message::rpl_472(serv_name,
-                                                    event_user.get_nick_name(),
-                                                    *iterator, msg)
-                                       .to_raw_msg());
-        }
-      }
-
-      // RESPONSE
-      Message rpl;
-      rpl.set_source(event_user.get_nick_name() + std::string("!~") +
-                     event_user.get_user_name() + std::string("@localhost"));
-      rpl.set_cmd_type(MODE);
-      rpl.push_back(msg.get_params()[0]);
-      rpl.push_back(LIMIT_OFF);
-
-      // BROADCASTING
-      std::map<std::string, User&>::iterator it;
-      for (it = get_channel(get_channel_iterator(targetChannelStr))
-                    .get_channel_client_list()
-                    .begin();
-           it != get_channel(get_channel_iterator(targetChannelStr))
-                     .get_channel_client_list()
-                     .end();
-           ++it) {
-        std::string clientNickName = it->second.get_nick_name();
-        it->second.push_back_msg(rpl.to_raw_msg());
-        pollfd* tmp;
-        for (int i = 0; i < MAX_USER; i++) {
-          if (observe_fd[i].fd == (it->second).get_user_socket()) {
-            tmp = &(observe_fd[i]);
-          }
-        }
-
-        // broadcasting 하는건데 event_user는 윗단에서 poll처리를 해줌으로
-        // 여기서는 continue를 해줌
-        if (clientNickName == event_user.get_nick_name()) continue;
-        if ((*this).send_msg_at_queue((it->second).get_user_socket()) == -1) {
-          tmp->events = POLLIN | POLLOUT;
-        } else {
-          tmp->events = POLLIN;
-        }
-      }
-    }
-    // rpl.set_source(event_user.get_nick_name() + std::string("!") +
-    //                event_user.get_user_name() + std::string("@localhost"));
-    // rpl.set_cmd_type(MODE);
-    // rpl.push_back(event_user.get_nick_name());
-    // rpl.push_back(":" + msg[0]);
-    // event_user.push_back_msg(rpl.to_raw_msg());
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+void Server::cmd_whois(int recv_fd, const Message& msg) {}

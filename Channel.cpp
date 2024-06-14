@@ -40,6 +40,8 @@ char Channel::get_channel_type(void) const { return channel_type; }
 
 const String& Channel::get_password(void) const { return pwd; };
 
+time_t Channel::get_created_time(void) const { return created_time; }
+
 int Channel::get_user_limit(void) const { return user_limit; }
 
 bool Channel::get_invite_only(void) const { return invite_only; };
@@ -47,10 +49,15 @@ bool Channel::get_invite_only(void) const { return invite_only; };
 const String& Channel::get_topic(void) const { return topic; };
 
 const String& Channel::get_topic_set_nick(void) const { return topic_set_nick; }
+
 std::time_t Channel::get_topic_set_time(void) const { return topic_set_time; }
 
+int Channel::get_mode(void) const { return mode; }
+
 std::map<String, User&>& Channel::get_user_list(void) { return user_list; }
+
 std::map<String, User&>& Channel::get_banned_list(void) { return banned_list; }
+
 std::map<String, User&>& Channel::get_operator_list(void) {
   return operator_list;
 }
@@ -193,6 +200,88 @@ void Channel::unset_mode(int flag) { mode &= ~flag; }
 
 // 채널 모드 확인
 bool Channel::chk_mode(int flag) const { return mode & flag; }
+
+void User::set_mode(char flag) {
+  if (flag == CHAN_FLAG_K_CHAR) {
+    mode |= CHAN_FLAG_K;
+  }
+  if (flag == CHAN_FLAG_L_CHAR) {
+    mode |= CHAN_FLAG_L;
+  }
+  if (flag == CHAN_FLAG_I_CHAR) {
+    mode |= CHAN_FLAG_I;
+  }
+  if (flag == CHAN_FLAG_S_CHAR) {
+    mode |= CHAN_FLAG_S;
+  }
+  if (flag == CHAN_FLAG_T_CHAR) {
+    mode |= CHAN_FLAG_T;
+  }
+}
+void User::unset_mode(char flag) {
+  if (flag == CHAN_FLAG_K_CHAR) {
+    mode &= ~CHAN_FLAG_K;
+  }
+  if (flag == CHAN_FLAG_L_CHAR) {
+    mode &= ~CHAN_FLAG_L;
+  }
+  if (flag == CHAN_FLAG_I_CHAR) {
+    mode &= ~CHAN_FLAG_I;
+  }
+  if (flag == CHAN_FLAG_S_CHAR) {
+    mode &= ~CHAN_FLAG_S;
+  }
+  if (flag == CHAN_FLAG_T_CHAR) {
+    mode &= ~CHAN_FLAG_T;
+  }
+}
+bool User::chk_mode(char flag) const {
+  if (flag == CHAN_FLAG_K_CHAR) {
+    return mode & CHAN_FLAG_K;
+  }
+  if (flag == CHAN_FLAG_L_CHAR) {
+    return mode & CHAN_FLAG_L;
+  }
+  if (flag == CHAN_FLAG_I_CHAR) {
+    return mode & CHAN_FLAG_I;
+  }
+  if (flag == CHAN_FLAG_S_CHAR) {
+    return mode & CHAN_FLAG_S;
+  }
+  if (flag == CHAN_FLAG_T_CHAR) {
+    return mode & CHAN_FLAG_T;
+  }
+}
+
+String Channel::make_mode_str(void) {
+  String mode_str = "";
+
+  if (mode & CHAN_FLAG_I) {
+    mode_str += "i";
+  }
+  if (mode & CHAN_FLAG_S) {
+    mode_str += "s";
+  }
+  if (mode & CHAN_FLAG_K) {
+    mode_str += "k";
+  }
+  if (mode & CHAN_FLAG_T) {
+    mode_str += "t";
+  }
+  if (mode & CHAN_FLAG_L) {
+    mode_str += "l";
+  }
+
+  return mode_str;
+}
+
+bool Channel::is_channel_name(const String& name) {
+  if (name[0] == REGULAR_CHANNEL_PREFIX || name[0] == LOCAL_CHANNEL_PREFIX) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 #ifdef DEBUG
 std::ostream& operator<<(std::ostream& out, Channel& channel) {

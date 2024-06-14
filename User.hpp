@@ -15,28 +15,16 @@
 
 typedef std::string String;
 
-#define CHANLIMIT "#&:10"
 #define USERCHANLIMIT 10
-#define NICKLEN 9
-#define USERLEN 12
+#define NICKLEN 30
+#define USERLEN 30
 
 #define AVAILABLE_USER_MODES "i"
 
+#define USER_FLAG_I_CHAR 'i'
 #define USER_FLAG_I (1 << 0)
 
-#define INIT_PING_OFFSET 60
-
-#define BLACK "\033[0;30m"
-#define RED "\033[0;31m"
-#define GREEN "\033[0;32m"
-#define GREEN_BOLD "\033[1;32m"
-#define YELLOW "\033[0;33m"
-#define BLUE "\033[0;34m"
-#define PURPLE "\033[0;35m"
-#define CYAN "\033[0;36m"
-#define WHITE "\033[0;37m"
-#define DEF_COLOR "\033[0;39m"
-#define LF "\e[1K\r"
+#define INIT_PING_OFFSET 120
 
 enum chk_status {
   NOT_YET = 0,
@@ -109,6 +97,7 @@ class User {
   bool get_have_to_disconnect(void) const;
   bool get_have_to_ping_chk(void) const;
   std::time_t get_last_ping(void) const;
+  int get_mode(void) const;
   const std::map<String, int>& get_invited_channels(void) const;
   const std::map<String, int>& get_channels(void) const;
   const std::map<String, int>& User::get_connected_list(void) const;
@@ -132,11 +121,28 @@ class User {
   void set_mode(int flag);
   void unset_mode(int flag);
   bool chk_mode(int flag) const;
+  void set_mode(char flag);
+  void unset_mode(char flag);
+  bool chk_mode(char flag) const;
+  String make_mode_str(void);
 };
 
 #ifdef DEBUG
 
 #include <iostream>
+
+#define BLACK "\033[0;30m"
+#define RED "\033[0;31m"
+#define GREEN "\033[0;32m"
+#define GREEN_BOLD "\033[1;32m"
+#define YELLOW "\033[0;33m"
+#define BLUE "\033[0;34m"
+#define PURPLE "\033[0;35m"
+#define CYAN "\033[0;36m"
+#define WHITE "\033[0;37m"
+#define DEF_COLOR "\033[0;39m"
+#define LF "\e[1K\r"
+
 std::ostream& operator<<(std::ostream& out, const User& user);
 
 #endif

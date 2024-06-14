@@ -36,7 +36,7 @@ typedef std::string String;
 #define IRCD "ngIRCd"
 #define CHARSET "UTF-8"
 #define CASEMAPPING "ascii"
-#define PREFIX "@%+"
+
 #define CHANNELNUM 20
 
 // MODE FLAG
@@ -155,7 +155,7 @@ class Server {
   void cmd_mode(int recv_fd, const Message& msg);
   void cmd_part(int recv_fd, const Message& msg);
   void cmd_list(int recv_fd, const Message& msg);
-
+  void cmd_whois(int recv_fd, const Message& msg);
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////

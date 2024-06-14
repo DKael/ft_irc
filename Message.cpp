@@ -172,6 +172,8 @@ Command Message::get_cmd_type(void) const { return cmd_type; }
 
 const std::vector<String>& Message::get_params(void) const { return params; }
 
+std::vector<String>& Message::get_params(void) { return params; }
+
 std::size_t Message::get_params_size(void) const { return params.size(); }
 
 String& Message::operator[](const int idx) {

@@ -79,6 +79,18 @@ Message Message::rpl_005(const String& source, const String& user,
   return rpl;
 }
 
+Message Message::rpl_221(const String& source, const String& user,
+                         const String& user_modes) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("221");
+  rpl.push_back(user);
+  rpl.push_back("+" + user_modes);
+
+  return rpl;
+}
+
 Message Message::rpl_315(const String& source, const String& user,
                          const String& mask) {
   Message rpl;
@@ -125,6 +137,35 @@ Message Message::rpl_323(const String& source, const String& user) {
   rpl.set_numeric("323");
   rpl.push_back(user);
   rpl.push_back(":End of LIST");
+
+  return rpl;
+}
+
+Message Message::rpl_324(const String& source, const String& user,
+                         const String& channel, const String& modestring,
+                         const std::vector<String> mode_arguments) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("324");
+  rpl.push_back(user);
+  rpl.push_back(channel);
+  rpl.push_back("+" + modestring);
+  for (size_t i = 0; i < mode_arguments.size(); ++i) {
+    rpl.push_back(mode_arguments[i]);
+  }
+  return rpl;
+}
+
+Message Message::rpl_329(const String& source, const String& user,
+                         const String& channel, const String& creationtime) {
+  Message rpl;
+
+  rpl.source = source;
+  rpl.set_numeric("329");
+  rpl.push_back(user);
+  rpl.push_back(channel);
+  rpl.push_back(creationtime);
 
   return rpl;
 }
@@ -506,6 +547,19 @@ Message Message::rpl_471(const String& source, const String& user,
   return rpl;
 }
 
+Message Message::rpl_472(const String& source, const String& user,
+                         const String& modechar, const String& channel) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("472");
+  rpl.push_back(user);
+  rpl.push_back(modechar);
+  rpl.push_back(":is unknown mode char for " + channel);
+
+  return rpl;
+}
+
 Message Message::rpl_473(const String& source, const String& user,
                          const String& channel) {
   // :irc.example.net 473 dy_ #test :Cannot join channel (+i) -- Invited users
@@ -555,6 +609,28 @@ Message Message::rpl_482(const String& source, const String& user,
   rpl.push_back(user);
   rpl.push_back(channel);
   rpl.push_back(":Your privileges are too low");
+
+  return rpl;
+}
+
+Message Message::rpl_501(const String& source, const String& user,
+                         const String& mode) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("501");
+  rpl.push_back(user);
+  rpl.push_back(":Unknown mode \"" + mode + "\"");
+
+  return rpl;
+}
+Message Message::rpl_502(const String& source, const String& user) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("502");
+  rpl.push_back(user);
+  rpl.push_back(":Can't set/get mode for other users");
 
   return rpl;
 }
