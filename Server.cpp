@@ -493,7 +493,6 @@ void Server::auth_complete(pollfd& p_val) {
     specs2.push_back("CHANNELLEN=" + ft_itos(CHANNELLEN));
     specs2.push_back("NICKLEN=" + ft_itos(NICKLEN));
     specs2.push_back("TOPICLEN=" + ft_itos(TOPICLEN));
-    specs2.push_back("AWAYLEN=" + ft_itos(AWAYLEN));
     specs2.push_back("KICKLEN=" + ft_itos(KICKLEN));
   }
   event_user.push_back_msg(

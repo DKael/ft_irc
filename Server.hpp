@@ -37,7 +37,6 @@ typedef std::string String;
 #define CHARSET "UTF-8"
 #define CASEMAPPING "ascii"
 #define PREFIX "@%+"
-#define AWAYLEN 127
 #define CHANNELNUM 20
 
 // MODE FLAG
