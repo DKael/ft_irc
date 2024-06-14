@@ -100,7 +100,7 @@ class User {
   int get_mode(void) const;
   const std::map<String, int>& get_invited_channels(void) const;
   const std::map<String, int>& get_channels(void) const;
-  const std::map<String, int>& User::get_connected_list(void) const;
+  const std::map<String, int>& get_connected_list(void) const;
   void add_connected(const String& name, int fd);
   void remove_connected(const String& name);
   String make_source(int mode);

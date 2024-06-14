@@ -248,6 +248,7 @@ bool User::chk_mode(char flag) const {
   if (flag == USER_FLAG_I_CHAR) {
     return mode & USER_FLAG_I;
   }
+  return false;
 }
 
 String User::make_mode_str(void) {

@@ -103,7 +103,7 @@ class Channel {
   const std::map<String, User&>& get_banned_list(void) const;
   const std::map<String, User&>& get_operator_list(void) const;
 
-  const String& get_user_list_str(bool is_joined) const;
+  String get_user_list_str(bool is_joined) const;
 
   void set_password(const String& _pwd);
   void set_user_limit(int _user_limit);

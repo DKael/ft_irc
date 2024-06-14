@@ -360,8 +360,11 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
       std::map<String, int>::const_iterator user_chan_it;
       for (user_chan_it = user_chan.begin(); user_chan_it != user_chan.end();
            ++user_chan_it) {
-        channel_list[user_chan_it->first].change_user_nickname(old_nick,
-                                                               new_nick);
+        std::map<String, Channel>::iterator chan_it =
+            channel_list.find(user_chan_it->first);
+        if (chan_it != channel_list.end()) {
+          chan_it->second.change_user_nickname(old_nick, new_nick);
+        }
       }
       send_msg_to_connected_user(event_user, rpl.to_raw_msg());
 
@@ -582,7 +585,7 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
       }
 
       if (chan.chk_mode(CHAN_FLAG_S) == true) {
-        if (event_user_in_chan = false) {
+        if (event_user_in_chan == false) {
           continue;
         } else {
           symbol = "@";
@@ -603,7 +606,7 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
 
     std::map<int, User>::reverse_iterator user_it = user_list.rbegin();
     String nicks = "";
-    for (; user_it < user_list.rend(); ++user_it) {
+    for (; user_it != user_list.rend(); ++user_it) {
       if (user_it->second.chk_mode(USER_FLAG_I) == true) {
         continue;
       }
@@ -641,7 +644,7 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
         }
 
         if (chan.chk_mode(CHAN_FLAG_S) == true) {
-          if (event_user_in_chan = false) {
+          if (event_user_in_chan == false) {
             continue;
           } else {
             symbol = "@";
@@ -862,16 +865,20 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
       Channel new_chan(chan_name_vec[i]);
 
       add_channel(new_chan);
-      Channel& chan_ref = channel_list[chan_name_vec[i]];
-      chan_ref.add_user(event_user);
-      chan_ref.add_operator(event_user);
-      event_user.push_back_msg(Message::rpl_353(serv_name, event_user_nick, "=",
-                                                chan_name_vec[i],
-                                                ":@" + event_user_nick)
-                                   .to_raw_msg());
-      event_user.push_back_msg(
-          Message::rpl_366(serv_name, event_user_nick, chan_name_vec[i])
-              .to_raw_msg());
+      std::map<String, Channel>::iterator chan_it =
+          channel_list.find(chan_name_vec[i]);
+      if (chan_it != channel_list.end()) {
+        Channel& chan_ref = chan_it->second;
+        chan_ref.add_user(event_user);
+        chan_ref.add_operator(event_user);
+        event_user.push_back_msg(Message::rpl_353(serv_name, event_user_nick,
+                                                  "=", chan_name_vec[i],
+                                                  ":@" + event_user_nick)
+                                     .to_raw_msg());
+        event_user.push_back_msg(
+            Message::rpl_366(serv_name, event_user_nick, chan_name_vec[i])
+                .to_raw_msg());
+      }
     }
   }
 }
@@ -1106,14 +1113,14 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
 
       for (size_t i = 0; i < mode.length(); i++) {
         if (mode[i] == '+') {
-          if (set_mode = false && done_set.length() != 0) {
+          if (set_mode == false && done_set.length() != 0) {
             result += "-";
             result += done_set;
             done_set = "";
           }
           set_mode = true;
         } else if (mode[i] == '-') {
-          if (set_mode = true && done_set.length() != 0) {
+          if (set_mode == true && done_set.length() != 0) {
             result += "+";
             result += done_set;
             done_set = "";
@@ -1281,14 +1288,14 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
       String result = "";
       for (size_t i = 1; i < mode.length(); i++) {
         if (mode[i] == '+') {
-          if (set_mode = false && done_set.length() != 0) {
+          if (set_mode == false && done_set.length() != 0) {
             result += "-";
             result += done_set;
             done_set = "";
           }
           set_mode = true;
         } else if (mode[i] == '-') {
-          if (set_mode = true && done_set.length() != 0) {
+          if (set_mode == true && done_set.length() != 0) {
             result += "+";
             result += done_set;
             done_set = "";

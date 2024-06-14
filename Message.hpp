@@ -153,7 +153,7 @@ class Message {
   const String& get_numeric(void) const;
   bool get_trailing_exist(void) const;
 
-  String& Message::operator[](const int idx);
+  String& operator[](const int idx);
   const String& operator[](const int idx) const;
 
   String to_raw_msg(void);

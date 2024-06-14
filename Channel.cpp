@@ -74,7 +74,7 @@ const std::map<String, User&>& Channel::get_operator_list(void) const {
   return operator_list;
 };
 
-const String& Channel::get_user_list_str(bool is_joined) const {
+String Channel::get_user_list_str(bool is_joined) const {
   String nicks = "";
   std::map<String, User&>::const_reverse_iterator cit1 = user_list.rbegin();
   std::map<String, User&>::const_iterator cit2;
@@ -201,7 +201,7 @@ void Channel::unset_mode(int flag) { mode &= ~flag; }
 // 채널 모드 확인
 bool Channel::chk_mode(int flag) const { return mode & flag; }
 
-void User::set_mode(char flag) {
+void Channel::set_mode(char flag) {
   if (flag == CHAN_FLAG_K_CHAR) {
     mode |= CHAN_FLAG_K;
   }
@@ -218,7 +218,7 @@ void User::set_mode(char flag) {
     mode |= CHAN_FLAG_T;
   }
 }
-void User::unset_mode(char flag) {
+void Channel::unset_mode(char flag) {
   if (flag == CHAN_FLAG_K_CHAR) {
     mode &= ~CHAN_FLAG_K;
   }
@@ -235,7 +235,7 @@ void User::unset_mode(char flag) {
     mode &= ~CHAN_FLAG_T;
   }
 }
-bool User::chk_mode(char flag) const {
+bool Channel::chk_mode(char flag) const {
   if (flag == CHAN_FLAG_K_CHAR) {
     return mode & CHAN_FLAG_K;
   }
@@ -251,6 +251,7 @@ bool User::chk_mode(char flag) const {
   if (flag == CHAN_FLAG_T_CHAR) {
     return mode & CHAN_FLAG_T;
   }
+  return false;
 }
 
 String Channel::make_mode_str(void) {
