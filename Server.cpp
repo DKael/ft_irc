@@ -624,11 +624,11 @@ void Server::remove_user(const int socket_fd) {
 
   it1 = tmp_user_list.find(socket_fd);
   if (it1 != tmp_user_list.end()) {
-    tmp = (it1->second).get_nick_name();
+    tmp = (it1->second).get_nick_name_no_chk();
     tmp_user_list.erase(it1);
     it2 = tmp_nick_to_soc.find(tmp);
     tmp_nick_to_soc.erase(it2);
-    ::close(socket_fd);
+    close(socket_fd);
     return;
   } else {
     throw std::invalid_argument("Subsription error!");

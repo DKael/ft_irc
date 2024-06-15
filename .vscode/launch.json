@@ -15,6 +15,28 @@
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "ircserv build",
+            "setupCommands": [
+                {
+                    "description": "stop at c++ exception",
+                    "text": "breakpoint set -E c++",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "ircserv debug_no_exception",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/ircserv",
+            "args": [
+               "8080", "1234"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "ircserv build",
         },
         {
             "name": "bot debug",
@@ -33,3 +55,11 @@
         }
     ]
 }
+
+// "setupCommands": [
+//     {
+//         "description": "stop at c++ exception",
+//         "text": "breakpoint set -E c++",
+//         "ignoreFailures": true
+//     }
+// ]
