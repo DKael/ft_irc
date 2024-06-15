@@ -101,6 +101,7 @@ class Server {
  public:
   Server(const char* _port, const char* _password);
   ~Server();
+  void server_quit(void);
 
   void listen(void);
 

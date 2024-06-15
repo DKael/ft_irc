@@ -54,6 +54,7 @@ Server::Server(const char* _port, const char* _password)
   }
 
   created_time_str = ctime(&created_time);
+  created_time_str.erase(created_time_str.length() - 1);
 
   std::clog << "Server created at " << created_time_str << '\n'
             << "Server listening at " << ::inet_ntoa(serv_addr.sin_addr) << ":"
@@ -61,28 +62,87 @@ Server::Server(const char* _port, const char* _password)
 }
 
 Server::~Server() {
-  ::close(serv_socket);
   std::map<int, User>::iterator head = user_list.begin();
   std::map<int, User>::iterator tail = user_list.end();
 
+  Message notice;
+
+  notice.set_source(serv_name);
+  notice.set_cmd_type(NOTICE);
+  notice.push_back("");
+  notice.push_back(":Connection statistics: client - kb, server - kb.");
+
   for (; head != tail; head++) {
-    ::close(head->first);
+    User& tmp = head->second;
+
+    notice[0] = tmp.get_nick_name();
+    tmp.push_back_msg(notice.to_raw_msg());
+    ft_send(tmp.get_pfd());
+    tmp.push_back_msg("ERROR :Server going down\r\n");
+    ft_send(tmp.get_pfd());
+    close(head->first);
   }
 
   head = tmp_user_list.begin();
   tail = tmp_user_list.end();
 
   for (; head != tail; head++) {
-    ::close(head->first);
+    User& tmp = head->second;
+
+    notice[0] = tmp.get_nick_name();
+    tmp.push_back_msg(notice.to_raw_msg());
+    ft_send(tmp.get_pfd());
+    tmp.push_back_msg("ERROR :Server going down\r\n");
+    ft_send(tmp.get_pfd());
+    close(head->first);
   }
+  close(serv_socket);
+}
+
+void Server::server_quit(void) {
+  std::map<int, User>::iterator head = user_list.begin();
+  std::map<int, User>::iterator tail = user_list.end();
+
+  Message notice;
+
+  notice.set_source(serv_name);
+  notice.set_cmd_type(NOTICE);
+  notice.push_back("");
+  notice.push_back(":Connection statistics: client - kb, server - kb.");
+
+  for (; head != tail; head++) {
+    User& tmp = head->second;
+
+    notice[0] = tmp.get_nick_name();
+    tmp.push_back_msg(notice.to_raw_msg());
+    ft_send(tmp.get_pfd());
+    tmp.push_back_msg("ERROR :Server going down\r\n");
+    ft_send(tmp.get_pfd());
+    close(head->first);
+  }
+
+  head = tmp_user_list.begin();
+  tail = tmp_user_list.end();
+
+  for (; head != tail; head++) {
+    User& tmp = head->second;
+
+    notice[0] = tmp.get_nick_name();
+    tmp.push_back_msg(notice.to_raw_msg());
+    ft_send(tmp.get_pfd());
+    tmp.push_back_msg("ERROR :Server going down\r\n");
+    ft_send(tmp.get_pfd());
+    close(head->first);
+  }
+  close(serv_socket);
 }
 
 void Server::listen(void) {
   int event_cnt = 0;
 
   while (true) {
-    tmp_user_timeout_chk();
-    user_ping_chk();
+    // tmp_user_timeout_chk();
+    // user_ping_chk();
     event_cnt = poll(observe_fd, MAX_USER, POLL_TIMEOUT * 1000);
     if (event_cnt == 0) {
       continue;
@@ -122,10 +182,7 @@ int Server::user_socket_init(void) {
     std::memset(&user_addr, 0, user_addr_len);
     user_socket = ::accept(serv_socket, (sockaddr*)&user_addr, &user_addr_len);
     if (user_socket == -1) {
-      // error_handling
-      // accept 함수 에러나는 경우 찾아보자
-      perror("accept() error");
-      return -1;
+      return 0;
     }
 
     std::map<unsigned int, int>::iterator ip_it =
@@ -305,6 +362,9 @@ void Server::revent_pollin(pollfd& p_val) {
     std::cerr << e.what() << '\n';
     std::cerr << "Maybe index out of range error or String is too "
                  "long to store\n";
+  } catch (const std::invalid_argument& e) {
+    std::cerr << e.what() << '\n';
+    std::cerr << "Maybe cmd_nick throw this\n";
   } catch (const std::exception& e) {
     // error handling
     std::cerr << e.what() << '\n';
@@ -385,7 +445,7 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
       cmd_list(p_val.fd, msg);
     } else {
       event_user.push_back_msg(
-          Message::rpl_421(serv_name, event_user.get_nick_name(), msg.get_cmd())
+          rpl_421(serv_name, event_user.get_nick_name(), msg.get_cmd())
               .to_raw_msg());
     }
     ft_send(p_val);
@@ -436,7 +496,7 @@ void Server::not_auth_user(pollfd& p_val, std::vector<String>& msg_list) {
       msg_list.clear();
       break;
     } else {
-      Message rpl = Message::rpl_451(serv_name, event_user.get_nick_name());
+      Message rpl = rpl_451(serv_name, event_user.get_nick_name());
       event_user.push_back_msg(rpl.to_raw_msg());
     }
     ft_send(p_val);
@@ -446,8 +506,7 @@ void Server::not_auth_user(pollfd& p_val, std::vector<String>& msg_list) {
       if (event_user.get_password_chk() != OK) {
         event_user.set_have_to_disconnect(true);
         event_user.push_back_msg(
-            Message::rpl_464(serv_name, event_user.get_nick_name())
-                .to_raw_msg());
+            rpl_464(serv_name, event_user.get_nick_name()).to_raw_msg());
         ft_sendd(p_val);
       } else {
         auth_complete(p_val);
@@ -463,15 +522,14 @@ void Server::auth_complete(pollfd& p_val) {
   const String& user = event_user.get_nick_name();
 
   event_user.push_back_msg(
-      Message::rpl_001(serv_name, user, event_user.make_source(1))
-          .to_raw_msg());
+      rpl_001(serv_name, user, event_user.make_source(1)).to_raw_msg());
   event_user.push_back_msg(
-      Message::rpl_002(serv_name, user, serv_name, serv_version).to_raw_msg());
+      rpl_002(serv_name, user, serv_name, serv_version).to_raw_msg());
   event_user.push_back_msg(
-      Message::rpl_003(serv_name, user, created_time_str).to_raw_msg());
-  event_user.push_back_msg(Message::rpl_004(serv_name, user, serv_name,
-                                            serv_version, AVAILABLE_USER_MODES,
-                                            AVAILABLE_CHANNEL_MODES)
+      rpl_003(serv_name, user, created_time_str).to_raw_msg());
+  event_user.push_back_msg(rpl_004(serv_name, user, serv_name, serv_version,
+                                   AVAILABLE_USER_MODES,
+                                   AVAILABLE_CHANNEL_MODES)
                                .to_raw_msg());
 
   static bool specs_created = false;
@@ -495,10 +553,8 @@ void Server::auth_complete(pollfd& p_val) {
     specs2.push_back("TOPICLEN=" + ft_itos(TOPICLEN));
     specs2.push_back("KICKLEN=" + ft_itos(KICKLEN));
   }
-  event_user.push_back_msg(
-      Message::rpl_005(serv_name, user, specs1).to_raw_msg());
-  event_user.push_back_msg(
-      Message::rpl_005(serv_name, user, specs2).to_raw_msg());
+  event_user.push_back_msg(rpl_005(serv_name, user, specs1).to_raw_msg());
+  event_user.push_back_msg(rpl_005(serv_name, user, specs2).to_raw_msg());
 
   ft_send(p_val);
 }

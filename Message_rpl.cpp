@@ -9,11 +9,11 @@
 :irc.example.net 005 kael CHANNELLEN=50 NICKLEN=9 TOPICLEN=490 AWAYLEN=127 KICKLEN=400 MODES=5 MAXLIST=beI:50 EXCEPTS=e INVEX=I PENALTY FNC :are supported on this server\r
 */
 
-Message Message::rpl_001(const String& source, const String& user,
-                         const String& user_source) {
+Message rpl_001(const String& source, const String& user,
+                const String& user_source) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("001");
   rpl.push_back(user);
   rpl.push_back(":Welcome to the Internet Relay Network " + user_source);
@@ -21,12 +21,11 @@ Message Message::rpl_001(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_002(const String& source, const String& user,
-                         const String& server_name,
-                         const String& server_version) {
+Message rpl_002(const String& source, const String& user,
+                const String& server_name, const String& server_version) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("002");
   rpl.push_back(user);
   rpl.push_back(":Your host is " + server_name + ", running version " +
@@ -35,11 +34,11 @@ Message Message::rpl_002(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_003(const String& source, const String& user,
-                         const String& server_created_time) {
+Message rpl_003(const String& source, const String& user,
+                const String& server_created_time) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("003");
   rpl.push_back(user);
   rpl.push_back(":This server has been started " + server_created_time +
@@ -47,14 +46,13 @@ Message Message::rpl_003(const String& source, const String& user,
 
   return rpl;
 }
-Message Message::rpl_004(const String& source, const String& user,
-                         const String& server_name,
-                         const String& server_version,
-                         const String& available_user_modes,
-                         const String& available_channel_modes) {
+Message rpl_004(const String& source, const String& user,
+                const String& server_name, const String& server_version,
+                const String& available_user_modes,
+                const String& available_channel_modes) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("004");
   rpl.push_back(user);
   rpl.push_back(server_name);
@@ -64,12 +62,12 @@ Message Message::rpl_004(const String& source, const String& user,
 
   return rpl;
 }
-Message Message::rpl_005(const String& source, const String& user,
-                         std::vector<String> specs) {
+Message rpl_005(const String& source, const String& user,
+                std::vector<String> specs) {
   Message rpl;
 
-  rpl.source = source;
-  rpl.set_numeric("004");
+  rpl.set_source(source);
+  rpl.set_numeric("005");
   rpl.push_back(user);
   for (size_t i = 0; i < specs.size(); ++i) {
     rpl.push_back(specs[i]);
@@ -79,11 +77,11 @@ Message Message::rpl_005(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_221(const String& source, const String& user,
-                         const String& user_modes) {
+Message rpl_221(const String& source, const String& user,
+                const String& user_modes) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("221");
   rpl.push_back(user);
   rpl.push_back("+" + user_modes);
@@ -91,11 +89,10 @@ Message Message::rpl_221(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_315(const String& source, const String& user,
-                         const String& mask) {
+Message rpl_315(const String& source, const String& user, const String& mask) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("315");
   rpl.push_back(user);
   rpl.push_back(mask);
@@ -104,10 +101,10 @@ Message Message::rpl_315(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_321(const String& source, const String& user) {
+Message rpl_321(const String& source, const String& user) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("321");
   rpl.push_back(user);
   rpl.push_back("Channel :Users  Name");
@@ -115,12 +112,11 @@ Message Message::rpl_321(const String& source, const String& user) {
   return rpl;
 }
 
-Message Message::rpl_322(const String& source, const String& user,
-                         const String& channel, const String& client_count,
-                         const String& topic) {
+Message rpl_322(const String& source, const String& user, const String& channel,
+                const String& client_count, const String& topic) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("322");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -130,10 +126,10 @@ Message Message::rpl_322(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_323(const String& source, const String& user) {
+Message rpl_323(const String& source, const String& user) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("323");
   rpl.push_back(user);
   rpl.push_back(":End of LIST");
@@ -141,12 +137,12 @@ Message Message::rpl_323(const String& source, const String& user) {
   return rpl;
 }
 
-Message Message::rpl_324(const String& source, const String& user,
-                         const String& channel, const String& modestring,
-                         const std::vector<String> mode_arguments) {
+Message rpl_324(const String& source, const String& user, const String& channel,
+                const String& modestring,
+                const std::vector<String> mode_arguments) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("324");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -157,11 +153,11 @@ Message Message::rpl_324(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_329(const String& source, const String& user,
-                         const String& channel, const String& creationtime) {
+Message rpl_329(const String& source, const String& user, const String& channel,
+                const String& creationtime) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("329");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -170,11 +166,11 @@ Message Message::rpl_329(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_331(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_331(const String& source, const String& user,
+                const String& channel) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("331");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -183,11 +179,11 @@ Message Message::rpl_331(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_332(const String& source, const String& user,
-                         const String& channel, const String& topic) {
+Message rpl_332(const String& source, const String& user, const String& channel,
+                const String& topic) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("332");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -196,12 +192,11 @@ Message Message::rpl_332(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_333(const String& source, const String& user,
-                         const String& channel, const String& nick,
-                         const String& setat) {
+Message rpl_333(const String& source, const String& user, const String& channel,
+                const String& nick, const String& setat) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("333");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -212,11 +207,11 @@ Message Message::rpl_333(const String& source, const String& user,
 }
 
 // reply message functions
-Message Message::rpl_341(const String& source, const String& user,
-                         const String& nick, const String& channel) {
+Message rpl_341(const String& source, const String& user, const String& nick,
+                const String& channel) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("341");
   rpl.push_back(user);
   rpl.push_back(nick);
@@ -237,13 +232,12 @@ WHO kkk\r
 :irc.example.net 352 ccc * ~test_user localhost irc.example.net kkk H :0 Hyungdo Kim\r
 :irc.example.net 315 ccc kkk :End of WHO list\r
 */
-Message Message::rpl_352(const String& source, const String& user,
-                         const String& channel, const User& _u,
-                         const String& server, const String& flags,
-                         int hopcount) {
+Message rpl_352(const String& source, const String& user, const String& channel,
+                const User& _u, const String& server, const String& flags,
+                int hopcount) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("352");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -267,12 +261,11 @@ Message Message::rpl_352(const String& source, const String& user,
   :irc.example.net 353 lfkn = #b :@lfkn\r
   :irc.example.net 366 lfkn #b :End of NAMES list\r
 */
-Message Message::rpl_353(const String& source, const String& user,
-                         const String& symbol, const String& channel,
-                         const String& nicks) {
+Message rpl_353(const String& source, const String& user, const String& symbol,
+                const String& channel, const String& nicks) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("353");
   rpl.push_back(user);
   rpl.push_back(symbol);
@@ -282,12 +275,12 @@ Message Message::rpl_353(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_366(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_366(const String& source, const String& user,
+                const String& channel) {
   // :irc.example.net 366 lfkn__ #a :End of NAMES list\r
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("366");
   rpl.push_back(user);
   rpl.push_back(channel);
@@ -295,8 +288,8 @@ Message Message::rpl_366(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_401(const String& source, const String& user,
-                         const String& nickname) {
+Message rpl_401(const String& source, const String& user,
+                const String& nickname) {
   /*
   ERR_NOSUCHNICK (401)
   "<user> <nickname> :No such nick/channel"
@@ -308,7 +301,7 @@ Message Message::rpl_401(const String& source, const String& user,
   */
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("401");
   rpl.push_back(user);
   rpl.push_back(nickname);
@@ -317,8 +310,8 @@ Message Message::rpl_401(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_403(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_403(const String& source, const String& user,
+                const String& channel) {
   /* ERR_NOSUCHCHANNEL (403)
     "<user> <channel> :No such channel"
     Indicates that no channel can be found for the supplied channel name.
@@ -337,8 +330,8 @@ Message Message::rpl_403(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_404(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_404(const String& source, const String& user,
+                const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -350,8 +343,8 @@ Message Message::rpl_404(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_405(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_405(const String& source, const String& user,
+                const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -363,7 +356,7 @@ Message Message::rpl_405(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_409(const String& source, const String& user) {
+Message rpl_409(const String& source, const String& user) {
   Message rpl;
 
   rpl.set_source(source);
@@ -374,8 +367,8 @@ Message Message::rpl_409(const String& source, const String& user) {
   return rpl;
 }
 
-Message Message::rpl_411(const String& source, const String& user,
-                         const String& command) {
+Message rpl_411(const String& source, const String& user,
+                const String& command) {
   Message rpl;
 
   rpl.set_source(source);
@@ -386,7 +379,7 @@ Message Message::rpl_411(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_412(const String& source, const String& user) {
+Message rpl_412(const String& source, const String& user) {
   Message rpl;
 
   rpl.set_source(source);
@@ -397,11 +390,11 @@ Message Message::rpl_412(const String& source, const String& user) {
   return rpl;
 }
 
-Message Message::rpl_421(const String& source, const String& user,
-                         const String& command) {
+Message rpl_421(const String& source, const String& user,
+                const String& command) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("421");
   rpl.push_back(user);
   rpl.push_back(command);
@@ -410,11 +403,10 @@ Message Message::rpl_421(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_432(const String& source, const String& user,
-                         const String& nick) {
+Message rpl_432(const String& source, const String& user, const String& nick) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("432");
   rpl.push_back(user);
   rpl.push_back(nick);
@@ -423,11 +415,10 @@ Message Message::rpl_432(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_433(const String& source, const String& user,
-                         const String& nick) {
+Message rpl_433(const String& source, const String& user, const String& nick) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("433");
   rpl.push_back(user);
   rpl.push_back(nick);
@@ -436,8 +427,8 @@ Message Message::rpl_433(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_441(const String& source, const String& user,
-                         const String& nick, const String& channel) {
+Message rpl_441(const String& source, const String& user, const String& nick,
+                const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -450,8 +441,8 @@ Message Message::rpl_441(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_442(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_442(const String& source, const String& user,
+                const String& channel) {
   /*
     ERR_NOTONCHANNEL (442)
     "<user> <channel> :You're not on that channel"
@@ -473,8 +464,8 @@ Message Message::rpl_442(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_443(const String& source, const String& user,
-                         const String& nick, const String& channel) {
+Message rpl_443(const String& source, const String& user, const String& nick,
+                const String& channel) {
   // :irc.example.net 443 dy dy #test :is already on channel\r
   Message rpl;
 
@@ -488,10 +479,10 @@ Message Message::rpl_443(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_451(const String& source, const String& user) {
+Message rpl_451(const String& source, const String& user) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("451");
   rpl.push_back(user);
   rpl.push_back(":Connection not registered");
@@ -499,11 +490,11 @@ Message Message::rpl_451(const String& source, const String& user) {
   return rpl;
 }
 
-Message Message::rpl_461(const String& source, const String& user,
-                         const String& command) {
+Message rpl_461(const String& source, const String& user,
+                const String& command) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("461");
   rpl.push_back(user);
   rpl.push_back(command);
@@ -512,10 +503,10 @@ Message Message::rpl_461(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_462(const String& source, const String& user) {
+Message rpl_462(const String& source, const String& user) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("462");
   rpl.push_back(user);
   rpl.push_back(":Connection already registered");
@@ -523,10 +514,10 @@ Message Message::rpl_462(const String& source, const String& user) {
   return rpl;
 }
 
-Message Message::rpl_464(const String& source, const String& user) {
+Message rpl_464(const String& source, const String& user) {
   Message rpl;
 
-  rpl.source = source;
+  rpl.set_source(source);
   rpl.set_numeric("464");
   rpl.push_back(user);
   rpl.push_back(":Password incorrect");
@@ -534,8 +525,8 @@ Message Message::rpl_464(const String& source, const String& user) {
   return rpl;
 }
 
-Message Message::rpl_471(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_471(const String& source, const String& user,
+                const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -547,8 +538,8 @@ Message Message::rpl_471(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_472(const String& source, const String& user,
-                         const String& modechar, const String& channel) {
+Message rpl_472(const String& source, const String& user,
+                const String& modechar, const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -560,8 +551,8 @@ Message Message::rpl_472(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_473(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_473(const String& source, const String& user,
+                const String& channel) {
   // :irc.example.net 473 dy_ #test :Cannot join channel (+i) -- Invited users
   // only\r
   Message rpl;
@@ -575,8 +566,8 @@ Message Message::rpl_473(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_475(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_475(const String& source, const String& user,
+                const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
@@ -588,8 +579,8 @@ Message Message::rpl_475(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_482(const String& source, const String& user,
-                         const String& channel) {
+Message rpl_482(const String& source, const String& user,
+                const String& channel) {
   /*
     ERR_CHANOPRIVSNEEDED (482)
     "<user> <channel> :You're not channel operator"
@@ -613,8 +604,7 @@ Message Message::rpl_482(const String& source, const String& user,
   return rpl;
 }
 
-Message Message::rpl_501(const String& source, const String& user,
-                         const String& mode) {
+Message rpl_501(const String& source, const String& user, const String& mode) {
   Message rpl;
 
   rpl.set_source(source);
@@ -624,7 +614,7 @@ Message Message::rpl_501(const String& source, const String& user,
 
   return rpl;
 }
-Message Message::rpl_502(const String& source, const String& user) {
+Message rpl_502(const String& source, const String& user) {
   Message rpl;
 
   rpl.set_source(source);

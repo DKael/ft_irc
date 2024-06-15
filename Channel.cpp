@@ -276,7 +276,7 @@ String Channel::make_mode_str(void) {
   return mode_str;
 }
 
-bool Channel::is_channel_name(const String& name) {
+bool is_channel_name(const String& name) {
   if (name[0] == REGULAR_CHANNEL_PREFIX || name[0] == LOCAL_CHANNEL_PREFIX) {
     return true;
   } else {

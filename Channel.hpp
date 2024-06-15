@@ -130,9 +130,9 @@ class Channel {
   void unset_mode(char flag);
   bool chk_mode(char flag) const;
   String make_mode_str(void);
-
-  static bool is_channel_name(const String& name);
 };
+
+bool is_channel_name(const String& name);
 
 #ifdef DEBUG
 

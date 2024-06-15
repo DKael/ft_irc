@@ -144,17 +144,14 @@ class Message {
   const String& get_numeric(void) const;
 
   String to_raw_msg(void);
-
-  static Message rpl_432(const String& source, const String& user,
-                         const String& nick);
-  static Message rpl_433(const String& source, const String& user,
-                         const String& nick);
-  static Message rpl_451(const String& source, const String& user);
-  static Message rpl_461(const String& source, const String& user,
-                         const String& cmd);
-  static Message rpl_462(const String& source, const String& user);
-  static Message rpl_464(const String& source, const String& user);
 };
+
+Message rpl_432(const String& source, const String& user, const String& nick);
+Message rpl_433(const String& source, const String& user, const String& nick);
+Message rpl_451(const String& source, const String& user);
+Message rpl_461(const String& source, const String& user, const String& cmd);
+Message rpl_462(const String& source, const String& user);
+Message rpl_464(const String& source, const String& user);
 
 std::ostream& operator<<(std::ostream& out, Message msg);
 

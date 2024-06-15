@@ -10,7 +10,7 @@ Server* g_server_ptr;
 void on_sigint(int sig) {
   signal(sig, SIG_IGN);
 
-  ::close(g_server_ptr->get_serv_socket());
+  g_server_ptr->server_quit();
   exit(130);
 }
 
@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
   try {
     Server serv(argv[1], argv[2]);
     Message::map_init();
+    g_server_ptr = &serv;
     signal(SIGINT, on_sigint);
 
     serv.listen();
