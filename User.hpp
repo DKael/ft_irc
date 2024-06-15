@@ -62,6 +62,8 @@ class User {
   User& operator=(const User& origin);
 
  public:
+  String remain_input;
+
   // constructors & desturctor
   User(pollfd& _pfd, const sockaddr_in& _user_addr);
   User(const User& origin);

@@ -127,6 +127,8 @@ class Server {
   void tmp_user_timeout_chk(void);
   void user_ping_chk(void);
 
+  void read_msg_from_socket(int socket_fd, std::vector<String>& msg_list);
+
   User& operator[](int socket_fd);
   int operator[](const String& nickname);
 

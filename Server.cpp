@@ -796,3 +796,62 @@ void Server::send_msg_to_connected_user(const User& u, const String& msg) {
     ft_send(tmp_u.get_pfd());
   }
 }
+
+void Server::read_msg_from_socket(int socket_fd,
+                                  std::vector<String>& msg_list) {
+  User& event_user = (*this)[socket_fd];
+
+  static String remains = "";
+  static bool incomplete = false;
+
+  char read_block[BLOCK_SIZE] = {
+      0,
+  };
+  int read_cnt = 0;
+  std::size_t idx;
+  std::vector<String> box;
+
+  while (true) {
+    read_cnt = ::recv(socket_fd, read_block, BLOCK_SIZE - 1, MSG_DONTWAIT);
+    if (0 < read_cnt && read_cnt <= BLOCK_SIZE - 1) {
+      read_block[read_cnt] = '\0';
+      box.clear();
+      ft_split(String(read_block), "\r\n", box);
+
+      idx = 0;
+      if (incomplete == true) {
+        remains += box[0];
+        msg_list.push_back(remains);
+        remains = "";
+        idx = 1;
+      }
+      if (read_block[read_cnt - 2] == '\r' &&
+          read_block[read_cnt - 1] == '\n') {
+        for (; idx < box.size(); idx++) {
+          if (box[idx].length() != 0) {
+            msg_list.push_back(box[idx]);
+          }
+        }
+        incomplete = false;
+      } else {
+        for (; idx + 1 < box.size(); idx++) {
+          if (box[idx].length() != 0) {
+            msg_list.push_back(box[idx]);
+          }
+        }
+        remains = box[idx];
+        incomplete = true;
+      }
+      if (read_cnt == BLOCK_SIZE - 1) {
+        continue;
+      } else {
+        break;
+      }
+    } else if (read_cnt == -1) {
+      break;
+    } else if (read_cnt == 0) {
+      msg_list.push_back(String("connection finish"));
+      break;
+    }
+  }
+}
