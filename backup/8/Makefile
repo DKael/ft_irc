@@ -18,7 +18,7 @@ OBJS = $(addprefix $(OBJDIR)/,$(SRCS:.cpp=.o))
 
 CXX = c++
 
-CFLAGS = -std=c++98#-Wall -Wextra -Werror #-fsanitize=address -g3 
+CFLAGS = -std=c++98 -fsanitize=address -g3 #-Wall -Wextra -Werror
 
 NAME = ircserv
 
@@ -37,7 +37,7 @@ $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	$(CXX) $(CFLAGS) -c -D DEBUG -I. $< -o $@
 else 
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-	$(CXX) $(CFLAGS) -c -I. $< -o $@
+	$(CXX) $(CFLAGS) -c  -I. $< -o $@
 endif
 
 all: $(NAME)

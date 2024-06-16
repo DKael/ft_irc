@@ -1,6 +1,8 @@
 #ifndef UTIL_HPP
 #define UTIL_HPP
 
+#define BLOCK_SIZE 1025
+
 #include <sys/socket.h>
 #include <unistd.h>
 

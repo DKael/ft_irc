@@ -30,12 +30,13 @@ T& ft_split(const String& str, const String& del, T& box,
   size_t idx1 = 0;
   size_t idx2 = 0;
   String tmp;
+  int del_len = del.length();
 
   while (idx1 < str.length()) {
-    idx2 = str.find_first_of(del, idx1);
+    idx2 = str.find(del, idx1);
     if (idx2 != String::npos) {
       tmp = str.substr(idx1, idx2 - idx1);
-      idx2 += 1;
+      idx2 += del_len;
       idx1 = idx2;
     } else {
       tmp = str.substr(idx1);

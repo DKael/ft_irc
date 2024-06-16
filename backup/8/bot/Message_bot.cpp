@@ -1,4 +1,4 @@
-#include "Message.hpp"
+#include "Message_bot.hpp"
 
 std::map<Command, String> Message::etos;
 std::map<String, Command> Message::stoe;
@@ -42,9 +42,7 @@ void Message::map_init(void) {
 Message::Message() : raw_msg(""), socket_fd(-1) {}
 
 Message::Message(int _socket_fd, const String& _raw_msg)
-    : socket_fd(_socket_fd),
-      raw_msg(ft_strip(_raw_msg)),
-      trailing_exist(false) {
+    : raw_msg(ft_strip(_raw_msg)), socket_fd(_socket_fd) {
   if (raw_msg.length() == 0) {
     set_cmd_type(NONE);
     numeric = "421";
@@ -93,9 +91,12 @@ Message::Message(int _socket_fd, const String& _raw_msg)
     cmd = tmp_type;
     raw_cmd = cmd;
     ft_upper(cmd);
-    std::map<String, Command>::const_iterator it = stoe.find(cmd);
+    std::map<String, Command>::iterator it = stoe.find(cmd);
     if (it != stoe.end()) {
       cmd_type = stoe.at(cmd);
+      if (pos == String::npos) {
+        return;
+      }
     } else {
       set_cmd_type(NONE);
       numeric = "421";
@@ -106,16 +107,12 @@ Message::Message(int _socket_fd, const String& _raw_msg)
     // type numeric
     numeric = tmp_type;
   }
-  if (pos == String::npos) {
-    return;
-  }
 
   // check trailing before get parameters
   idx2 = raw_msg.rfind(" :");
   if (idx2 != String::npos) {
     // trailing exist
     tmp_trailing = raw_msg.substr(idx2 + 2);
-    trailing_exist = true;
   } else {
     idx2 = raw_msg.length();
   }
@@ -132,7 +129,7 @@ Message::Message(int _socket_fd, const String& _raw_msg)
     }
   }
 
-  if (trailing_exist == true) {
+  if (tmp_trailing.length() != 0) {
     params.push_back(tmp_trailing);
   }
   return;
@@ -156,8 +153,6 @@ void Message::clear(void) { params.clear(); }
 
 void Message::set_numeric(const String& input) { numeric = input; }
 
-void Message::set_trailing_exist(bool input) { trailing_exist = input; }
-
 const String& Message::get_raw_msg(void) const { return raw_msg; }
 
 int Message::get_socket_fd(void) const { return socket_fd; }
@@ -172,20 +167,10 @@ Command Message::get_cmd_type(void) const { return cmd_type; }
 
 const std::vector<String>& Message::get_params(void) const { return params; }
 
-std::vector<String>& Message::get_params(void) { return params; }
-
 std::size_t Message::get_params_size(void) const { return params.size(); }
 
-String& Message::operator[](const int idx) {
-  if (0 <= idx && idx < static_cast<int>(params.size())) {
-    return params[idx];
-  } else {
-    throw std::out_of_range("params vector out of range");
-  }
-}
-
 const String& Message::operator[](const int idx) const {
-  if (0 <= idx && idx < static_cast<int>(params.size())) {
+  if (0UL <= idx && idx < static_cast<int>(params.size())) {
     return params[idx];
   } else {
     throw std::out_of_range("params vector out of range");
@@ -193,8 +178,6 @@ const String& Message::operator[](const int idx) const {
 }
 
 const String& Message::get_numeric(void) const { return numeric; }
-
-bool Message::get_trailing_exist(void) const { return trailing_exist; }
 
 String Message::to_raw_msg(void) {
   String raw_msg = "";
@@ -221,8 +204,6 @@ String Message::to_raw_msg(void) {
   return raw_msg;
 }
 
-#ifdef DEBUG
-
 std::ostream& operator<<(std::ostream& out, Message msg) {
   std::size_t i = 0;
 
@@ -244,4 +225,65 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
   return out;
 }
 
-#endif
+Message rpl_432(const String& source, const String& user, const String& nick) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("432");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(":Erroneous nickname");
+  return rpl;
+}
+
+Message rpl_433(const String& source, const String& user, const String& nick) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("433");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(":Nickname is already in use");
+  return rpl;
+}
+
+Message rpl_451(const String& source, const String& user) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("451");
+  rpl.push_back(user);
+  rpl.push_back(":Connection not registered");
+  return rpl;
+}
+
+Message rpl_461(const String& source, const String& user, const String& cmd) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("461");
+  rpl.push_back(user);
+  rpl.push_back(cmd);
+  rpl.push_back(":Not enough parameters");
+  return rpl;
+}
+
+Message rpl_462(const String& source, const String& user) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("462");
+  rpl.push_back(user);
+  rpl.push_back(":Connection already registered");
+  return rpl;
+}
+
+Message rpl_464(const String& source, const String& user) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("464");
+  rpl.push_back(user);
+  rpl.push_back(":Password incorrect");
+  return rpl;
+}
