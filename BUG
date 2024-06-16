@@ -154,6 +154,7 @@ numeric         :
 
 8.  kick 오류
 강퇴 후 메세지 전송이 가능
+전체적으로 해당 채널에서 강퇴된 유저가 전부 삭제되는지 확인 (client list + operator list)
 
 9. part 오류
 /join test
@@ -164,21 +165,3 @@ numeric         :
 	[Server_cmd.cpp / 914번째 줄]
 	변경 전 : if (is_channel_name(chan_name_vec[i]))
 	변경 후 : if (is_channel_name(chan_name_vec[i]) == false)
-
-10. mode #[채널명]
-case1. 채널명 = 있는채널명일경우
-15:38 -!- MODE Not enough parameters 라고 나오는데
-324, 329 RESPONSE 해주면 될듯
-
-[ngircd 기준]
-> 2024/06/16 15:48:50.000708448  length=20 from=1444 to=1463
-MODE #validChannel\r
-< 2024/06/16 15:48:50.000708871  length=91 from=6697 to=6787
-:irc.example.net 324 dy #validChannel +\r
-:irc.example.net 329 dy #validChannel 1718520528\r
-
-case2. 채널명 = 없는 채널명일경우
-
-[ngircd 기준]
-< 2024/06/16 15:50:21.000810971  length=71 from=7063 to=7133
-:irc.example.net 401 dy #invalidChannel :No such nick or channel name\r

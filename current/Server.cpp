@@ -293,6 +293,10 @@ int Server::send_msg_at_queue(int socket_fd) {
 
   while (to_send_num > 0) {
     const String& msg = user_tmp.get_front_msg();
+#ifdef DEBUG
+  std::cout << YELLOW << "\t\t\t[ircserv RESPONSE] " << GREEN_BOLD << "["
+          << msg << "]" << WHITE;
+#endif
     msg_len = msg.length();
     idx = 0;
     error_flag = false;
