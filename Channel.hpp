@@ -11,10 +11,10 @@
 typedef std::string String;
 
 #define CHANTYPES "#&"
-#define AVAILABLE_CHANNEL_MODES "biklost"
-#define CHANMODES "b,k,l,ist"
-#define CHANMODE_A "bo"
-#define CHANMODE_B "k"
+#define AVAILABLE_CHANNEL_MODES "iklost"
+#define CHANMODES ",k,l,ist"
+#define CHANMODE_A ""
+#define CHANMODE_B "ko"
 #define CHANMODE_C "l"
 #define CHANMODE_D "ist"
 #define CHANLIMIT "#&:10"
@@ -24,7 +24,6 @@ typedef std::string String;
 #define KICKLEN 307
 
 #define CHAN_FLAG_O_CHAR 'o'
-#define CHAN_FLAG_B_CHAR 'b'
 
 #define CHAN_FLAG_K_CHAR 'k'
 #define CHAN_FLAG_K (1 << 0)
@@ -60,12 +59,10 @@ class Channel {
   const std::time_t created_time;
   String pwd;
   int user_limit;
-  bool invite_only;
   String topic;
   String topic_set_nick;
   std::time_t topic_set_time;
   std::map<String, User&> user_list;
-  std::map<String, User&> banned_list;
   std::map<String, User&> operator_list;
   /* <MODE>
     i : set / unset Invite only channel
@@ -91,23 +88,19 @@ class Channel {
   const String& get_password(void) const;
   time_t get_created_time(void) const;
   int get_user_limit(void) const;
-  bool get_invite_only(void) const;
   const String& get_topic(void) const;
   const String& get_topic_set_nick(void) const;
   std::time_t get_topic_set_time(void) const;
   int get_mode(void) const;
   std::map<String, User&>& get_user_list(void);
-  std::map<String, User&>& get_banned_list(void);
   std::map<String, User&>& get_operator_list(void);
   const std::map<String, User&>& get_user_list(void) const;
-  const std::map<String, User&>& get_banned_list(void) const;
   const std::map<String, User&>& get_operator_list(void) const;
 
   String get_user_list_str(bool is_joined) const;
 
   void set_password(const String& _pwd);
   void set_user_limit(int _user_limit);
-  void set_invite_only(bool _invite_only);
   void set_topic(const String& _topic);
   void set_topic_set_nick(const String& _nick);
   void set_topic_set_time(std::time_t _t);

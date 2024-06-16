@@ -103,7 +103,7 @@ class Server {
   ~Server();
   void server_quit(void);
 
-  void listen(void);
+  void server_listen(void);
 
   int get_port(void) const;
   const String& get_str_port(void) const;

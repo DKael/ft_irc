@@ -14,7 +14,7 @@ Server::Server(const char* _port, const char* _password)
     throw socket_create_error();
   }
   if (fcntl(serv_socket, F_SETFL, O_NONBLOCK) == -1) {
-    throw std::exception();
+    throw socket_setting_error();
   }
   std::memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
@@ -23,7 +23,7 @@ Server::Server(const char* _port, const char* _password)
 
   int retry_cnt = 10;
   std::stringstream port_tmp;
-  while (::bind(serv_socket, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
+  while (bind(serv_socket, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
     if (retry_cnt == 0) {
       throw std::exception();
     } else if (errno == EADDRINUSE) {
@@ -42,7 +42,7 @@ Server::Server(const char* _port, const char* _password)
     }
   }
 
-  if (::listen(serv_socket, 64) == -1) {
+  if (listen(serv_socket, 64) == -1) {
     throw socket_listening_error();
   }
 
@@ -137,12 +137,12 @@ void Server::server_quit(void) {
   close(serv_socket);
 }
 
-void Server::listen(void) {
+void Server::server_listen(void) {
   int event_cnt = 0;
 
   while (true) {
-    // tmp_user_timeout_chk();
-    // user_ping_chk();
+    tmp_user_timeout_chk();
+    user_ping_chk();
     event_cnt = poll(observe_fd, MAX_USER, POLL_TIMEOUT * 1000);
     if (event_cnt == 0) {
       continue;
@@ -284,15 +284,15 @@ void Server::ft_sendd(pollfd& p_val) {
 }
 
 int Server::send_msg_at_queue(int socket_fd) {
-  User& user_tmp = (*this)[socket_fd];
-  std::size_t to_send_num = user_tmp.get_to_send_size();
+  User& tmp_user = (*this)[socket_fd];
+  std::size_t to_send_num = tmp_user.get_to_send_size();
   size_t msg_len;
   size_t idx;
   ssize_t bytes_sent;
   bool error_flag;
 
   while (to_send_num > 0) {
-    const String& msg = user_tmp.get_front_msg();
+    const String& msg = tmp_user.get_front_msg();
     msg_len = msg.length();
     idx = 0;
     error_flag = false;
@@ -307,9 +307,9 @@ int Server::send_msg_at_queue(int socket_fd) {
         break;
       }
     }
-    user_tmp.pop_front_msg();
+    tmp_user.pop_front_msg();
     if (error_flag == true) {
-      user_tmp.push_front_msg(msg.substr(idx + bytes_sent));
+      tmp_user.push_front_msg(msg.substr(idx + bytes_sent));
       return -1;
     }
     to_send_num--;
@@ -578,6 +578,7 @@ int Server::get_user_cnt(void) const { return user_list.size(); }
 bool Server::get_enable_ident_protocol(void) const {
   return enable_ident_protocol;
 }
+
 int Server::get_channel_num(void) const { return channel_list.size(); };
 
 void Server::add_tmp_user(pollfd& pfd, const sockaddr_in& user_addr) {
@@ -612,7 +613,7 @@ void Server::remove_user(const int socket_fd) {
     user_list.erase(it1);
     it2 = nick_to_soc.find(tmp);
     nick_to_soc.erase(it2);
-    ::close(socket_fd);
+    close(socket_fd);
     return;
   }
 
@@ -683,7 +684,7 @@ void Server::user_ping_chk(void) {
     const String& tmp_user_nick = tmp_user.get_nick_name();
 
     if (tmp_user.get_have_to_ping_chk() == true) {
-      if (now - tmp_user.get_last_ping() > PINGTIMEOUT + PONGTIMEOUT) {
+      if (now > tmp_user.get_last_ping() + PINGTIMEOUT + PONGTIMEOUT) {
         Message rpl;
 
         rpl.set_source(tmp_user.make_source(1));
@@ -705,7 +706,7 @@ void Server::user_ping_chk(void) {
         ft_sendd(tmp_user.get_pfd());
       }
     } else {
-      if (now - tmp_user.get_last_ping() > PINGTIMEOUT) {
+      if (now > tmp_user.get_last_ping() + PINGTIMEOUT) {
         tmp_user.set_have_to_ping_chk(true);
         Message ping;
 
@@ -781,6 +782,10 @@ void Server::send_msg_to_connected_user(const User& u, const String& msg) {
   for (; user_it != user_list.end(); ++user_it) {
     User& tmp_u = user_it->second;
     const String& tmp_name = tmp_u.get_nick_name();
+
+    if (tmp_name == u.get_nick_name()) {
+      continue;
+    }
 
     for (user_chan_it = u.get_channels().begin();
          user_chan_it != u.get_channels().end(); ++user_chan_it) {

@@ -3,19 +3,16 @@
 Channel::Channel(const String& _channel_name)
     : channel_name(_channel_name),
       created_time(std::time(NULL)),
-      invite_only(false),
       mode(0),
       user_limit(INIT_USER_LIMIT) {
   if (_channel_name.length() == 0 ||
       String(CHANTYPES).find(_channel_name[0]) == String::npos) {
-    throw std::exception();
+    throw channel_prefix_error();
   }
   if (_channel_name[0] == REGULAR_CHANNEL_PREFIX) {
     channel_type = REGULAR_CHANNEL;
   } else if (_channel_name[0] == LOCAL_CHANNEL_PREFIX) {
     channel_type = LOCAL_CHANNEL;
-  } else {
-    throw channel_prefix_error();
   }
 }
 
@@ -24,11 +21,11 @@ Channel::Channel(const Channel& other)
       channel_type(other.channel_type),
       created_time(other.created_time),
       pwd(other.pwd),
-      invite_only(other.invite_only),
       user_limit(other.user_limit),
       topic(other.topic),
+      topic_set_nick(other.topic_set_nick),
+      topic_set_time(other.topic_set_time),
       user_list(other.user_list),
-      banned_list(other.banned_list),
       operator_list(other.operator_list) {}
 
 Channel::~Channel() {}
@@ -44,8 +41,6 @@ time_t Channel::get_created_time(void) const { return created_time; }
 
 int Channel::get_user_limit(void) const { return user_limit; }
 
-bool Channel::get_invite_only(void) const { return invite_only; };
-
 const String& Channel::get_topic(void) const { return topic; };
 
 const String& Channel::get_topic_set_nick(void) const { return topic_set_nick; }
@@ -56,18 +51,12 @@ int Channel::get_mode(void) const { return mode; }
 
 std::map<String, User&>& Channel::get_user_list(void) { return user_list; }
 
-std::map<String, User&>& Channel::get_banned_list(void) { return banned_list; }
-
 std::map<String, User&>& Channel::get_operator_list(void) {
   return operator_list;
 }
 
 const std::map<String, User&>& Channel::get_user_list(void) const {
   return user_list;
-};
-
-const std::map<String, User&>& Channel::get_banned_list(void) const {
-  return banned_list;
 };
 
 const std::map<String, User&>& Channel::get_operator_list(void) const {
@@ -98,8 +87,6 @@ String Channel::get_user_list_str(bool is_joined) const {
 void Channel::set_password(const String& _pwd) { pwd = _pwd; }
 
 void Channel::set_user_limit(int _user_limit) { user_limit = _user_limit; }
-
-void Channel::set_invite_only(bool _invite_only) { invite_only = _invite_only; }
 
 void Channel::set_topic(const String& _topic) { topic = _topic; }
 
@@ -182,13 +169,15 @@ void Channel::change_user_nickname(const String& old_nick,
   std::map<String, User&>::iterator it = user_list.find(old_nick);
 
   if (it != user_list.end()) {
-    user_list.insert(std::pair<String, User&>(new_nick, it->second));
+    User& tmp_user = it->second;
+
     user_list.erase(it);
+    user_list.insert(std::pair<String, User&>(new_nick, tmp_user));
 
     it = operator_list.find(old_nick);
     if (it != operator_list.end()) {
-      operator_list.insert(std::pair<String, User&>(new_nick, it->second));
       operator_list.erase(it);
+      operator_list.insert(std::pair<String, User&>(new_nick, tmp_user));
     }
   }
 }

@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     g_server_ptr = &serv;
     signal(SIGINT, on_sigint);
 
-    serv.listen();
+    serv.server_listen();
 
   } catch (std::exception& e) {
     std::cerr << e.what() << '\n';

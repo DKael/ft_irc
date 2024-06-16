@@ -202,7 +202,7 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
 
   rpl.set_source(event_user.make_source(1));
   rpl.set_cmd_type(KICK);
-  rpl.push_back(event_user_nick);
+  rpl.push_back(chan_name);
   rpl.push_back("");
   if (msg.get_params_size() >= 3) {
     if (msg[2].length() > KICKLEN) {
@@ -232,6 +232,7 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
     rpl[1] = name_vec[i];
     send_msg_to_channel(chan, rpl.to_raw_msg());
     chan.remove_user(name_vec[i]);
+    (*this)[(*this)[name_vec[i]]].part_channel(chan_name);
   }
 }
 
@@ -783,7 +784,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
 
       try {
         chan.add_user(event_user);
-
+        event_user.join_channel(chan_name_vec[i]);
         // :zzz!~zzz@localhost JOIN :#chan_a\r
         Message rpl;
 
@@ -831,6 +832,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
         Channel& chan_ref = chan_it->second;
         chan_ref.add_user(event_user);
         chan_ref.add_operator(event_user);
+        event_user.join_channel(chan_name_vec[i]);
         Message rpl;
 
         rpl.set_source(event_user.make_source(1));
@@ -898,7 +900,7 @@ zzz
   }
 
   for (size_t i = 0; i < chan_name_vec.size(); ++i) {
-    if (is_channel_name(chan_name_vec[i])) {
+    if (is_channel_name(chan_name_vec[i]) == false) {
       event_user.push_back_msg(
           rpl_403(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());
       continue;
@@ -909,19 +911,20 @@ zzz
     if (chan_it == channel_list.end()) {
       event_user.push_back_msg(
           rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
-      return;
+      continue;
     }
 
     Channel& chan = chan_it->second;
     if (chan.chk_user_join(event_user_nick) == false) {
       event_user.push_back_msg(
           rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
-      return;
+      continue;
     }
 
     rpl[0] = chan_name;
     send_msg_to_channel(chan, rpl.to_raw_msg());
     chan.remove_user(event_user_nick);
+    event_user.part_channel(chan_name);
   }
 }
 
@@ -1018,8 +1021,8 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
   const String& event_user_nick = event_user.get_nick_name();
 
-  // 인자 개수 확인. 1 ~ 2개가 정상적
-  if (msg.get_params_size() < 1 || msg.get_params_size() > 2) {
+  // 인자 개수 확인. 1개 이상이 정상적
+  if (msg.get_params_size() < 1) {
     event_user.push_back_msg(
         rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
     return;
@@ -1052,12 +1055,6 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
                                        ft_ltos(chan.get_created_time()))
                                    .to_raw_msg());
     } else {
-      if (chan.is_operator(event_user_nick) == false) {
-        event_user.push_back_msg(
-            rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
-        return;
-      }
-
       const String& mode = msg[1];
       size_t param_idx = 2;
       bool set_mode = true;
@@ -1090,6 +1087,11 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
             continue;
           }
           if (mode[i] == CHAN_FLAG_O_CHAR) {
+            if (chan.is_operator(event_user_nick) == false) {
+              event_user.push_back_msg(
+                  rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
+              return;
+            }
             String target_nick;
             if (param_idx < msg.get_params_size()) {
               target_nick = msg[param_idx];
@@ -1113,15 +1115,12 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
               param_vec.push_back(target_nick);
               done_set += mode[i];
             }
-          } else if (mode[i] == CHAN_FLAG_B_CHAR) {
-            String target_nick;
-            if (param_idx < msg.get_params_size()) {
-              target_nick = msg[param_idx];
-              ++param_idx;
-            } else {
-              continue;
-            }
           } else if (mode[i] == CHAN_FLAG_K_CHAR) {
+            if (chan.is_operator(event_user_nick) == false) {
+              event_user.push_back_msg(
+                  rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
+              return;
+            }
             String password;
             if (param_idx < msg.get_params_size()) {
               password = msg[param_idx];
@@ -1141,6 +1140,11 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
               done_set += mode[i];
             }
           } else if (mode[i] == CHAN_FLAG_L_CHAR) {
+            if (chan.is_operator(event_user_nick) == false) {
+              event_user.push_back_msg(
+                  rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
+              return;
+            }
             String user_limit;
             if (set_mode == true) {
               if (param_idx < msg.get_params_size()) {
@@ -1173,6 +1177,11 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
           } else if (mode[i] == CHAN_FLAG_I_CHAR ||
                      mode[i] == CHAN_FLAG_S_CHAR ||
                      mode[i] == CHAN_FLAG_T_CHAR) {
+            if (chan.is_operator(event_user_nick) == false) {
+              event_user.push_back_msg(
+                  rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
+              return;
+            }
             if (set_mode == true && chan.chk_mode(mode[i]) == false) {
               chan.set_mode(mode[i]);
               done_set += mode[i];
