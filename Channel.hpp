@@ -92,6 +92,7 @@ class Channel {
   const String& get_topic_set_nick(void) const;
   std::time_t get_topic_set_time(void) const;
   int get_mode(void) const;
+  size_t get_user_num(void) const;
   std::map<String, User&>& get_user_list(void);
   std::map<String, User&>& get_operator_list(void);
   const std::map<String, User&>& get_user_list(void) const;
