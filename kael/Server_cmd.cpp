@@ -518,7 +518,7 @@ bbb
   rpl.push_back(trailing);
   event_user.push_back_msg(rpl.to_raw_msg());
 
-  std::clog << "Connection close at " << recv_fd << '\n';
+  std::cout << "Connection close at " << recv_fd << '\n';
   event_user.set_have_to_disconnect(true);
   ft_sendd(tmp_pfd);
 }
@@ -833,7 +833,6 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
         chan_ref.add_user(event_user);
         chan_ref.add_operator(event_user);
         event_user.join_channel(chan_name_vec[i]);
-
         Message rpl;
 
         rpl.set_source(event_user.make_source(1));
@@ -926,6 +925,10 @@ zzz
     send_msg_to_channel(chan, rpl.to_raw_msg());
     chan.remove_user(event_user_nick);
     event_user.part_channel(chan_name);
+
+    if (chan.get_user_num() == 0) {
+      channel_list.erase(chan_name);
+    }
   }
 }
 

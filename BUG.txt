@@ -1,7 +1,11 @@
 1. mode +i 설정 한 적 없는데
 	channel 입장하려는데 you must be invited 요구사항이 나옴
 
+
+
 2-1. part하고 다시 같은 채널로 join했을때 기존 데이터가 있는듯?
+
+
 
 3. 채널에 처음 들어가면 인원 데이터 업데이트가 잘못됨.
 	예를들어 닉네임이 dy 일 경우
@@ -15,6 +19,8 @@
 	14:14 [Users #test]
 	14:14 [@dy] [ dy_] 
 	14:14 -!- Irssi: #test: Total of 2 nicks [1 ops, 0 halfops, 0 voices, 1 normal]
+
+
 
 5. mode +l -l 에러 처리 (rpl_461)
 /mode +l 1
@@ -31,6 +37,8 @@ Server_cmd.cpp 1035번째 줄
 if (msg.get_params_size() < 1 || msg.get_params_size() > 2)
 이 부분 조건 확인 필요 params_size
 
+
+
 6. mode +o -o 예외 처리
 [IRSSI REQUEST] :: MODE #test +o 1
 < Message contents > 
@@ -43,6 +51,7 @@ numeric         :
 [SERVER SENDING...] [:ft_irc.net 441 dy 1 #test :They aren't on that channel
 
 
+
 7.	ban list?
 	[상황]
 	채널 : ii
@@ -52,9 +61,13 @@ numeric         :
 	이 요청은 클라이언트에서 자동적으로 보내지는데,
 	권한이 없다는 에러가 주기적으로 발생
 
+
+
 8. kick 오류
 강퇴 후 메세지 전송이 가능
 전체적으로 해당 채널에서 강퇴된 유저가 전부 삭제되는지 확인 (client list + operator list)
+
+
 
 9. part 오류
 /join test
@@ -66,9 +79,15 @@ numeric         :
 	변경 전 : if (is_channel_name(chan_name_vec[i]))
 	변경 후 : if (is_channel_name(chan_name_vec[i]) == false)
 
+
+
 10. mode limit 설정 후 변경 및 해제가 안됨.
 
+
+
 11. topic 수정이 권한을 갖지 않은 사람이 수정 가능
+
+
 
 12. 유저 3명으로 테스트 했을 때, 3명 다 quit하고 다시 서버에 connect 하려하면
 
@@ -89,3 +108,4 @@ Irssi v1.4.5 - https://irssi.org
 위와 같은 에러 발생
 
 User connection limit exceed!
+

@@ -126,11 +126,10 @@ const std::map<String, int>& User::get_invited_channels(void) const {
 const std::map<String, int>& User::get_channels(void) const { return channels; }
 
 /*
-  mode 1 : <nickname>!<user>@<host>
-  mode 2 : <nickname>!<user>
-  mode 3 : <nickname>
+mode 1 : <nickname>!<user>@<host>
+mode 2 : <nickname>!<user>
+mode 3 : <nickname>
 */
-
 String User::make_source(int mode = 1) {
   String source = nick_name;
   String ip;

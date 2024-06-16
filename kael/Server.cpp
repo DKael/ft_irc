@@ -56,7 +56,7 @@ Server::Server(const char* _port, const char* _password)
   created_time_str = ctime(&created_time);
   created_time_str.erase(created_time_str.length() - 1);
 
-  std::clog << "Server created at " << created_time_str << '\n'
+  std::cout << "Server created at " << created_time_str << '\n'
             << "Server listening at " << ::inet_ntoa(serv_addr.sin_addr) << ":"
             << port << std::endl;
 }
@@ -189,7 +189,7 @@ int Server::user_socket_init(void) {
         ip_list.find(user_addr.sin_addr.s_addr);
     if (ip_it != ip_list.end()) {
       if (ip_it->second > MAXCONNECTIONSIP) {
-        std::clog << "To many connection at " << inet_ntoa(user_addr.sin_addr)
+        std::cout << "To many connection at " << inet_ntoa(user_addr.sin_addr)
                   << '\n';
         send(user_socket,
              "ERROR :Connection refused, too many connections from your IP "
@@ -203,8 +203,14 @@ int Server::user_socket_init(void) {
         ip_it->second++;
       }
     } else {
-      ip_list.insert(std::pair<in_addr_t, int>(user_addr.sin_addr.s_addr, 0));
+      ip_list.insert(std::pair<in_addr_t, int>(user_addr.sin_addr.s_addr, 1));
     }
+#ifdef DEBUG
+    std::cout << YELLOW << "ip : " << GREEN << inet_ntoa(user_addr.sin_addr)
+              << "(" << user_addr.sin_addr.s_addr << "), connected count : "
+              << ip_list.find(user_addr.sin_addr.s_addr)->second << WHITE
+              << "\n\n";
+#endif
 
     if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
       // error_handling
@@ -249,7 +255,7 @@ int Server::user_socket_init(void) {
     }
     (*this).add_tmp_user(observe_fd[i], user_addr);
 
-    std::clog << "Connection established at " << user_socket << '\n';
+    std::cout << "Connection established at " << user_socket << '\n';
     connection_limit--;
   }
   return 0;
@@ -260,6 +266,12 @@ void Server::connection_fin(pollfd& p_val) {
       ip_list.find((*this)[p_val.fd].get_user_addr().sin_addr.s_addr);
 
   ip_it->second--;
+#ifdef DEBUG
+  std::cout << GREEN << "ip : " << GREEN
+            << inet_ntoa((*this)[p_val.fd].get_user_addr().sin_addr) << "("
+            << ip_it->first << "), connected count : " << ip_it->second << WHITE
+            << "\n\n";
+#endif
   if (ip_it->second == 0) {
     ip_list.erase(ip_it);
   }
@@ -351,7 +363,7 @@ void Server::revent_pollin(pollfd& p_val) {
 
     if (msg_list.size() == 0) {
       if (event_user.get_have_to_disconnect() == true) {
-        std::clog << "Connection close at " << p_val.fd << '\n';
+        std::cout << "Connection close at " << p_val.fd << '\n';
         connection_fin(p_val);
       }
       return;
@@ -700,7 +712,7 @@ void Server::user_ping_chk(void) {
         tmp_user.push_back_msg(rpl.to_raw_msg());
         tmp_user.push_back_msg("ERROR :Ping timeout: 20 seconds\r\n");
 
-        std::clog << "Connection close at " << tmp_user.get_user_socket()
+        std::cout << "Connection close at " << tmp_user.get_user_socket()
                   << '\n';
         tmp_user.set_have_to_disconnect(true);
         ft_sendd(tmp_user.get_pfd());

@@ -26,7 +26,8 @@ Channel::Channel(const Channel& other)
       topic_set_nick(other.topic_set_nick),
       topic_set_time(other.topic_set_time),
       user_list(other.user_list),
-      operator_list(other.operator_list) {}
+      operator_list(other.operator_list),
+      mode(other.mode) {}
 
 Channel::~Channel() {}
 
@@ -48,6 +49,8 @@ const String& Channel::get_topic_set_nick(void) const { return topic_set_nick; }
 std::time_t Channel::get_topic_set_time(void) const { return topic_set_time; }
 
 int Channel::get_mode(void) const { return mode; }
+
+size_t Channel::get_user_num(void) const { return user_list.size(); }
 
 std::map<String, User&>& Channel::get_user_list(void) { return user_list; }
 
