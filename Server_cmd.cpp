@@ -842,7 +842,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
 
         event_user.push_back_msg(rpl_353(serv_name, event_user_nick, "=",
                                          chan_name_vec[i],
-                                         ":@" + event_user_nick)
+                                         "@" + event_user_nick)
                                      .to_raw_msg());
         event_user.push_back_msg(
             rpl_366(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());
