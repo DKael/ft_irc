@@ -1,0 +1,65 @@
+{
+    "version": "2.0.0",
+    "configurations": [
+        {
+            "name": "ircserv debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/ircserv",
+            "args": [
+               "8080", "1234"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "ircserv build",
+            "setupCommands": [
+                {
+                    "description": "stop at c++ exception",
+                    "text": "breakpoint set -E c++",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "ircserv debug_no_exception",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/ircserv",
+            "args": [
+               "8080", "1234"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "ircserv build",
+        },
+        {
+            "name": "bot debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/bot",
+            "args": [
+                "127.0.0.1", "8080", "1234", "tmp_bot", "lunch_menu_240508.txt"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "bot build",
+        }
+    ]
+}
+
+// "setupCommands": [
+//     {
+//         "description": "stop at c++ exception",
+//         "text": "breakpoint set -E c++",
+//         "ignoreFailures": true
+//     }
+// ]
