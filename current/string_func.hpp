@@ -7,6 +7,8 @@
 #include <sstream>
 #include <string>
 
+typedef std::string String;
+
 #if !defined(M_NO_BLANK) && !defined(M_BLANK)
 #define M_NO_BLANK 0
 #define M_BLANK 1
@@ -15,24 +17,24 @@
 #define STR_COMP \
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-std::string ft_itos(const int input);
-std::string ft_strip(const std::string& origin);
-std::string make_random_string(std::size_t len,
-                               const std::string comp = STR_COMP);
-std::string& ft_upper(std::string& origin);
-std::string ft_upper(const std::string& origin);
+String ft_itos(int input);
+String ft_ltos(long input);
+String ft_strip(const String& origin);
+String make_random_string(std::size_t len, const String comp = STR_COMP);
+String& ft_upper(String& origin);
+String ft_upper(const String& origin);
 
 template <typename T>
-T& ft_split(const std::string& str, const std::string& del, T& box,
+T& ft_split(const String& str, const String& del, T& box,
             int mode = M_NO_BLANK) {
   size_t idx1 = 0;
   size_t idx2 = 0;
-  std::string tmp;
+  String tmp;
   int del_len = del.length();
 
   while (idx1 < str.length()) {
     idx2 = str.find(del, idx1);
-    if (idx2 != std::string::npos) {
+    if (idx2 != String::npos) {
       tmp = str.substr(idx1, idx2 - idx1);
       idx2 += del_len;
       idx1 = idx2;

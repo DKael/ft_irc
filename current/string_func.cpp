@@ -1,8 +1,8 @@
 #include "string_func.hpp"
 
-std::string ft_itos(const int input) {
+String ft_itos(int input) {
   std::stringstream ss_tmp;
-  std::string ret;
+  String ret;
 
   ss_tmp << input;
   ss_tmp >> ret;
@@ -10,21 +10,31 @@ std::string ft_itos(const int input) {
   return ret;
 }
 
-std::string ft_strip(const std::string& origin) {
+String ft_ltos(long input) {
+  std::stringstream ss_tmp;
+  String ret;
+
+  ss_tmp << input;
+  ss_tmp >> ret;
+
+  return ret;
+}
+
+String ft_strip(const String& origin) {
   std::size_t front_pos;
   std::size_t back_pos;
 
   front_pos = origin.find_first_not_of(" \n\t\v\f\r");
   back_pos = origin.find_last_not_of(" \n\t\v\f\r");
-  if (front_pos == std::string::npos || back_pos == std::string::npos) {
+  if (front_pos == String::npos || back_pos == String::npos) {
     return "";
   }
   return origin.substr(front_pos, back_pos - front_pos + 1);
 }
 
-std::string make_random_string(std::size_t len, const std::string comp) {
+String make_random_string(std::size_t len, const String comp) {
   std::size_t comp_len = comp.length();
-  std::string result;
+  String result;
   std::size_t idx = 0;
   timeval t;
 
@@ -38,7 +48,7 @@ std::string make_random_string(std::size_t len, const std::string comp) {
   return result;
 }
 
-std::string& ft_upper(std::string& origin) {
+String& ft_upper(String& origin) {
   std::size_t len = origin.length();
   std::size_t idx = 0;
 
@@ -51,10 +61,10 @@ std::string& ft_upper(std::string& origin) {
   return origin;
 }
 
-std::string ft_upper(const std::string& origin) {
+String ft_upper(const String& origin) {
   std::size_t len = origin.length();
   std::size_t idx = 0;
-  std::string ret = "";
+  String ret = "";
 
   while (idx < len) {
     if ('a' <= origin[idx] && origin[idx] <= 'z') {

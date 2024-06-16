@@ -20,6 +20,10 @@ const char* server_channel_list_capacity_error::what() const throw() {
   return "Channel capacity error!";
 };
 
-const char* channel_client_capacity_error::what() const throw() {
+const char* channel_user_capacity_error::what() const throw() {
   return "Channel capacity error!";
+};
+
+const char* channel_prefix_error::what() const throw() {
+  return "Channel prefix error!";
 };

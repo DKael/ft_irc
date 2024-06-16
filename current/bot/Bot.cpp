@@ -23,7 +23,7 @@ Bot::Bot(char** argv) : remain_msg(false) {
 
   nickname = argv[4];
   if (('0' <= nickname[0] && nickname[0] <= '9') ||
-      nickname.find_first_of(": \n\t\v\f\r") != std::string::npos) {
+      nickname.find_first_of(": \n\t\v\f\r") != String::npos) {
     std::cerr << "Invalid bot nickname!\n";
     throw std::exception();
   }
@@ -33,7 +33,7 @@ Bot::Bot(char** argv) : remain_msg(false) {
     std::cerr << "Cannot open file!\n";
     throw std::exception();
   } else {
-    std::string buf;
+    String buf;
 
     while (getline(menu_file_read, buf)) {
       if (buf.length() > 0) {
@@ -73,13 +73,13 @@ void Bot::connect_to_serv(void) {
 void Bot::step_auth(void) {
   int auth_flag = 0;
   int nick_retry_cnt = 0;
-  std::string nick_retry;
-  std::vector<std::string> msg_list;
+  String nick_retry;
+  std::vector<String> msg_list;
 
-  to_send.push(std::string("PASS ") + password + std::string("\r\n"));
-  to_send.push(std::string("NICK ") + nickname + std::string("\r\n"));
-  to_send.push(std::string("USER ") + nickname + std::string(" 0 * :") +
-               nickname + std::string("\r\n"));
+  to_send.push(String("PASS ") + password + String("\r\n"));
+  to_send.push(String("NICK ") + nickname + String("\r\n"));
+  to_send.push(String("USER ") + nickname + String(" 0 * :") + nickname +
+               String("\r\n"));
 
   send_msg_at_queue();
 
@@ -95,39 +95,39 @@ void Bot::step_auth(void) {
         continue;
       }
       for (std::size_t i = 0; i < msg_list.size(); i++) {
-        if (msg_list[i] == std::string("connection finish")) {
+        if (msg_list[i] == String("connection finish")) {
           std::cerr << "Connection lost\n";
           close(bot_sock);
           exit(0);
         }
         Message msg(bot_sock, msg_list[i]);
 
-        if (msg.get_numeric() == std::string("001")) {
+        if (msg.get_numeric() == String("001")) {
           auth_flag |= NUMERIC_001;
-        } else if (msg.get_numeric() == std::string("002")) {
+        } else if (msg.get_numeric() == String("002")) {
           auth_flag |= NUMERIC_002;
-        } else if (msg.get_numeric() == std::string("003")) {
+        } else if (msg.get_numeric() == String("003")) {
           auth_flag |= NUMERIC_003;
-        } else if (msg.get_numeric() == std::string("004")) {
+        } else if (msg.get_numeric() == String("004")) {
           auth_flag |= NUMERIC_004;
           serv_name = msg[1];
-        } else if (msg.get_numeric() == std::string("005")) {
+        } else if (msg.get_numeric() == String("005")) {
           auth_flag |= NUMERIC_005;
-        } else if (msg.get_numeric() == std::string("433")) {
+        } else if (msg.get_numeric() == String("433")) {
           std::stringstream int_to_str;
-          std::string tmp;
+          String tmp;
 
           nick_retry_cnt++;
           int_to_str << nick_retry_cnt;
           int_to_str >> tmp;
           nick_retry = nickname + tmp;
-          to_send.push(std::string("NICK ") + nick_retry + std::string("\r\n"));
+          to_send.push(String("NICK ") + nick_retry + String("\r\n"));
           send_msg_at_queue();
-        } else if (msg.get_numeric() == std::string("421") ||
-                   msg.get_numeric() == std::string("432") ||
-                   msg.get_numeric() == std::string("451") ||
-                   msg.get_numeric() == std::string("462") ||
-                   msg.get_numeric() == std::string("464") ||
+        } else if (msg.get_numeric() == String("421") ||
+                   msg.get_numeric() == String("432") ||
+                   msg.get_numeric() == String("451") ||
+                   msg.get_numeric() == String("462") ||
+                   msg.get_numeric() == String("464") ||
                    msg.get_cmd_type() == ERROR) {
           std::cerr << msg_list[i];
           close(bot_sock);
@@ -140,7 +140,7 @@ void Bot::step_auth(void) {
                    "or another things require additional memory\n";
     } catch (const std::length_error& e) {
       std::cerr << e.what() << '\n';
-      std::cerr << "Maybe index out of range error or std::string is too "
+      std::cerr << "Maybe index out of range error or String is too "
                    "long to store\n";
     } catch (const std::exception& e) {
       // error handling
@@ -159,7 +159,7 @@ void Bot::step_listen(void) {
   time_t ping_send_time = time(NULL);
   bool is_ping_sent = false;
   bool is_pong_received = false;
-  std::vector<std::string> msg_list;
+  std::vector<String> msg_list;
 
   while (true) {
     if (remain_msg == true) {
@@ -194,7 +194,7 @@ void Bot::step_listen(void) {
       }
       for (std::size_t i = 0; i < msg_list.size(); i++) {
         // std::cerr << "msg " << i << " : " << msg_list[i] << '\n';
-        if (msg_list[i] == std::string("connection finish")) {
+        if (msg_list[i] == String("connection finish")) {
           std::cerr << "Connection lost\n";
           close(bot_sock);
           exit(0);
@@ -211,14 +211,14 @@ void Bot::step_listen(void) {
           rpl.set_cmd_type(PRIVMSG);
 
           std::size_t tail = msg.get_source().find("!");
-          std::string who_send = msg.get_source().substr(0, tail);
+          String who_send = msg.get_source().substr(0, tail);
           rpl.push_back(who_send);
-          if (msg[1] == std::string("lunch menu recommend")) {
+          if (msg[1] == String("lunch menu recommend")) {
             int select = std::rand() % menu.size();
-            rpl.push_back(std::string(":Today's lunch menu recommendation : ") +
+            rpl.push_back(String(":Today's lunch menu recommendation : ") +
                           menu[select]);
-          } else if (ft_upper(msg[1]) == std::string("HELLO") ||
-                     ft_upper(msg[1]) == std::string("HI")) {
+          } else if (ft_upper(msg[1]) == String("HELLO") ||
+                     ft_upper(msg[1]) == String("HI")) {
             rpl.push_back(":Hi there");
           } else {
             rpl.push_back(":unknown command");
@@ -233,7 +233,7 @@ void Bot::step_listen(void) {
                    "or another things require additional memory\n";
     } catch (const std::length_error& e) {
       std::cerr << e.what() << '\n';
-      std::cerr << "Maybe index out of range error or std::string is too "
+      std::cerr << "Maybe index out of range error or String is too "
                    "long to store\n";
     } catch (const std::exception& e) {
       // error handling
@@ -244,7 +244,7 @@ void Bot::step_listen(void) {
   }
 }
 
-const std::string& Bot::get_ipv4(void) { return ipv4; }
+const String& Bot::get_ipv4(void) { return ipv4; }
 
 int Bot::get_port(void) { return port; }
 
@@ -252,16 +252,16 @@ int Bot::get_bot_sock(void) { return bot_sock; }
 
 const sockaddr_in& Bot::get_bot_adr(void) { return bot_addr; }
 
-const std::string& Bot::get_password(void) { return password; }
+const String& Bot::get_password(void) { return password; }
 
-const std::string& Bot::get_nickname(void) { return nickname; }
+const String& Bot::get_nickname(void) { return nickname; }
 
 void Bot::send_msg_at_queue(void) {
   int send_result;
   std::size_t to_send_num = to_send.size();
 
   while (to_send_num > 0) {
-    const std::string& msg_tmp = to_send.front();
+    const String& msg_tmp = to_send.front();
     send_result =
         send(bot_sock, msg_tmp.c_str(), msg_tmp.length(), MSG_DONTWAIT);
     to_send.pop();
