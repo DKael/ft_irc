@@ -36,7 +36,6 @@ User::User(const User& origin)
       to_send(origin.to_send),
       invited_channels(origin.invited_channels),
       channels(origin.channels),
-      connected_list(origin.connected_list),
       mode(origin.mode),
       dummy("*") {}
 
@@ -125,26 +124,6 @@ const std::map<String, int>& User::get_invited_channels(void) const {
 }
 
 const std::map<String, int>& User::get_channels(void) const { return channels; }
-
-const std::map<String, int>& User::get_connected_list(void) const {
-  return connected_list;
-}
-
-void User::add_connected(const String& name, int fd) {
-  std::map<String, int>::iterator it = connected_list.find(name);
-
-  if (it == connected_list.end()) {
-    connected_list.insert(std::pair<String, int>(name, fd));
-  }
-}
-
-void User::remove_connected(const String& name) {
-  std::map<String, int>::iterator it = connected_list.find(name);
-
-  if (it != connected_list.end()) {
-    connected_list.erase(it);
-  }
-}
 
 /*
 mode 1 : <nickname>!<user>@<host>

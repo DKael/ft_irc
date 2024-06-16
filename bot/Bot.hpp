@@ -18,6 +18,8 @@
 #include "../util.hpp"
 #include "Message_bot.hpp"
 
+#define SOCKET_BUFFER_SIZE 8192
+
 #define NUMERIC_001 1 << 0
 #define NUMERIC_002 1 << 1
 #define NUMERIC_003 1 << 2
@@ -46,6 +48,8 @@ class Bot {
   Bot& operator=(const Bot& origin);
 
  public:
+  String remain_input;
+
   Bot(char** argv);
 
   void connect_to_serv(void);
@@ -60,6 +64,7 @@ class Bot {
   const String& get_nickname(void);
 
   void send_msg_at_queue(void);
+  void read_msg_from_socket(std::vector<String>& msg_list);
 };
 
 #endif

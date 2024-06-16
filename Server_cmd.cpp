@@ -504,12 +504,6 @@ bbb
   rpl.push_back(trailing);
   send_msg_to_connected_user(event_user, rpl.to_raw_msg());
 
-  std::map<String, int>::const_iterator con_it =
-      event_user.get_connected_list().begin();
-  for (; con_it != event_user.get_connected_list().end(); ++con_it) {
-    (*this)[con_it->second].remove_connected(event_user_nick);
-  }
-
   rpl.clear();
   rpl.set_source(serv_name);
   rpl.set_cmd_type(NOTICE);
@@ -797,13 +791,6 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
         rpl.set_cmd_type(JOIN);
         rpl.push_back(":" + chan_name);
         send_msg_to_channel(chan, rpl.to_raw_msg());
-
-        std::map<String, User&>::iterator chan_user_it =
-            chan.get_user_list().begin();
-        for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
-          event_user.add_connected(chan_user_it->first,
-                                   chan_user_it->second.get_user_socket());
-        }
 
         String symbol;
         if (chan.chk_mode(CHAN_FLAG_S) == true) {

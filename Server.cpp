@@ -349,6 +349,14 @@ void Server::revent_pollin(pollfd& p_val) {
   try {
     read_msg_from_socket(p_val.fd, msg_list);
 
+    if (msg_list.size() == 0) {
+      if (event_user.get_have_to_disconnect() == true) {
+        std::clog << "Connection close at " << p_val.fd << '\n';
+        connection_fin(p_val);
+      }
+      return;
+    }
+
     if (event_user.get_is_authenticated() == OK) {
       auth_user(p_val, msg_list);
     } else {
@@ -377,13 +385,6 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
   for (int j = 0; j < msg_list.size(); j++) {
-    if (msg_list[j] == String("connection finish")) {
-      std::clog << "Connection close at " << p_val.fd << '\n';
-      connection_fin(p_val);
-      msg_list.clear();
-      break;
-    }
-
     Message msg(p_val.fd, msg_list[j]);
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -458,13 +459,6 @@ void Server::not_auth_user(pollfd& p_val, std::vector<String>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
   for (int j = 0; j < msg_list.size(); j++) {
-    if (msg_list[j] == String("connection finish")) {
-      std::clog << "Connection close at " << p_val.fd << '\n';
-      connection_fin(p_val);
-      msg_list.clear();
-      break;
-    }
-
     Message msg(p_val.fd, msg_list[j]);
 
     //////////////////////////////////////////////////////////////////////
@@ -697,12 +691,6 @@ void Server::user_ping_chk(void) {
         rpl.push_back(":Ping timeout: 20 seconds");
         send_msg_to_connected_user(tmp_user, rpl.to_raw_msg());
 
-        std::map<String, int>::const_iterator con_it =
-            tmp_user.get_connected_list().begin();
-        for (; con_it != tmp_user.get_connected_list().end(); ++con_it) {
-          (*this)[con_it->second].remove_connected(tmp_user_nick);
-        }
-
         rpl.clear();
         rpl.set_source(serv_name);
         rpl.set_cmd_type(NOTICE);
@@ -787,13 +775,25 @@ void Server::send_msg_to_channel_except_sender(Channel& chan,
 }
 
 void Server::send_msg_to_connected_user(const User& u, const String& msg) {
-  std::map<String, int>::const_iterator it = u.get_connected_list().begin();
+  std::map<int, User>::iterator user_it = user_list.begin();
+  std::map<String, int>::const_iterator user_chan_it;
 
-  for (; it != u.get_connected_list().end(); ++it) {
-    User& tmp_u = (*this)[it->second];
+  for (; user_it != user_list.end(); ++user_it) {
+    User& tmp_u = user_it->second;
+    const String& tmp_name = tmp_u.get_nick_name();
 
-    tmp_u.push_back_msg(msg);
-    ft_send(tmp_u.get_pfd());
+    for (user_chan_it = u.get_channels().begin();
+         user_chan_it != u.get_channels().end(); ++user_chan_it) {
+      std::map<String, Channel>::iterator chan_it =
+          channel_list.find(user_chan_it->first);
+      if (chan_it != channel_list.end()) {
+        if (chan_it->second.chk_user_join(tmp_name) == true) {
+          tmp_u.push_back_msg(msg);
+          ft_send(tmp_u.get_pfd());
+          break;
+        }
+      }
+    }
   }
 }
 
@@ -801,57 +801,34 @@ void Server::read_msg_from_socket(int socket_fd,
                                   std::vector<String>& msg_list) {
   User& event_user = (*this)[socket_fd];
 
-  static String remains = "";
-  static bool incomplete = false;
-
-  char read_block[BLOCK_SIZE] = {
-      0,
-  };
+  char read_block[SOCKET_BUFFER_SIZE];
+  int repeat_cnt = 5;
   int read_cnt = 0;
-  std::size_t idx;
-  std::vector<String> box;
+  String read_buf;
+  size_t end_idx;
 
-  while (true) {
-    read_cnt = ::recv(socket_fd, read_block, BLOCK_SIZE - 1, MSG_DONTWAIT);
-    if (0 < read_cnt && read_cnt <= BLOCK_SIZE - 1) {
-      read_block[read_cnt] = '\0';
-      box.clear();
-      ft_split(String(read_block), "\r\n", box);
-
-      idx = 0;
-      if (incomplete == true) {
-        remains += box[0];
-        msg_list.push_back(remains);
-        remains = "";
-        idx = 1;
-      }
-      if (read_block[read_cnt - 2] == '\r' &&
-          read_block[read_cnt - 1] == '\n') {
-        for (; idx < box.size(); idx++) {
-          if (box[idx].length() != 0) {
-            msg_list.push_back(box[idx]);
-          }
-        }
-        incomplete = false;
-      } else {
-        for (; idx + 1 < box.size(); idx++) {
-          if (box[idx].length() != 0) {
-            msg_list.push_back(box[idx]);
-          }
-        }
-        remains = box[idx];
-        incomplete = true;
-      }
-      if (read_cnt == BLOCK_SIZE - 1) {
-        continue;
-      } else {
-        break;
-      }
-    } else if (read_cnt == -1) {
-      break;
-    } else if (read_cnt == 0) {
-      msg_list.push_back(String("connection finish"));
+  while (--repeat_cnt >= 0) {
+    read_cnt =
+        ::recv(socket_fd, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
+    read_block[read_cnt] = '\0';
+    read_buf += read_block;
+    if (read_cnt < SOCKET_BUFFER_SIZE - 1) {
       break;
     }
+  }
+  if (read_cnt == 0 && read_buf.length() == 0) {
+    event_user.set_have_to_disconnect(true);
+    return;
+  }
+
+  ft_split(read_buf, "\r\n", msg_list);
+  if (event_user.remain_input.length() != 0) {
+    msg_list[0] = event_user.remain_input + msg_list[0];
+    event_user.remain_input = "";
+  }
+  end_idx = read_buf.find_last_not_of("\r\n");
+  if (end_idx == read_buf.length() - 1) {
+    event_user.remain_input = *(msg_list.end() + 1);
+    msg_list.erase(msg_list.end() + 1);
   }
 }

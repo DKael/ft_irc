@@ -24,21 +24,21 @@ NAME = ircserv
 
 DEBUG_FLAG = 0
 
-ifeq ($(DEBUG_FLAG),1)
-$(NAME): $(OBJS)
-	$(CXX) $(CFLAGS) $(OBJS) -D DEBUG -o $(NAME)
-else 
 $(NAME): $(OBJS)
 	$(CXX) $(CFLAGS) $(OBJS) -o $(NAME)
-endif
 
 # Create the obj/ directory if it doesn't exist
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 # Update the pattern rule to place .o files in the obj/ directory
+ifeq ($(DEBUG_FLAG),1)
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+	$(CXX) $(CFLAGS) -c -D DEBUG -I. $< -o $@
+else 
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	$(CXX) $(CFLAGS) -c -I. $< -o $@
+endif
 
 all: $(NAME)
 

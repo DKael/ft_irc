@@ -67,6 +67,16 @@ void Bot::connect_to_serv(void) {
     std::cerr << "errno : " << errno << '\n';
     throw std::exception();
   }
+  int bufSize = SOCKET_BUFFER_SIZE;
+  socklen_t len = sizeof(bufSize);
+  if (setsockopt(bot_sock, SOL_SOCKET, SO_SNDBUF, &bufSize, sizeof(bufSize)) ==
+      -1) {
+    perror("setsockopt() error");
+    std::cerr << "errno : " << errno << '\n';
+    close(bot_sock);
+    throw std::exception();
+  }
+
   std::cout << "Bot connected to " << ipv4 << ':' << port << '\n';
 }
 
@@ -88,7 +98,7 @@ void Bot::step_auth(void) {
       send_msg_at_queue();
     }
     try {
-      read_msg_from_socket(bot_sock, msg_list);
+      read_msg_from_socket(msg_list);
 
       if (msg_list.size() == 0) {
         sleep(1);
@@ -166,7 +176,7 @@ void Bot::step_listen(void) {
       send_msg_at_queue();
     }
     try {
-      read_msg_from_socket(bot_sock, msg_list);
+      read_msg_from_socket(msg_list);
 
       if (is_ping_sent == false && time(NULL) > last_ping_chk + PING_INTERVAL) {
         Message ping;
@@ -274,4 +284,36 @@ void Bot::send_msg_at_queue(void) {
     to_send_num--;
   }
   remain_msg = false;
+}
+
+void Bot::read_msg_from_socket(std::vector<String>& msg_list) {
+  char read_block[SOCKET_BUFFER_SIZE];
+  int repeat_cnt = 5;
+  int read_cnt = 0;
+  String read_buf;
+  size_t end_idx;
+
+  while (--repeat_cnt >= 0) {
+    read_cnt =
+        ::recv(bot_sock, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
+    read_block[read_cnt] = '\0';
+    read_buf += read_block;
+    if (read_cnt < SOCKET_BUFFER_SIZE - 1) {
+      break;
+    }
+  }
+  if (read_buf.length() == 0) {
+    return;
+  }
+
+  ft_split(read_buf, "\r\n", msg_list);
+  if (remain_input.length() != 0) {
+    msg_list[0] = remain_input + msg_list[0];
+    remain_input = "";
+  }
+  end_idx = read_buf.find_last_not_of("\r\n");
+  if (end_idx == read_buf.length() - 1) {
+    remain_input = *(msg_list.end() + 1);
+    msg_list.erase(msg_list.end() + 1);
+  }
 }

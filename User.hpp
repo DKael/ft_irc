@@ -53,7 +53,6 @@ class User {
   std::list<String> to_send;
   std::map<String, int> invited_channels;
   std::map<String, int> channels;
-  std::map<String, int> connected_list;
 
   int mode;
 
@@ -102,9 +101,6 @@ class User {
   int get_mode(void) const;
   const std::map<String, int>& get_invited_channels(void) const;
   const std::map<String, int>& get_channels(void) const;
-  const std::map<String, int>& get_connected_list(void) const;
-  void add_connected(const String& name, int fd);
-  void remove_connected(const String& name);
   String make_source(int mode);
 
   void push_front_msg(const String& msg);

@@ -96,9 +96,6 @@ Message::Message(int _socket_fd, const String& _raw_msg)
     std::map<String, Command>::const_iterator it = stoe.find(cmd);
     if (it != stoe.end()) {
       cmd_type = stoe.at(cmd);
-      if (pos == String::npos) {
-        return;
-      }
     } else {
       set_cmd_type(NONE);
       numeric = "421";
@@ -108,6 +105,9 @@ Message::Message(int _socket_fd, const String& _raw_msg)
   } else {
     // type numeric
     numeric = tmp_type;
+  }
+  if (pos == String::npos) {
+    return;
   }
 
   // check trailing before get parameters
