@@ -1150,22 +1150,23 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
               return;
             }
             String user_limit;
+            int limit_num;
             if (set_mode == true) {
               if (param_idx < msg.get_params_size()) {
                 user_limit = msg[param_idx];
                 ++param_idx;
+
+                std::stringstream convert_to_int;
+
+                convert_to_int << user_limit;
+                convert_to_int >> limit_num;
+
+                if (convert_to_int.fail()) {
+                  continue;
+                }
               } else {
                 continue;
               }
-            }
-            std::stringstream convert_to_int;
-            int limit_num;
-
-            convert_to_int << user_limit;
-            convert_to_int >> limit_num;
-
-            if (convert_to_int.fail()) {
-              continue;
             }
 
             if (set_mode == true && chan.chk_mode(mode[i]) == false) {

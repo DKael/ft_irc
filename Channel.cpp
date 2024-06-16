@@ -106,7 +106,7 @@ void Channel::add_user(User& newuser) {
   if (it != user_list.end()) {
     return;
   }
-  if (user_list.size() >= user_limit) {
+  if ((mode & CHAN_FLAG_L) && user_list.size() >= user_limit) {
     /*
       ERR_CHANNELISFULL (471)
       "<user> <channel> :Cannot join channel (+l)"
