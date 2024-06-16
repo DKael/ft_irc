@@ -1,0 +1,4 @@
+BasedOnStyle: Google  # Google 스타일을 기본으로 사용 (다른 스타일도 선택 가능)
+IndentWidth: 2        # 들여쓰기 폭 설정
+ColumnLimit: 80        # 코드 열 길이 제한을 비활성화
+ReflowComments: false # 주석을 다시 흐르지 않도록 설정

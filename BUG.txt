@@ -109,3 +109,26 @@ Irssi v1.4.5 - https://irssi.org
 
 User connection limit exceed!
 
+13.
+/mode -l12312837
+
+음수가 붙어 나옴
+
+21:54 -!- Unknown mode character -1
+21:54 -!- Unknown mode character -2
+21:54 -!- Unknown mode character -3
+21:54 -!- Unknown mode character -1
+21:54 -!- Unknown mode character -2
+21:54 -!- Unknown mode character -8
+21:54 -!- Unknown mode character -3
+21:54 -!- Unknown mode character -7
+
+< 2024/06/16 21:54:43.000713624  length=661 from=2209 to=2869
+:irc.example.net 472 dy 1 :is unknown mode char for #test\r
+:irc.example.net 472 dy 2 :is unknown mode char for #test\r
+:irc.example.net 472 dy 3 :is unknown mode char for #test\r
+:irc.example.net 472 dy 1 :is unknown mode char for #test\r
+:irc.example.net 472 dy 2 :is unknown mode char for #test\r
+:irc.example.net 472 dy 8 :is unknown mode char for #test\r
+:irc.example.net 472 dy 3 :is unknown mode char for #test\r
+:irc.example.net 472 dy 7 :is unknown mode char for #test\r
