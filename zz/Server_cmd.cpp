@@ -833,6 +833,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
         chan_ref.add_user(event_user);
         chan_ref.add_operator(event_user);
         event_user.join_channel(chan_name_vec[i]);
+
         Message rpl;
 
         rpl.set_source(event_user.make_source(1));
@@ -842,7 +843,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
 
         event_user.push_back_msg(rpl_353(serv_name, event_user_nick, "=",
                                          chan_name_vec[i],
-                                         ":@" + event_user_nick)
+                                         "@" + event_user_nick)
                                      .to_raw_msg());
         event_user.push_back_msg(
             rpl_366(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());

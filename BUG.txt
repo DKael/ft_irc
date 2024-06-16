@@ -1,8 +1,7 @@
 1. mode +i 설정 한 적 없는데
 	channel 입장하려는데 you must be invited 요구사항이 나옴
 
-2. 채널 떠나려고 하는데 (/part)
-	your privileges are too low 나옴
+2-1. part하고 다시 같은 채널로 join했을때 기존 데이터가 있는듯?
 
 3. 채널에 처음 들어가면 인원 데이터 업데이트가 잘못됨.
 	예를들어 닉네임이 dy 일 경우
@@ -16,105 +15,6 @@
 	14:14 [Users #test]
 	14:14 [@dy] [ dy_] 
 	14:14 -!- Irssi: #test: Total of 2 nicks [1 ops, 0 halfops, 0 voices, 1 normal]
-
-4. SEGMENTATION FAULT # [/quit]
-
-irssi 클라이언트 프로그램에서 ft_irc 서버에 연결된 유저가 /quit을 할 경우 오류 발생
-
-"""
-[IRSSI REQUEST] :: QUIT :leaving
-< Message contents > 
-fd              : 6
-source          : 
-command         : QUIT
-params          : leaving
-numeric         : 
-
-Connection close at 6
-=================================================================
-==55606==ERROR: AddressSanitizer: heap-use-after-free on address 0x613000000f05 at pc 0x00010ffbe9de bp 0x7ffedfcf0f20 sp 0x7ffedfcf0f18
-WRITE of size 1 at 0x613000000f05 thread T0
-	#0 0x10ffbe9dd in User::set_have_to_ping_chk(bool) User.cpp:65
-	#1 0x10ff8fb7a in Server::auth_user(pollfd&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > >&) Server.cpp:453
-	#2 0x10ff89a0e in Server::revent_pollin(pollfd&) Server.cpp:353
-	#3 0x10ff8890b in Server::listen() Server.cpp:163
-	#4 0x10ff0f349 in main main.cpp:42
-	#5 0x7fff7321dcc8 in start+0x0 (libdyld.dylib:x86_64+0x1acc8)
-
-0x613000000f05 is located 197 bytes inside of 336-byte region [0x613000000e40,0x613000000f90)
-freed by thread T0 here:
-    #0 0x110137c0d in wrap__ZdlPv+0x7d (libclang_rt.asan_osx_dynamic.dylib:x86_64h+0x55c0d)
-    #1 0x10ff1a954 in std::__1::_DeallocateCaller::__do_call(void*) new:334
-    #2 0x10ff1a938 in std::__1::_DeallocateCaller::__do_deallocate_handle_size(void*, unsigned long) new:292
-    #3 0x10ff9f430 in std::__1::_DeallocateCaller::__do_deallocate_handle_size_align(void*, unsigned long, unsigned long) new:262
-    #4 0x10ff9f404 in std::__1::__libcpp_deallocate(void*, unsigned long, unsigned long) new:340
-    #5 0x10ff9fb1c in std::__1::allocator<std::__1::__tree_node<std::__1::__value_type<int, User>, void*> >::deallocate(std::__1::__tree_node<std::__1::__value_type<int, User>, void*>*, unsigned long) memory:1872
-    #6 0x10ff9fa74 in std::__1::allocator_traits<std::__1::allocator<std::__1::__tree_node<std::__1::__value_type<int, User>, void*> > >::deallocate(std::__1::allocator<std::__1::__tree_node<std::__1::__value_type<int, User>, void*> >&, std::__1::__tree_node<std::__1::__value_type<int, User>, void*>*, unsigned long) memory:1594
-    #7 0x10ffb200d in std::__1::__tree<std::__1::__value_type<int, User>, std::__1::__map_value_compare<int, std::__1::__value_type<int, User>, std::__1::less<int>, true>, std::__1::allocator<std::__1::__value_type<int, User> > >::erase(std::__1::__tree_const_iterator<std::__1::__value_type<int, User>, std::__1::__tree_node<std::__1::__value_type<int, User>, void*>*, long>) __tree:2524
-    #8 0x10ff95669 in std::__1::map<int, User, std::__1::less<int>, std::__1::allocator<std::__1::pair<int const, User> > >::erase(std::__1::__map_iterator<std::__1::__tree_iterator<std::__1::__value_type<int, User>, std::__1::__tree_node<std::__1::__value_type<int, User>, void*>*, long> >) map:1301
-    #9 0x10ff8ca8a in Server::remove_user(int) Server.cpp:618
-    #10 0x10ff8bb6f in Server::connection_fin(pollfd&) Server.cpp:266
-    #11 0x10ff8d9f6 in Server::ft_sendd(pollfd&) Server.cpp:282
-    #12 0x10ff5e0a2 in Server::cmd_quit(int, Message const&) Server_cmd.cpp:528
-    #13 0x10ff8f36d in Server::auth_user(pollfd&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > >&) Server.cpp:425
-    #14 0x10ff89a0e in Server::revent_pollin(pollfd&) Server.cpp:353
-    #15 0x10ff8890b in Server::listen() Server.cpp:163
-    #16 0x10ff0f349 in main main.cpp:42
-    #17 0x7fff7321dcc8 in start+0x0 (libdyld.dylib:x86_64+0x1acc8)
-
-previously allocated by thread T0 here:
-    #0 0x1101377ed in wrap__Znwm+0x7d (libclang_rt.asan_osx_dynamic.dylib:x86_64h+0x557ed)
-    #1 0x10ffa61f8 in std::__1::__libcpp_allocate(unsigned long, unsigned long) new:253
-    #2 0x10ffafab4 in std::__1::allocator<std::__1::__tree_node<std::__1::__value_type<int, User>, void*> >::allocate(unsigned long, void const*) memory:1869
-    #3 0x10ffaf7d0 in std::__1::allocator_traits<std::__1::allocator<std::__1::__tree_node<std::__1::__value_type<int, User>, void*> > >::allocate(std::__1::allocator<std::__1::__tree_node<std::__1::__value_type<int, User>, void*> >&, unsigned long) memory:1586
-    #4 0x10ffaeb03 in std::__1::__tree<std::__1::__value_type<int, User>, std::__1::__map_value_compare<int, std::__1::__value_type<int, User>, std::__1::less<int>, true>, std::__1::allocator<std::__1::__value_type<int, User> > >::__construct_node(std::__1::pair<int const, User> const&) __tree:2270
-    #5 0x10ffae013 in std::__1::pair<std::__1::__tree_iterator<std::__1::__value_type<int, User>, std::__1::__tree_node<std::__1::__value_type<int, User>, void*>*, long>, bool> std::__1::__tree<std::__1::__value_type<int, User>, std::__1::__map_value_compare<int, std::__1::__value_type<int, User>, std::__1::less<int>, true>, std::__1::allocator<std::__1::__value_type<int, User> > >::__emplace_unique_key_args<int, std::__1::pair<int const, User> const>(int const&, std::__1::pair<int const, User> const&) __tree:2141
-    #6 0x10ffadb67 in std::__1::__tree<std::__1::__value_type<int, User>, std::__1::__map_value_compare<int, std::__1::__value_type<int, User>, std::__1::less<int>, true>, std::__1::allocator<std::__1::__value_type<int, User> > >::__insert_unique(std::__1::pair<int const, User> const&) __tree:1269
-    #7 0x10ff94e1b in std::__1::map<int, User, std::__1::less<int>, std::__1::allocator<std::__1::pair<int const, User> > >::insert(std::__1::pair<int const, User> const&) map:1173
-    #8 0x10ff93c14 in Server::move_tmp_user_to_user_list(int) Server.cpp:605
-    #9 0x10ff91a05 in Server::auth_complete(pollfd&) Server.cpp:519
-    #10 0x10ff90c4e in Server::not_auth_user(pollfd&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > > >&) Server.cpp:512
-    #11 0x10ff89ef5 in Server::revent_pollin(pollfd&) Server.cpp:355
-    #12 0x10ff8890b in Server::listen() Server.cpp:163
-    #13 0x10ff0f349 in main main.cpp:42
-    #14 0x7fff7321dcc8 in start+0x0 (libdyld.dylib:x86_64+0x1acc8)
-
-SUMMARY: AddressSanitizer: heap-use-after-free User.cpp:65 in User::set_have_to_ping_chk(bool)
-Shadow bytes around the buggy address:
-  0x1c2600000190: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x1c26000001a0: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x1c26000001b0: fd fd fd fd fd fd fd fd fd fd fa fa fa fa fa fa
-  0x1c26000001c0: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
-  0x1c26000001d0: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-=>0x1c26000001e0:[fd]fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x1c26000001f0: fd fd fa fa fa fa fa fa fa fa fa fa fa fa fa fa
-  0x1c2600000200: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x1c2600000210: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x1c2600000220: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
-  0x1c2600000230: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
-Shadow byte legend (one shadow byte represents 8 application bytes):
-  Addressable:           00
-  Partially addressable: 01 02 03 04 05 06 07 
-  Heap left redzone:       fa
-  Freed heap region:       fd
-  Stack left redzone:      f1
-  Stack mid redzone:       f2
-  Stack right redzone:     f3
-  Stack after return:      f5
-  Stack use after scope:   f8
-  Global redzone:          f9
-  Global init order:       f6
-  Poisoned by user:        f7
-  Container overflow:      fc
-  Array cookie:            ac
-  Intra object redzone:    bb
-  ASan internal:           fe
-  Left alloca redzone:     ca
-  Right alloca redzone:    cb
-  Shadow gap:              cc
-==55606==ABORTING
-[1]    55606 abort      ./ircserv 8080 1234
-"""
 
 5. mode +l -l 에러 처리 (rpl_461)
 /mode +l 1
@@ -152,7 +52,7 @@ numeric         :
 	이 요청은 클라이언트에서 자동적으로 보내지는데,
 	권한이 없다는 에러가 주기적으로 발생
 
-8.  kick 오류
+8. kick 오류
 강퇴 후 메세지 전송이 가능
 전체적으로 해당 채널에서 강퇴된 유저가 전부 삭제되는지 확인 (client list + operator list)
 
@@ -165,3 +65,27 @@ numeric         :
 	[Server_cmd.cpp / 914번째 줄]
 	변경 전 : if (is_channel_name(chan_name_vec[i]))
 	변경 후 : if (is_channel_name(chan_name_vec[i]) == false)
+
+10. mode limit 설정 후 변경 및 해제가 안됨.
+
+11. topic 수정이 권한을 갖지 않은 사람이 수정 가능
+
+12. 유저 3명으로 테스트 했을 때, 3명 다 quit하고 다시 서버에 connect 하려하면
+
+Irssi v1.4.5 - https://irssi.org                                                        
+17:40 -!-  ___           _
+17:40 -!- |_ _|_ _ _____(_)
+17:40 -!-  | || '_(_-<_-< |
+17:40 -!- |___|_| /__/__/_|
+17:40 -!- Irssi v1.4.5 - https://irssi.org
+17:41 -!- Irssi: Looking up localhost
+17:41 -!- Irssi: Connecting to localhost [127.0.0.1] port 8081
+17:41 Waiting for CAP LS response...
+17:41 -!- Irssi: Connection to localhost established
+17:41 -!- ERROR Too many users on server
+17:41 -!- Irssi: (default) warning Connection reset by peer
+17:41 -!- Irssi: Connection lost to localhost
+
+위와 같은 에러 발생
+
+User connection limit exceed!

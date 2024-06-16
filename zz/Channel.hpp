@@ -64,12 +64,16 @@ class Channel {
   std::time_t topic_set_time;
   std::map<String, User&> user_list;
   std::map<String, User&> operator_list;
-  /* <MODE>
+  
+  /* 
+    <MODE>
     i : set / unset Invite only channel
     t : set / unset the restrictions of the TOPIC command to channel operators
     k : set / unset the channel key (password)
     o : give / take channel operator privilege
-    l : set / unset the user limit to channel */
+    l : set / unset the user limit to channel
+  */
+  
   int mode;
 
   // not use
