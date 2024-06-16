@@ -606,11 +606,13 @@ void Server::add_tmp_user(pollfd& pfd, const sockaddr_in& user_addr) {
 }
 
 void Server::move_tmp_user_to_user_list(int socket_fd) {
-  User& user_tmp = (*this)[socket_fd];
+  User& tmp_user = (*this)[socket_fd];
 
-  nick_to_soc.insert(std::make_pair(user_tmp.get_nick_name(), socket_fd));
-  user_list.insert(std::make_pair(socket_fd, user_tmp));
-  tmp_nick_to_soc.erase(user_tmp.get_nick_name());
+  nick_to_soc.insert(std::make_pair(tmp_user.get_nick_name(), socket_fd));
+  user_list.insert(std::make_pair(socket_fd, tmp_user));
+  (*this)[socket_fd].set_last_ping(std::time(NULL));
+
+  tmp_nick_to_soc.erase(tmp_user.get_nick_name());
   tmp_user_list.erase(socket_fd);
 }
 
@@ -689,14 +691,18 @@ void Server::tmp_user_timeout_chk(void) {
 
 void Server::user_ping_chk(void) {
   std::map<int, User>::iterator user_it = user_list.begin();
+  std::map<int, User>::iterator user_it2;
   std::time_t now = std::time(NULL);
 
-  for (; user_it != user_list.end(); ++user_it) {
+  while (user_it != user_list.end()) {
     User& tmp_user = user_it->second;
     const String& tmp_user_nick = tmp_user.get_nick_name();
 
     if (tmp_user.get_have_to_ping_chk() == true) {
       if (now > tmp_user.get_last_ping() + PINGTIMEOUT + PONGTIMEOUT) {
+        user_it2 = user_it;
+        ++user_it2;
+
         Message rpl;
 
         rpl.set_source(tmp_user.make_source(1));
@@ -716,6 +722,8 @@ void Server::user_ping_chk(void) {
                   << '\n';
         tmp_user.set_have_to_disconnect(true);
         ft_sendd(tmp_user.get_pfd());
+        user_it = user_it2;
+        continue;
       }
     } else {
       if (now > tmp_user.get_last_ping() + PINGTIMEOUT) {
@@ -729,6 +737,7 @@ void Server::user_ping_chk(void) {
         ft_send(tmp_user.get_pfd());
       }
     }
+    ++user_it;
   }
 }
 

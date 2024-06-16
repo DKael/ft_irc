@@ -14,7 +14,7 @@ User::User(pollfd& _pfd, const sockaddr_in& _user_addr)
       is_authenticated(NOT_YET),
       have_to_disconnect(false),
       have_to_ping_chk(false),
-      last_ping(std::time(NULL) + INIT_PING_OFFSET),
+      last_ping(0),
       mode(0),
       dummy("*") {}
 

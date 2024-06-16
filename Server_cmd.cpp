@@ -1132,7 +1132,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
             } else {
               continue;
             }
-            if (set_mode == true && chan.chk_mode(mode[i]) == false) {
+            if (set_mode == true) {
               chan.set_mode(mode[i]);
               chan.set_password(password);
               param_vec.push_back(password);
@@ -1161,7 +1161,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
                 convert_to_int << user_limit;
                 convert_to_int >> limit_num;
 
-                if (convert_to_int.fail()) {
+                if (convert_to_int.fail() || limit_num <= 0) {
                   continue;
                 }
               } else {
@@ -1169,7 +1169,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
               }
             }
 
-            if (set_mode == true && chan.chk_mode(mode[i]) == false) {
+            if (set_mode == true) {
               chan.set_mode(mode[i]);
               chan.set_user_limit(limit_num);
               param_vec.push_back(user_limit);

@@ -23,7 +23,7 @@ typedef std::string String;
 
 #define MAXCONNECTIONSIP 5
 #define MAX_USER 256
-#define POLL_TIMEOUT 5
+#define POLL_TIMEOUT 1
 #define AUTHENTICATE_TIMEOUT 20
 #define PINGTIMEOUT 120
 #define PONGTIMEOUT 20

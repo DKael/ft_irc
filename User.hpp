@@ -24,8 +24,6 @@ typedef std::string String;
 #define USER_FLAG_I_CHAR 'i'
 #define USER_FLAG_I (1 << 0)
 
-#define INIT_PING_OFFSET 120
-
 enum chk_status {
   NOT_YET = 0,
   FAIL,
