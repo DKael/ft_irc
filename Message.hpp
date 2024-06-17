@@ -173,7 +173,15 @@ Message rpl_005(const String& source, const String& user,
                 std::vector<String> specs);
 Message rpl_221(const String& source, const String& user,
                 const String& user_modes);
+Message rpl_311(const String& source, const String& user, const String& nick,
+                const String& username, const String& host,
+                const String& realname);
+Message rpl_312(const String& source, const String& user, const String& nick,
+                const String& server, const String& server_info);
 Message rpl_315(const String& source, const String& user, const String& mask);
+Message rpl_317(const String& source, const String& user, const String& nick,
+                const String& secs, const String& signon);
+Message rpl_318(const String& source, const String& user, const String& nick);
 Message rpl_321(const String& source, const String& user);
 Message rpl_322(const String& source, const String& user, const String& channel,
                 const String& client_count, const String& topic);
@@ -198,8 +206,13 @@ Message rpl_353(const String& source, const String& user, const String& symbol,
                 const String& channel, const String& nicks);
 Message rpl_366(const String& source, const String& user,
                 const String& channel);
+Message rpl_378(const String& source, const String& user, const String& nick);
+Message rpl_379(const String& source, const String& user, const String& nick,
+                const String& mode);
 Message rpl_401(const String& source, const String& user,
                 const String& nickname);
+Message rpl_402(const String& source, const String& user,
+                const String& server_name);
 Message rpl_403(const String& source, const String& nickname,
                 const String& channel);
 Message rpl_404(const String& source, const String& user,
@@ -212,6 +225,7 @@ Message rpl_411(const String& source, const String& user,
 Message rpl_412(const String& source, const String& user);
 Message rpl_421(const String& source, const String& user,
                 const String& command);
+Message rpl_431(const String& source, const String& user);
 Message rpl_432(const String& source, const String& user, const String& nick);
 Message rpl_433(const String& source, const String& user, const String& nick);
 Message rpl_441(const String& source, const String& user, const String& nick,

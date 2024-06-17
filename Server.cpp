@@ -5,8 +5,8 @@ Server::Server(const char* _port, const char* _password)
       str_port(_port),
       serv_name(SERVER_NAME),
       serv_version(SERVER_VERSION),
-      chantypes(CHANTYPES),
       created_time(std::time(NULL)),
+      serv_info("Server Info Text"),
       password(_password),
       enable_ident_protocol(false) {
   serv_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -455,6 +455,8 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
       cmd_part(p_val.fd, msg);
     } else if (cmd_type == LIST) {
       cmd_list(p_val.fd, msg);
+    } else if (cmd_type == WHOIS) {
+      cmd_whois(p_val.fd, msg);
     } else {
       event_user.push_back_msg(
           rpl_421(serv_name, event_user.get_nick_name(), msg.get_cmd())
@@ -564,34 +566,6 @@ void Server::auth_complete(pollfd& p_val) {
   ft_send(p_val);
 }
 
-int Server::get_port(void) const { return port; }
-
-const String& Server::get_str_port(void) const { return str_port; }
-
-const String& Server::get_serv_name(void) const { return serv_name; }
-
-const String& Server::get_password(void) const { return password; }
-
-const std::time_t& Server::get_created_time(void) const { return created_time; }
-
-const String& Server::get_created_time_str(void) const {
-  return created_time_str;
-}
-
-int Server::get_serv_socket(void) const { return serv_socket; }
-
-const sockaddr_in& Server::get_serv_addr(void) const { return serv_addr; }
-
-int Server::get_tmp_user_cnt(void) const { return tmp_user_list.size(); }
-
-int Server::get_user_cnt(void) const { return user_list.size(); }
-
-bool Server::get_enable_ident_protocol(void) const {
-  return enable_ident_protocol;
-}
-
-int Server::get_channel_num(void) const { return channel_list.size(); };
-
 void Server::add_tmp_user(pollfd& pfd, const sockaddr_in& user_addr) {
   User tmp(pfd, user_addr);
   String tmp_nick = tmp.get_nick_name_no_chk();
@@ -671,6 +645,30 @@ void Server::remove_user(const String& nickname) {
   }
 }
 
+void Server::change_nickname(const String& old_nick, const String& new_nick) {
+  std::map<String, int>::iterator it;
+  int tmp_fd;
+
+  it = nick_to_soc.find(old_nick);
+  if (it != nick_to_soc.end()) {
+    tmp_fd = it->second;
+    nick_to_soc.erase(it);
+    nick_to_soc.insert(std::make_pair(new_nick, tmp_fd));
+    (*this)[tmp_fd].set_nick_name(new_nick);
+    return;
+  }
+  it = tmp_nick_to_soc.find(old_nick);
+  if (it != tmp_nick_to_soc.end()) {
+    tmp_fd = it->second;
+    tmp_nick_to_soc.erase(it);
+    tmp_nick_to_soc.insert(std::make_pair(new_nick, tmp_fd));
+    (*this)[tmp_fd].set_nick_name(new_nick);
+    return;
+  } else {
+    throw std::invalid_argument("Subsription error!");
+  }
+}
+
 void Server::tmp_user_timeout_chk(void) {
   std::map<int, User>::iterator it1 = tmp_user_list.begin();
   std::map<int, User>::iterator it2 = tmp_user_list.end();
@@ -737,6 +735,48 @@ void Server::user_ping_chk(void) {
       }
     }
     ++user_it;
+  }
+}
+
+void Server::read_msg_from_socket(int socket_fd,
+                                  std::vector<String>& msg_list) {
+  User& event_user = (*this)[socket_fd];
+
+  char read_block[SOCKET_BUFFER_SIZE];
+  int repeat_cnt = 5;
+  int read_cnt = 0;
+  String read_buf;
+  size_t end_idx;
+
+  while (--repeat_cnt >= 0) {
+    read_cnt =
+        ::recv(socket_fd, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
+    read_block[read_cnt] = '\0';
+    read_buf += read_block;
+    if (read_cnt < SOCKET_BUFFER_SIZE - 1) {
+      break;
+    }
+  }
+  if (read_cnt == 0 && read_buf.length() == 0) {
+    event_user.set_have_to_disconnect(true);
+    return;
+  }
+
+  size_t front_pos = read_buf.find_first_not_of(" \n\t\v\f\r");
+  size_t back_pos = read_buf.find_last_not_of(" \n\t\v\f\r");
+  if (front_pos == String::npos || back_pos == String::npos) {
+    return;
+  }
+
+  ft_split(read_buf, "\r\n", msg_list);
+  if (event_user.remain_input.length() != 0) {
+    msg_list[0] = event_user.remain_input + msg_list[0];
+    event_user.remain_input = "";
+  }
+  end_idx = read_buf.find_last_not_of("\r\n");
+  if (end_idx == read_buf.length() - 1) {
+    event_user.remain_input = *(msg_list.end() - 1);
+    msg_list.erase(msg_list.end() - 1);
   }
 }
 
@@ -822,38 +862,27 @@ void Server::send_msg_to_connected_user(const User& u, const String& msg) {
   }
 }
 
-void Server::read_msg_from_socket(int socket_fd,
-                                  std::vector<String>& msg_list) {
-  User& event_user = (*this)[socket_fd];
+#ifdef DEBUG
+void Server::print_channel_list(void) const {
+  std::map<String, Channel>::const_iterator chan_it = channel_list.begin();
 
-  char read_block[SOCKET_BUFFER_SIZE];
-  int repeat_cnt = 5;
-  int read_cnt = 0;
-  String read_buf;
-  size_t end_idx;
-
-  while (--repeat_cnt >= 0) {
-    read_cnt =
-        ::recv(socket_fd, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
-    read_block[read_cnt] = '\0';
-    read_buf += read_block;
-    if (read_cnt < SOCKET_BUFFER_SIZE - 1) {
-      break;
-    }
+  std::cout << RED << "[Channel Lists in the server]\n";
+  for (; chan_it != channel_list.end(); ++chan_it) {
+    std::cout << YELLOW << "name : " << chan_it->first
+              << " , user number in channel : "
+              << chan_it->second.get_user_list().size() << '\n';
   }
-  if (read_cnt == 0 && read_buf.length() == 0) {
-    event_user.set_have_to_disconnect(true);
-    return;
-  }
-
-  ft_split(read_buf, "\r\n", msg_list);
-  if (event_user.remain_input.length() != 0) {
-    msg_list[0] = event_user.remain_input + msg_list[0];
-    event_user.remain_input = "";
-  }
-  end_idx = read_buf.find_last_not_of("\r\n");
-  if (end_idx == read_buf.length() - 1) {
-    event_user.remain_input = *(msg_list.end() + 1);
-    msg_list.erase(msg_list.end() + 1);
-  }
+  std::cout << WHITE;
 }
+
+void Server::print_user_list(void) const {
+  std::map<int, User>::const_iterator user_it = user_list.begin();
+
+  std::cout << RED << "[User Lists in the server]\n" << YELLOW;
+  for (; user_it != user_list.end(); ++user_it) {
+    std::cout << user_it->second.get_nick_name() << ", ";
+  }
+  std::cout << WHITE << '\n';
+}
+
+#endif

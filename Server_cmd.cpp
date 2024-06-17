@@ -1,289 +1,5 @@
 #include "Server.hpp"
 
-void Server::cmd_topic(int recv_fd, const Message& msg) {
-  User& event_user = (*this)[recv_fd];
-  const String& event_user_nick = event_user.get_nick_name();
-
-  // 인자 개수 확인. 1 ~ 2개가 정상적.
-  if (msg.get_params_size() < 1 || msg.get_params_size() > 2) {
-    event_user.push_back_msg(
-        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
-    return;
-  }
-
-  // 채널 존재하는지 확인
-  const String& chan_name = msg[0];
-  std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
-  if (chan_it == channel_list.end()) {
-    event_user.push_back_msg(
-        rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  // 메세지 날린 유저가 채널에 존재하는지 확인
-  Channel& chan = chan_it->second;
-  if (chan.chk_user_join(event_user_nick) == false) {
-    event_user.push_back_msg(
-        rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  const String& topic = chan.get_topic();
-  if (msg.get_params_size() == 1) {
-    //check the topic
-
-    // topic set chk
-    if (topic.length() == 0) {
-      event_user.push_back_msg(
-          rpl_331(serv_name, event_user_nick, chan_name).to_raw_msg());
-      return;
-    } else {
-      event_user.push_back_msg(
-          rpl_332(serv_name, event_user_nick, chan_name, topic).to_raw_msg());
-      event_user.push_back_msg(rpl_333(serv_name, event_user_nick, chan_name,
-                                       chan.get_topic_set_nick(),
-                                       ft_ltos(chan.get_topic_set_time()))
-                                   .to_raw_msg());
-      return;
-    }
-  } else {
-    // set the topic
-
-    // if channel mode set to +t
-    // user privilege chk
-    if (chan.chk_mode(CHAN_FLAG_T) == true &&
-        chan.is_operator(event_user_nick) == false) {
-      event_user.push_back_msg(
-          rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
-      return;
-    }
-
-    /*
-    < 2024/05/11 15:09:25.000532736  length=45 from=4305 to=4349
-    :dy!~memememe@localhost TOPIC #test :welfkn\r
-    */
-    const String& new_topic = msg[1];
-
-    if (new_topic.length() > TOPICLEN) {
-      chan.set_topic(new_topic.substr(0, TOPICLEN) + "[CUT]");
-    } else {
-      chan.set_topic(new_topic);
-    }
-
-    Message rpl;
-
-    rpl.set_source(event_user.make_source(1));
-    rpl.set_cmd_type(TOPIC);
-    rpl.push_back(chan_name);
-    rpl.push_back(":" + new_topic);
-    send_msg_to_channel(chan, rpl.to_raw_msg());
-  }
-}
-
-void Server::cmd_invite(int recv_fd, const Message& msg) {
-  User& event_user = (*this)[recv_fd];
-  const String& event_user_nick = event_user.get_nick_name();
-
-  // 인자 개수 확인. 2개가 정상적.
-  if (msg.get_params_size() != 2) {
-    event_user.push_back_msg(
-        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
-    return;
-  }
-
-  /*
-    > 2024/05/09 21:54:32.000536657
-    INVITE dy2 #a\r
-    < 2024/05/09 21:54:32.000536960
-    :dy2!~memememe@localhost 341 dy dy2 #a\r
-  */
-  const String& invited_user_nick = msg[0];
-  const String& chan_name = msg[1];
-
-  // 유저 존재하는지 확인
-  std::map<String, int>::iterator user_it = nick_to_soc.find(invited_user_nick);
-  if (user_it == nick_to_soc.end()) {
-    // :irc.example.net 401 dy lkkllk :No such nick or channel name\r
-    event_user.push_back_msg(
-        rpl_401(serv_name, event_user_nick, invited_user_nick).to_raw_msg());
-    return;
-  }
-
-  // 채널 존재하는지 확인
-  std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
-  if (chan_it == channel_list.end()) {
-    event_user.push_back_msg(
-        rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  User& invited_user = (*this)[user_it->second];
-  Channel& chan = chan_it->second;
-
-  // 초대자가 채널에 들어가 있는지 확인
-  if (chan.chk_user_join(event_user_nick) == false) {
-    event_user.push_back_msg(
-        rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  // 초대자가 권한이 있는지 확인
-  if (chan.is_operator(event_user_nick) == false) {
-    event_user.push_back_msg(
-        rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  // 초대받은자가 이미 채널에 있는지 확인
-  if (chan.chk_user_join(invited_user_nick) == true) {
-    event_user.push_back_msg(
-        rpl_443(serv_name, event_user_nick, invited_user_nick, chan_name)
-            .to_raw_msg());
-    return;
-  }
-
-  invited_user.push_invitation(chan.get_channel_name());
-
-  event_user.push_back_msg(rpl_341(invited_user.make_source(1), event_user_nick,
-                                   invited_user_nick, chan_name)
-                               .to_raw_msg());
-  ft_send(event_user.get_pfd());
-
-  Message rpl;
-
-  rpl.set_source(event_user.make_source(1));
-  rpl.set_cmd_type(INVITE);
-  rpl.push_back(invited_user_nick);
-  rpl.push_back(chan_name);
-  invited_user.push_back_msg(rpl.to_raw_msg());
-  ft_send(invited_user.get_pfd());
-}
-
-void Server::cmd_kick(int recv_fd, const Message& msg) {
-  User& event_user = (*this)[recv_fd];
-  const String& event_user_nick = event_user.get_nick_name();
-
-  // 인자 개수 확인. 2 ~3 개가 정상적
-  if (msg.get_params_size() < 2 || msg.get_params_size() > 3) {
-    event_user.push_back_msg(
-        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
-    return;
-  }
-
-  const String& chan_name = msg[0];
-  // 채널 존재하는지 확인
-  std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
-  if (chan_it == channel_list.end()) {
-    event_user.push_back_msg(
-        rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  // 추방하는 유저가 채널에 들어가 있는지 확인
-  Channel& chan = chan_it->second;
-  if (chan.chk_user_join(event_user_nick) == false) {
-    event_user.push_back_msg(
-        rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  // 추방하는 유저가 권한이 있는지 확인
-  if (chan.is_operator(event_user_nick) == false) {
-    event_user.push_back_msg(
-        rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
-    return;
-  }
-
-  // 추방할 이름이 여러 개 들어올 수 있음. ','를 기준으로 구분.
-  std::vector<String> name_vec;
-  ft_split(msg[1], ",", name_vec);
-
-  Message rpl;
-
-  rpl.set_source(event_user.make_source(1));
-  rpl.set_cmd_type(KICK);
-  rpl.push_back(chan_name);
-  rpl.push_back("");
-  if (msg.get_params_size() >= 3) {
-    if (msg[2].length() > KICKLEN) {
-      rpl.push_back(":" + msg[2].substr(0, KICKLEN) + "[CUT]");
-    } else {
-      rpl.push_back(":" + msg[2]);
-    }
-  }
-
-  for (size_t i = 0; i < name_vec.size(); ++i) {
-    // 유저 존재하는지 확인
-    std::map<String, int>::iterator user_it = nick_to_soc.find(name_vec[i]);
-    if (user_it == nick_to_soc.end()) {
-      event_user.push_back_msg(
-          rpl_401(serv_name, event_user_nick, name_vec[i]).to_raw_msg());
-      continue;
-    }
-
-    // 추방당할 자가 채널에 있는지 확인
-    if (chan.chk_user_join(name_vec[i]) == false) {
-      event_user.push_back_msg(
-          rpl_441(serv_name, event_user_nick, name_vec[i], chan_name)
-              .to_raw_msg());
-      return;
-    }
-
-    rpl[1] = name_vec[i];
-    send_msg_to_channel(chan, rpl.to_raw_msg());
-    chan.remove_user(name_vec[i]);
-    (*this)[(*this)[name_vec[i]]].part_channel(chan_name);
-  }
-}
-
-void Server::cmd_who(int recv_fd, const Message& msg) {
-  User& event_user = (*this)[recv_fd];
-  const String& event_user_nick = event_user.get_nick_name();
-
-  // short parameter chk. 1개가 정상적.
-  if (msg.get_params_size() != 1) {
-    event_user.push_back_msg(
-        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
-    return;
-  }
-
-  // 채널인지 유저인지 확인
-  if (is_channel_name(msg[0]) == true) {
-    const String& chan_name = msg[0];
-    std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
-    if (chan_it != channel_list.end()) {
-      Channel& chan = chan_it->second;
-      std::map<String, User&>::iterator chan_user_it =
-          chan.get_user_list().begin();
-      for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
-        if (chan.is_operator(chan_user_it->first) == true) {
-          event_user.push_back_msg(rpl_352(serv_name, event_user_nick,
-                                           chan_name, chan_user_it->second,
-                                           serv_name, "H@", 0)
-                                       .to_raw_msg());
-        } else {
-          event_user.push_back_msg(rpl_352(serv_name, event_user_nick,
-                                           chan_name, chan_user_it->second,
-                                           serv_name, "H", 0)
-                                       .to_raw_msg());
-        }
-      }
-    }
-  } else {
-    const String& user_name = msg[0];
-    std::map<String, int>::iterator user_it = nick_to_soc.find(user_name);
-    if (user_it != nick_to_soc.end()) {
-      event_user.push_back_msg(rpl_352(serv_name, event_user_nick, "*",
-                                       (*this)[user_it->second], serv_name, "H",
-                                       0)
-                                   .to_raw_msg());
-    }
-  }
-  event_user.push_back_msg(
-      rpl_315(serv_name, event_user_nick, msg[0]).to_raw_msg());
-  ft_send(event_user.get_pfd());
-}
-
 void Server::cmd_pass(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
   String pass_tmp;
@@ -365,30 +81,6 @@ void Server::cmd_nick(int recv_fd, const Message& msg) {
   } else {
     (*this).change_nickname(event_user.get_nick_name_no_chk(), new_nick);
     event_user.set_nick_init_chk(OK);
-  }
-}
-
-void Server::change_nickname(const String& old_nick, const String& new_nick) {
-  std::map<String, int>::iterator it;
-  int tmp_fd;
-
-  it = nick_to_soc.find(old_nick);
-  if (it != nick_to_soc.end()) {
-    tmp_fd = it->second;
-    nick_to_soc.erase(it);
-    nick_to_soc.insert(std::make_pair(new_nick, tmp_fd));
-    (*this)[tmp_fd].set_nick_name(new_nick);
-    return;
-  }
-  it = tmp_nick_to_soc.find(old_nick);
-  if (it != tmp_nick_to_soc.end()) {
-    tmp_fd = it->second;
-    tmp_nick_to_soc.erase(it);
-    tmp_nick_to_soc.insert(std::make_pair(new_nick, tmp_fd));
-    (*this)[tmp_fd].set_nick_name(new_nick);
-    return;
-  } else {
-    throw std::invalid_argument("Subsription error!");
   }
 }
 
@@ -521,137 +213,6 @@ bbb
   std::cout << "Connection close at " << recv_fd << '\n';
   event_user.set_have_to_disconnect(true);
   ft_sendd(tmp_pfd);
-}
-
-void Server::cmd_names(int recv_fd, const Message& msg) {
-  /*
-  NAMES #chan_a,#chan_b
-  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
-  :irc.example.net 366 sss #chan_a :End of NAMES list
-  :irc.example.net 353 sss = #chan_b :@jjjj
-  :irc.example.net 366 sss #chan_b :End of NAMES list
-
-  NAMES
-  :irc.example.net 353 sss = #chan_b :@jjjj
-  :irc.example.net 353 sss = #chan_a :ccc @test
-  :irc.example.net 353 sss = #kick_test :ccc test
-  :irc.example.net 353 sss = #test :@ccc
-  :irc.example.net 353 sss = #chan :ccc @test
-  :irc.example.net 353 sss * * :sss
-  :irc.example.net 366 sss * :End of NAMES list
-
-  NAMES
-  :irc.example.net 353 sss = #chan_b :@jjjj
-  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
-  :irc.example.net 353 sss = #kick_test :ccc test
-  :irc.example.net 353 sss = #test :@ccc
-  :irc.example.net 353 sss = #chan :ccc @test
-  :irc.example.net 366 sss * :End of NAMES list
-  */
-  User& event_user = (*this)[recv_fd];
-  const String& event_user_nick = event_user.get_nick_name();
-
-  // short parameter chk
-  if (msg.get_params_size() == 0) {
-    std::map<String, Channel>::iterator chan_it = channel_list.begin();
-    String symbol;
-
-    for (; chan_it != channel_list.end(); ++chan_it) {
-      Channel& chan = chan_it->second;
-      const String& chan_name = chan.get_channel_name();
-      bool event_user_in_chan;
-
-      if (chan.chk_user_join(event_user_nick) == true) {
-        event_user_in_chan = true;
-      } else {
-        event_user_in_chan = false;
-      }
-
-      if (chan.chk_mode(CHAN_FLAG_S) == true) {
-        if (event_user_in_chan == false) {
-          continue;
-        } else {
-          symbol = "@";
-        }
-      } else {
-        symbol = "=";
-      }
-
-      String nicks = "";
-
-      nicks = chan.get_user_list_str(event_user_in_chan);
-      if (nicks.length() > 0) {
-        event_user.push_back_msg(
-            rpl_353(serv_name, event_user_nick, symbol, chan_name, nicks)
-                .to_raw_msg());
-      }
-    }
-
-    std::map<int, User>::reverse_iterator user_it = user_list.rbegin();
-    String nicks = "";
-    for (; user_it != user_list.rend(); ++user_it) {
-      if (user_it->second.chk_mode(USER_FLAG_I) == true) {
-        continue;
-      }
-      if (user_it->second.get_channels().size() == 0) {
-        nicks += user_it->second.get_nick_name();
-        nicks += " ";
-      }
-    }
-    if (nicks.length() > 0) {
-      nicks.erase(nicks.length() - 1);
-      event_user.push_back_msg(
-          rpl_353(serv_name, event_user_nick, "*", "*", nicks).to_raw_msg());
-    }
-    event_user.push_back_msg(
-        rpl_366(serv_name, event_user_nick, "*").to_raw_msg());
-  } else if (msg.get_params_size() == 1) {
-    std::vector<String> chan_name_vec;
-    ft_split(msg[1], ",", chan_name_vec);
-
-    for (size_t i = 0; i < chan_name_vec.size(); ++i) {
-      // 채널 존재하는지 확인
-      std::map<String, Channel>::iterator chan_it =
-          channel_list.find(chan_name_vec[i]);
-      if (chan_it != channel_list.end()) {
-        Channel& chan = chan_it->second;
-        const String& chan_name = chan.get_channel_name();
-        bool event_user_in_chan;
-        String symbol;
-
-        if (chan.chk_user_join(event_user_nick) == true) {
-          event_user_in_chan = true;
-        } else {
-          event_user_in_chan = false;
-        }
-
-        if (chan.chk_mode(CHAN_FLAG_S) == true) {
-          if (event_user_in_chan == false) {
-            continue;
-          } else {
-            symbol = "@";
-          }
-        } else {
-          symbol = "=";
-        }
-
-        String nicks = "";
-
-        nicks = chan.get_user_list_str(event_user_in_chan);
-        if (nicks.length() > 0) {
-          event_user.push_back_msg(
-              rpl_353(serv_name, event_user_nick, symbol, chan_name, nicks)
-                  .to_raw_msg());
-        }
-      }
-      event_user.push_back_msg(
-          rpl_366(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());
-    }
-  } else {
-    event_user.push_back_msg(
-        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
-    return;
-  }
 }
 
 void Server::cmd_privmsg(int recv_fd, const Message& msg) {
@@ -850,30 +411,163 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
   }
 }
 
-void Server::cmd_part(int recv_fd, const Message& msg) {
+void Server::cmd_kick(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // 인자 개수 확인. 2 ~3 개가 정상적
+  if (msg.get_params_size() < 2 || msg.get_params_size() > 3) {
+    event_user.push_back_msg(
+        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
+    return;
+  }
+
+  const String& chan_name = msg[0];
+  // 채널 존재하는지 확인
+  std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
+  if (chan_it == channel_list.end()) {
+    event_user.push_back_msg(
+        rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
+  }
+
+  // 추방하는 유저가 채널에 들어가 있는지 확인
+  Channel& chan = chan_it->second;
+  if (chan.chk_user_join(event_user_nick) == false) {
+    event_user.push_back_msg(
+        rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
+  }
+
+  // 추방하는 유저가 권한이 있는지 확인
+  if (chan.is_operator(event_user_nick) == false) {
+    event_user.push_back_msg(
+        rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
+  }
+
+  // 추방할 이름이 여러 개 들어올 수 있음. ','를 기준으로 구분.
+  std::vector<String> name_vec;
+  ft_split(msg[1], ",", name_vec);
+
+  Message rpl;
+
+  rpl.set_source(event_user.make_source(1));
+  rpl.set_cmd_type(KICK);
+  rpl.push_back(chan_name);
+  rpl.push_back("");
+  if (msg.get_params_size() >= 3) {
+    if (msg[2].length() > KICKLEN) {
+      rpl.push_back(":" + msg[2].substr(0, KICKLEN) + "[CUT]");
+    } else {
+      rpl.push_back(":" + msg[2]);
+    }
+  }
+
+  for (size_t i = 0; i < name_vec.size(); ++i) {
+    // 유저 존재하는지 확인
+    std::map<String, int>::iterator user_it = nick_to_soc.find(name_vec[i]);
+    if (user_it == nick_to_soc.end()) {
+      event_user.push_back_msg(
+          rpl_401(serv_name, event_user_nick, name_vec[i]).to_raw_msg());
+      continue;
+    }
+
+    // 추방당할 자가 채널에 있는지 확인
+    if (chan.chk_user_join(name_vec[i]) == false) {
+      event_user.push_back_msg(
+          rpl_441(serv_name, event_user_nick, name_vec[i], chan_name)
+              .to_raw_msg());
+      return;
+    }
+
+    rpl[1] = name_vec[i];
+    send_msg_to_channel(chan, rpl.to_raw_msg());
+    chan.remove_user(name_vec[i]);
+    (*this)[(*this)[name_vec[i]]].part_channel(chan_name);
+  }
+}
+
+void Server::cmd_invite(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // 인자 개수 확인. 2개가 정상적.
+  if (msg.get_params_size() != 2) {
+    event_user.push_back_msg(
+        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
+    return;
+  }
+
   /*
-zzz
-< part #chan_a,#chan_b
-> :zzz!~zzz@localhost PART #chan_a :\r
-> :zzz!~zzz@localhost PART #chan_b :\r
+    > 2024/05/09 21:54:32.000536657
+    INVITE dy2 #a\r
+    < 2024/05/09 21:54:32.000536960
+    :dy2!~memememe@localhost 341 dy dy2 #a\r
+  */
+  const String& invited_user_nick = msg[0];
+  const String& chan_name = msg[1];
 
-aaa (zzz와 chan_a, chan_b에 같이 있음)
-> :zzz!~zzz@localhost PART #chan_a :\r
-> :zzz!~zzz@localhost PART #chan_b :\r
+  // 유저 존재하는지 확인
+  std::map<String, int>::iterator user_it = nick_to_soc.find(invited_user_nick);
+  if (user_it == nick_to_soc.end()) {
+    // :irc.example.net 401 dy lkkllk :No such nick or channel name\r
+    event_user.push_back_msg(
+        rpl_401(serv_name, event_user_nick, invited_user_nick).to_raw_msg());
+    return;
+  }
 
-bbb (zzz와 chan_a, chan_b에 같이 있음)
-> :zzz!~zzz@localhost PART #chan_a :\r
-> :zzz!~zzz@localhost PART #chan_b :\r
+  // 채널 존재하는지 확인
+  std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
+  if (chan_it == channel_list.end()) {
+    event_user.push_back_msg(
+        rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
+  }
 
-ccc
-none
----------------------------------------------------------
-zzz
-< part #chan_a,#chan_b :part message test
-> :zzz!~zzz@localhost PART #chan_a :part message test\r
-> :zzz!~zzz@localhost PART #chan_b :part message test\r
-*/
+  User& invited_user = (*this)[user_it->second];
+  Channel& chan = chan_it->second;
 
+  // 초대자가 채널에 들어가 있는지 확인
+  if (chan.chk_user_join(event_user_nick) == false) {
+    event_user.push_back_msg(
+        rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
+  }
+
+  // 초대자가 권한이 있는지 확인
+  if (chan.is_operator(event_user_nick) == false) {
+    event_user.push_back_msg(
+        rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
+  }
+
+  // 초대받은자가 이미 채널에 있는지 확인
+  if (chan.chk_user_join(invited_user_nick) == true) {
+    event_user.push_back_msg(
+        rpl_443(serv_name, event_user_nick, invited_user_nick, chan_name)
+            .to_raw_msg());
+    return;
+  }
+
+  invited_user.push_invitation(chan.get_channel_name());
+
+  event_user.push_back_msg(rpl_341(invited_user.make_source(1), event_user_nick,
+                                   invited_user_nick, chan_name)
+                               .to_raw_msg());
+  ft_send(event_user.get_pfd());
+
+  Message rpl;
+
+  rpl.set_source(event_user.make_source(1));
+  rpl.set_cmd_type(INVITE);
+  rpl.push_back(invited_user_nick);
+  rpl.push_back(chan_name);
+  invited_user.push_back_msg(rpl.to_raw_msg());
+  ft_send(invited_user.get_pfd());
+}
+
+void Server::cmd_topic(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
   const String& event_user_nick = event_user.get_nick_name();
 
@@ -884,103 +578,252 @@ zzz
     return;
   }
 
-  String reason;
-
-  std::vector<String> chan_name_vec;
-  ft_split(msg[0], ",", chan_name_vec);
-
-  Message rpl;
-
-  rpl.set_source(event_user.make_source(1));
-  rpl.set_cmd_type(PART);
-  rpl.push_back("");
-  if (msg.get_params_size() == 2) {
-    rpl.push_back(":" + msg[1]);
+  // 채널 존재하는지 확인
+  const String& chan_name = msg[0];
+  std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
+  if (chan_it == channel_list.end()) {
+    event_user.push_back_msg(
+        rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
   }
 
-  for (size_t i = 0; i < chan_name_vec.size(); ++i) {
-    if (is_channel_name(chan_name_vec[i]) == false) {
+  // 메세지 날린 유저가 채널에 존재하는지 확인
+  Channel& chan = chan_it->second;
+  if (chan.chk_user_join(event_user_nick) == false) {
+    event_user.push_back_msg(
+        rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
+    return;
+  }
+
+  const String& topic = chan.get_topic();
+  if (msg.get_params_size() == 1) {
+    //check the topic
+
+    // topic set chk
+    if (topic.length() == 0) {
       event_user.push_back_msg(
-          rpl_403(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());
-      continue;
+          rpl_331(serv_name, event_user_nick, chan_name).to_raw_msg());
+      return;
+    } else {
+      event_user.push_back_msg(
+          rpl_332(serv_name, event_user_nick, chan_name, topic).to_raw_msg());
+      event_user.push_back_msg(rpl_333(serv_name, event_user_nick, chan_name,
+                                       chan.get_topic_set_nick(),
+                                       ft_ltos(chan.get_topic_set_time()))
+                                   .to_raw_msg());
+      return;
+    }
+  } else {
+    // set the topic
+
+    // if channel mode set to +t
+    // user privilege chk
+    if (chan.chk_mode(CHAN_FLAG_T) == true &&
+        chan.is_operator(event_user_nick) == false) {
+      event_user.push_back_msg(
+          rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
+      return;
     }
 
-    const String& chan_name = chan_name_vec[i];
-    std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
-    if (chan_it == channel_list.end()) {
-      event_user.push_back_msg(
-          rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
-      continue;
+    /*
+    < 2024/05/11 15:09:25.000532736  length=45 from=4305 to=4349
+    :dy!~memememe@localhost TOPIC #test :welfkn\r
+    */
+    const String& new_topic = msg[1];
+
+    if (new_topic.length() > TOPICLEN) {
+      chan.set_topic(new_topic.substr(0, TOPICLEN) + "[CUT]");
+    } else {
+      chan.set_topic(new_topic);
     }
 
-    Channel& chan = chan_it->second;
-    if (chan.chk_user_join(event_user_nick) == false) {
-      event_user.push_back_msg(
-          rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
-      continue;
-    }
+    Message rpl;
 
-    rpl[0] = chan_name;
+    rpl.set_source(event_user.make_source(1));
+    rpl.set_cmd_type(TOPIC);
+    rpl.push_back(chan_name);
+    rpl.push_back(":" + new_topic);
     send_msg_to_channel(chan, rpl.to_raw_msg());
-    chan.remove_user(event_user_nick);
-    event_user.part_channel(chan_name);
-
-    if (chan.get_user_num() == 0) {
-      channel_list.erase(chan_name);
-    }
   }
 }
 
-void Server::cmd_list(int recv_fd, const Message& msg) {
+void Server::cmd_who(int recv_fd, const Message& msg) {
   User& event_user = (*this)[recv_fd];
   const String& event_user_nick = event_user.get_nick_name();
 
-  // 인자 개수 확인. 0 ~ 1개가 정상적.
-  if (msg.get_params_size() > 1) {
+  // short parameter chk. 1개가 정상적.
+  if (msg.get_params_size() != 1) {
     event_user.push_back_msg(
         rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
     return;
   }
 
-  event_user.push_back_msg(rpl_321(serv_name, event_user_nick).to_raw_msg());
-  if (msg.get_params_size() == 0) {
-    std::map<String, Channel>::iterator chan_it = channel_list.begin();
-    for (; chan_it != channel_list.end(); ++chan_it) {
-      const String& chan_name = chan_it->first;
+  // 채널인지 유저인지 확인
+  if (is_channel_name(msg[0]) == true) {
+    const String& chan_name = msg[0];
+    std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
+    if (chan_it != channel_list.end()) {
       Channel& chan = chan_it->second;
-
-      if (chan.chk_mode(CHAN_FLAG_S) == true) {
-        continue;
+      std::map<String, User&>::iterator chan_user_it =
+          chan.get_user_list().begin();
+      for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
+        if (chan.is_operator(chan_user_it->first) == true) {
+          event_user.push_back_msg(rpl_352(serv_name, event_user_nick,
+                                           chan_name, chan_user_it->second,
+                                           serv_name, "H@", 0)
+                                       .to_raw_msg());
+        } else {
+          event_user.push_back_msg(rpl_352(serv_name, event_user_nick,
+                                           chan_name, chan_user_it->second,
+                                           serv_name, "H", 0)
+                                       .to_raw_msg());
+        }
       }
-
-      event_user.push_back_msg(rpl_322(serv_name, event_user_nick, chan_name,
-                                       ft_itos(chan.get_user_list().size()),
-                                       chan.get_topic())
-                                   .to_raw_msg());
     }
   } else {
+    const String& user_name = msg[0];
+    std::map<String, int>::iterator user_it = nick_to_soc.find(user_name);
+    if (user_it != nick_to_soc.end()) {
+      event_user.push_back_msg(rpl_352(serv_name, event_user_nick, "*",
+                                       (*this)[user_it->second], serv_name, "H",
+                                       0)
+                                   .to_raw_msg());
+    }
+  }
+  event_user.push_back_msg(
+      rpl_315(serv_name, event_user_nick, msg[0]).to_raw_msg());
+  ft_send(event_user.get_pfd());
+}
+
+void Server::cmd_names(int recv_fd, const Message& msg) {
+  /*
+  NAMES #chan_a,#chan_b
+  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
+  :irc.example.net 366 sss #chan_a :End of NAMES list
+  :irc.example.net 353 sss = #chan_b :@jjjj
+  :irc.example.net 366 sss #chan_b :End of NAMES list
+
+  NAMES
+  :irc.example.net 353 sss = #chan_b :@jjjj
+  :irc.example.net 353 sss = #chan_a :ccc @test
+  :irc.example.net 353 sss = #kick_test :ccc test
+  :irc.example.net 353 sss = #test :@ccc
+  :irc.example.net 353 sss = #chan :ccc @test
+  :irc.example.net 353 sss * * :sss
+  :irc.example.net 366 sss * :End of NAMES list
+
+  NAMES
+  :irc.example.net 353 sss = #chan_b :@jjjj
+  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
+  :irc.example.net 353 sss = #kick_test :ccc test
+  :irc.example.net 353 sss = #test :@ccc
+  :irc.example.net 353 sss = #chan :ccc @test
+  :irc.example.net 366 sss * :End of NAMES list
+  */
+  User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // short parameter chk
+  if (msg.get_params_size() == 0) {
+    std::map<String, Channel>::iterator chan_it = channel_list.begin();
+    String symbol;
+
+    for (; chan_it != channel_list.end(); ++chan_it) {
+      Channel& chan = chan_it->second;
+      const String& chan_name = chan.get_channel_name();
+      bool event_user_in_chan;
+
+      if (chan.chk_user_join(event_user_nick) == true) {
+        event_user_in_chan = true;
+      } else {
+        event_user_in_chan = false;
+      }
+
+      if (chan.chk_mode(CHAN_FLAG_S) == true) {
+        if (event_user_in_chan == false) {
+          continue;
+        } else {
+          symbol = "@";
+        }
+      } else {
+        symbol = "=";
+      }
+
+      String nicks = "";
+
+      nicks = chan.get_user_list_str(event_user_in_chan);
+      if (nicks.length() > 0) {
+        event_user.push_back_msg(
+            rpl_353(serv_name, event_user_nick, symbol, chan_name, nicks)
+                .to_raw_msg());
+      }
+    }
+
+    std::map<int, User>::reverse_iterator user_it = user_list.rbegin();
+    String nicks = "";
+    for (; user_it != user_list.rend(); ++user_it) {
+      if (user_it->second.chk_mode(USER_FLAG_I) == true) {
+        continue;
+      }
+      if (user_it->second.get_channels().size() == 0) {
+        nicks += user_it->second.get_nick_name();
+        nicks += " ";
+      }
+    }
+    if (nicks.length() > 0) {
+      nicks.erase(nicks.length() - 1);
+      event_user.push_back_msg(
+          rpl_353(serv_name, event_user_nick, "*", "*", nicks).to_raw_msg());
+    }
+    event_user.push_back_msg(
+        rpl_366(serv_name, event_user_nick, "*").to_raw_msg());
+  } else if (msg.get_params_size() == 1) {
     std::vector<String> chan_name_vec;
-    ft_split(msg[0], ",", chan_name_vec);
+    ft_split(msg[1], ",", chan_name_vec);
 
     for (size_t i = 0; i < chan_name_vec.size(); ++i) {
+      // 채널 존재하는지 확인
       std::map<String, Channel>::iterator chan_it =
           channel_list.find(chan_name_vec[i]);
       if (chan_it != channel_list.end()) {
-        const String& chan_name = chan_it->first;
         Channel& chan = chan_it->second;
+        const String& chan_name = chan.get_channel_name();
+        bool event_user_in_chan;
+        String symbol;
 
-        if (chan.chk_mode(CHAN_FLAG_S) == true) {
-          continue;
+        if (chan.chk_user_join(event_user_nick) == true) {
+          event_user_in_chan = true;
+        } else {
+          event_user_in_chan = false;
         }
 
-        event_user.push_back_msg(rpl_322(serv_name, event_user_nick, chan_name,
-                                         ft_itos(chan.get_user_list().size()),
-                                         chan.get_topic())
-                                     .to_raw_msg());
+        if (chan.chk_mode(CHAN_FLAG_S) == true) {
+          if (event_user_in_chan == false) {
+            continue;
+          } else {
+            symbol = "@";
+          }
+        } else {
+          symbol = "=";
+        }
+
+        String nicks = "";
+
+        nicks = chan.get_user_list_str(event_user_in_chan);
+        if (nicks.length() > 0) {
+          event_user.push_back_msg(
+              rpl_353(serv_name, event_user_nick, symbol, chan_name, nicks)
+                  .to_raw_msg());
+        }
       }
+      event_user.push_back_msg(
+          rpl_366(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());
     }
+  } else {
+    event_user.push_back_msg(
+        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
+    return;
   }
-  event_user.push_back_msg(rpl_323(serv_name, event_user_nick).to_raw_msg());
 }
 
 void Server::cmd_mode(int recv_fd, const Message& msg) {
@@ -1320,7 +1163,220 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+void Server::cmd_part(int recv_fd, const Message& msg) {
+  /*
+zzz
+< part #chan_a,#chan_b
+> :zzz!~zzz@localhost PART #chan_a :\r
+> :zzz!~zzz@localhost PART #chan_b :\r
 
-// void Server::cmd_whois(int recv_fd, const Message& msg) {}
+aaa (zzz와 chan_a, chan_b에 같이 있음)
+> :zzz!~zzz@localhost PART #chan_a :\r
+> :zzz!~zzz@localhost PART #chan_b :\r
+
+bbb (zzz와 chan_a, chan_b에 같이 있음)
+> :zzz!~zzz@localhost PART #chan_a :\r
+> :zzz!~zzz@localhost PART #chan_b :\r
+
+ccc
+none
+---------------------------------------------------------
+zzz
+< part #chan_a,#chan_b :part message test
+> :zzz!~zzz@localhost PART #chan_a :part message test\r
+> :zzz!~zzz@localhost PART #chan_b :part message test\r
+*/
+
+  User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // 인자 개수 확인. 1 ~ 2개가 정상적.
+  if (msg.get_params_size() < 1 || msg.get_params_size() > 2) {
+    event_user.push_back_msg(
+        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
+    return;
+  }
+
+  String reason;
+
+  std::vector<String> chan_name_vec;
+  ft_split(msg[0], ",", chan_name_vec);
+
+  Message rpl;
+
+  rpl.set_source(event_user.make_source(1));
+  rpl.set_cmd_type(PART);
+  rpl.push_back("");
+  if (msg.get_params_size() == 2) {
+    rpl.push_back(":" + msg[1]);
+  }
+
+  for (size_t i = 0; i < chan_name_vec.size(); ++i) {
+    if (is_channel_name(chan_name_vec[i]) == false) {
+      event_user.push_back_msg(
+          rpl_403(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());
+      continue;
+    }
+
+    const String& chan_name = chan_name_vec[i];
+    std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
+    if (chan_it == channel_list.end()) {
+      event_user.push_back_msg(
+          rpl_403(serv_name, event_user_nick, chan_name).to_raw_msg());
+      continue;
+    }
+
+    Channel& chan = chan_it->second;
+    if (chan.chk_user_join(event_user_nick) == false) {
+      event_user.push_back_msg(
+          rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
+      continue;
+    }
+
+    rpl[0] = chan_name;
+    send_msg_to_channel(chan, rpl.to_raw_msg());
+    chan.remove_user(event_user_nick);
+    event_user.part_channel(chan_name);
+
+    if (chan.get_user_num() == 0) {
+      channel_list.erase(chan_name);
+    }
+  }
+}
+
+void Server::cmd_list(int recv_fd, const Message& msg) {
+  User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // 인자 개수 확인. 0 ~ 1개가 정상적.
+  if (msg.get_params_size() > 1) {
+    event_user.push_back_msg(
+        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
+    return;
+  }
+
+  event_user.push_back_msg(rpl_321(serv_name, event_user_nick).to_raw_msg());
+  if (msg.get_params_size() == 0) {
+    std::map<String, Channel>::iterator chan_it = channel_list.begin();
+    for (; chan_it != channel_list.end(); ++chan_it) {
+      const String& chan_name = chan_it->first;
+      Channel& chan = chan_it->second;
+
+      if (chan.chk_mode(CHAN_FLAG_S) == true) {
+        continue;
+      }
+
+      event_user.push_back_msg(rpl_322(serv_name, event_user_nick, chan_name,
+                                       ft_itos(chan.get_user_list().size()),
+                                       chan.get_topic())
+                                   .to_raw_msg());
+    }
+  } else {
+    std::vector<String> chan_name_vec;
+    ft_split(msg[0], ",", chan_name_vec);
+
+    for (size_t i = 0; i < chan_name_vec.size(); ++i) {
+      std::map<String, Channel>::iterator chan_it =
+          channel_list.find(chan_name_vec[i]);
+      if (chan_it != channel_list.end()) {
+        const String& chan_name = chan_it->first;
+        Channel& chan = chan_it->second;
+
+        if (chan.chk_mode(CHAN_FLAG_S) == true) {
+          continue;
+        }
+
+        event_user.push_back_msg(rpl_322(serv_name, event_user_nick, chan_name,
+                                         ft_itos(chan.get_user_list().size()),
+                                         chan.get_topic())
+                                     .to_raw_msg());
+      }
+    }
+  }
+  event_user.push_back_msg(rpl_323(serv_name, event_user_nick).to_raw_msg());
+}
+
+void Server::cmd_whois(int recv_fd, const Message& msg) {
+  /*
+WHOIS zzz\r
+
+:irc.example.net 401 test_ zzz :No such nick or channel name\r
+:irc.example.net 318 test_ zzz :End of WHOIS list\r
+
+WHOIS test\r
+
+:irc.example.net 311 test_ test ~test_user localhost * :Hyungdo Kim\r
+:irc.example.net 312 test_ test irc.example.net :Server Info Text\r
+:irc.example.net 317 test_ test 148 1718614059 :seconds idle, signon time\r
+:irc.example.net 318 test_ test :End of WHOIS list\r
+
+WHOIS test\r
+
+:irc.example.net 311 test test ~test_user localhost * :Hyungdo Kim\r
+:irc.example.net 312 test test irc.example.net :Server Info Text\r
+:irc.example.net 378 test test :is connecting from *@localhost 127.0.0.1\r
+:irc.example.net 379 test test :is using modes +i\r
+:irc.example.net 317 test test 2238 1718614059 :seconds idle, signon time\r
+:irc.example.net 318 test test :End of WHOIS list\r
+*/
+
+  User& event_user = (*this)[recv_fd];
+  const String& event_user_nick = event_user.get_nick_name();
+
+  // 인자 개수 확인. 1 ~ 2개가 정상적.
+  if (msg.get_params_size() < 1 || msg.get_params_size() > 2) {
+    event_user.push_back_msg(
+        rpl_461(serv_name, event_user_nick, msg.get_raw_cmd()).to_raw_msg());
+    return;
+  }
+
+  String target_server;
+  String target_nick;
+  if (msg.get_params_size() == 2) {
+    target_server = msg[0];
+    target_nick = msg[1];
+
+    if (target_server != serv_name) {
+      event_user.push_back_msg(
+          rpl_402(serv_name, event_user_nick, target_server).to_raw_msg());
+      return;
+    }
+  } else {
+    target_nick = msg[0];
+  }
+
+  // 유저 존재하는지 확인
+  std::map<String, int>::iterator user_it = nick_to_soc.find(target_nick);
+  if (user_it == nick_to_soc.end()) {
+    event_user.push_back_msg(
+        rpl_401(serv_name, event_user_nick, target_nick).to_raw_msg());
+    return;
+  }
+  User& target_user = (*this)[user_it->second];
+
+  event_user.push_back_msg(rpl_311(serv_name, event_user_nick, target_nick,
+                                   target_user.get_user_name(),
+                                   target_user.get_host_ip(),
+                                   target_user.get_real_name())
+                               .to_raw_msg());
+  event_user.push_back_msg(
+      rpl_312(serv_name, event_user_nick, target_nick, serv_name, serv_info)
+          .to_raw_msg());
+  if (event_user_nick == target_nick) {
+    event_user.push_back_msg(
+        rpl_378(serv_name, event_user_nick, event_user_nick).to_raw_msg());
+    event_user.push_back_msg(rpl_379(serv_name, event_user_nick,
+                                     event_user_nick,
+                                     event_user.make_mode_str())
+                                 .to_raw_msg());
+  }
+  std::time_t now = std::time(NULL);
+
+  event_user.push_back_msg(
+      rpl_317(serv_name, event_user_nick, target_nick,
+              ft_itos(now - target_user.get_created_time()),
+              ft_itos(target_user.get_created_time()))
+          .to_raw_msg());
+  event_user.push_back_msg(
+      rpl_318(serv_name, event_user_nick, target_nick).to_raw_msg());
+}

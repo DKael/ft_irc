@@ -39,31 +39,15 @@ typedef std::string String;
 
 #define CHANNELNUM 20
 
-// MODE FLAG
-#define INVITE_MODE_ON "+i"
-#define INVITE_MODE_OFF "-i"
-
-#define BLACK "\033[0;30m"
-#define RED "\033[0;31m"
-#define GREEN "\033[0;32m"
-#define GREEN_BOLD "\033[1;32m"
-#define YELLOW "\033[0;33m"
-#define BLUE "\033[0;34m"
-#define PURPLE "\033[0;35m"
-#define CYAN "\033[0;36m"
-#define WHITE "\033[0;37m"
-#define DEF_COLOR "\033[0;39m"
-#define LF "\e[1K\r"
-
 class Server {
  private:
   int port;
   String str_port;
   String serv_name;
   String serv_version;
-  String chantypes;
   std::time_t created_time;
   String created_time_str;
+  String serv_info;
 
   String password;
   int serv_socket;
@@ -102,22 +86,7 @@ class Server {
   Server(const char* _port, const char* _password);
   ~Server();
   void server_quit(void);
-
   void server_listen(void);
-
-  int get_port(void) const;
-  const String& get_str_port(void) const;
-  const String& get_serv_name(void) const;
-  const String& get_serv_version(void) const;
-  const String& get_password(void) const;
-  const std::time_t& get_created_time(void) const;
-  const String& get_created_time_str(void) const;
-  int get_serv_socket(void) const;
-  const sockaddr_in& get_serv_addr(void) const;
-  int get_tmp_user_cnt(void) const;
-  int get_user_cnt(void) const;
-  bool get_enable_ident_protocol(void) const;
-  int get_channel_num(void) const;
 
   void add_tmp_user(pollfd& pfd, const sockaddr_in& addr);
   void move_tmp_user_to_user_list(int socket_fd);
@@ -139,8 +108,26 @@ class Server {
                                          const String& msg);
   void send_msg_to_connected_user(const User& u, const String& msg);
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////////
-  /* IMPLEMENTATIONS OF COMMANDS */
+  // Server_getset_func.cpp
+  int get_port(void) const;
+  int get_serv_socket(void) const;
+  int get_tmp_user_cnt(void) const;
+  int get_user_cnt(void) const;
+  int get_channel_num(void) const;
+  bool get_enable_ident_protocol(void) const;
+  const String& get_str_port(void) const;
+  const String& get_serv_name(void) const;
+  const String& get_serv_version(void) const;
+  const String& get_password(void) const;
+  const String& get_serv_info(void) const;
+  const String& get_created_time_str(void) const;
+  const sockaddr_in& get_serv_addr(void) const;
+  const std::time_t& get_created_time(void) const;
+
+  void set_enable_ident_protocol(bool input);
+  void set_serv_info(const String& input);
+
+  // Server.cpp
   void cmd_pass(int recv_fd, const Message& msg);
   void cmd_nick(int recv_fd, const Message& msg);
   void cmd_user(int recv_fd, const Message& msg);
@@ -154,11 +141,27 @@ class Server {
   void cmd_topic(int recv_fd, const Message& msg);
   void cmd_who(int recv_fd, const Message& msg);
   void cmd_names(int recv_fd, const Message& msg);
-
   void cmd_mode(int recv_fd, const Message& msg);
   void cmd_part(int recv_fd, const Message& msg);
   void cmd_list(int recv_fd, const Message& msg);
   void cmd_whois(int recv_fd, const Message& msg);
+
+#ifdef DEBUG
+#define BLACK "\033[0;30m"
+#define RED "\033[0;31m"
+#define GREEN "\033[0;32m"
+#define GREEN_BOLD "\033[1;32m"
+#define YELLOW "\033[0;33m"
+#define BLUE "\033[0;34m"
+#define PURPLE "\033[0;35m"
+#define CYAN "\033[0;36m"
+#define WHITE "\033[0;37m"
+#define DEF_COLOR "\033[0;39m"
+#define LF "\e[1K\r"
+
+  void print_channel_list(void) const;
+  void print_user_list(void) const;
+#endif
 };
 
 #endif

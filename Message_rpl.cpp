@@ -89,6 +89,37 @@ Message rpl_221(const String& source, const String& user,
   return rpl;
 }
 
+Message rpl_311(const String& source, const String& user, const String& nick,
+                const String& username, const String& host,
+                const String& realname) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("311");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(username);
+  rpl.push_back(host);
+  rpl.push_back("*");
+  rpl.push_back(":" + realname);
+
+  return rpl;
+}
+
+Message rpl_312(const String& source, const String& user, const String& nick,
+                const String& server, const String& server_info) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("312");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(server);
+  rpl.push_back(":" + server_info);
+
+  return rpl;
+}
+
 Message rpl_315(const String& source, const String& user, const String& mask) {
   Message rpl;
 
@@ -97,6 +128,33 @@ Message rpl_315(const String& source, const String& user, const String& mask) {
   rpl.push_back(user);
   rpl.push_back(mask);
   rpl.push_back(":End of WHO list");
+
+  return rpl;
+}
+
+Message rpl_317(const String& source, const String& user, const String& nick,
+                const String& secs, const String& signon) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("317");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(secs);
+  rpl.push_back(signon);
+  rpl.push_back(":seconds idle, signon time");
+
+  return rpl;
+}
+
+Message rpl_318(const String& source, const String& user, const String& nick) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("318");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(":End of WHOIS list");
 
   return rpl;
 }
@@ -284,7 +342,30 @@ Message rpl_366(const String& source, const String& user,
   rpl.set_numeric("366");
   rpl.push_back(user);
   rpl.push_back(channel);
-  rpl.push_back(String(":End of NAMES list"));
+  rpl.push_back(":End of NAMES list");
+  return rpl;
+}
+
+Message rpl_378(const String& source, const String& user, const String& nick) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("378");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(":is connecting from *@localhost 127.0.0.1");
+  return rpl;
+}
+
+Message rpl_379(const String& source, const String& user, const String& nick,
+                const String& mode) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("379");
+  rpl.push_back(user);
+  rpl.push_back(nick);
+  rpl.push_back(":is using modes +" + mode);
   return rpl;
 }
 
@@ -306,6 +387,28 @@ Message rpl_401(const String& source, const String& user,
   rpl.push_back(user);
   rpl.push_back(nickname);
   rpl.push_back(":No such nick or channel name");
+
+  return rpl;
+}
+
+Message rpl_402(const String& source, const String& user,
+                const String& server_name) {
+  /*
+  ERR_NOSUCHNICK (401)
+  "<user> <nickname> :No such nick/channel"
+  Indicates that no user can be found for the supplied nickname. The text
+  used in the last param of this message may vary.
+
+  :irc.example.net 401 lfkn slkfdn :No such nick or channel name\r
+  (hostname) (nickname) (msg)
+  */
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("402");
+  rpl.push_back(user);
+  rpl.push_back(server_name);
+  rpl.push_back(":No such server");
 
   return rpl;
 }
@@ -403,6 +506,17 @@ Message rpl_421(const String& source, const String& user,
   return rpl;
 }
 
+Message rpl_431(const String& source, const String& user) {
+  Message rpl;
+
+  rpl.set_source(source);
+  rpl.set_numeric("431");
+  rpl.push_back(user);
+  rpl.push_back(":No nickname given");
+
+  return rpl;
+}
+
 Message rpl_432(const String& source, const String& user, const String& nick) {
   Message rpl;
 
@@ -436,7 +550,7 @@ Message rpl_441(const String& source, const String& user, const String& nick,
   rpl.push_back(user);
   rpl.push_back(nick);
   rpl.push_back(channel);
-  rpl.push_back(String(":They aren't on that channel"));
+  rpl.push_back(":They aren't on that channel");
 
   return rpl;
 }
@@ -459,7 +573,7 @@ Message rpl_442(const String& source, const String& user,
   rpl.set_numeric("442");
   rpl.push_back(user);
   rpl.push_back(channel);
-  rpl.push_back(String(":You're not on that channel"));
+  rpl.push_back(":You're not on that channel");
 
   return rpl;
 }

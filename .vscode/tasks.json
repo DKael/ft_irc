@@ -28,7 +28,6 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${fileDirname}/*.cpp",
-                "${fileDirname}/../Message.cpp",
                 "${fileDirname}/../string_func.cpp",
                 "${fileDirname}/../util.cpp",
                 "-o",

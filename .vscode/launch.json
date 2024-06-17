@@ -44,7 +44,7 @@
             "request": "launch",
             "program": "${fileDirname}/bot",
             "args": [
-                "127.0.0.1", "8080", "1234", "tmp_bot", "lunch_menu_240508.txt"
+                "127.0.0.1", "4000", "1234", "tmp_bot", "lunch_menu_240508.txt"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

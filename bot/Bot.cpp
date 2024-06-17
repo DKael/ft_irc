@@ -313,7 +313,7 @@ void Bot::read_msg_from_socket(std::vector<String>& msg_list) {
   }
   end_idx = read_buf.find_last_not_of("\r\n");
   if (end_idx == read_buf.length() - 1) {
-    remain_input = *(msg_list.end() + 1);
-    msg_list.erase(msg_list.end() + 1);
+    remain_input = *(msg_list.end() - 1);
+    msg_list.erase(msg_list.end() - 1);
   }
 }
