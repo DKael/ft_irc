@@ -614,6 +614,9 @@ void Server::remove_user(const int socket_fd) {
           channel_list.find(user_chan_it->first);
       if (chan_it != channel_list.end()) {
         chan_it->second.remove_user(event_user_nick);
+        if (chan_it->second.get_user_num() == 0) {
+          channel_list.erase(chan_it->first);
+        }
       }
     }
 
@@ -655,6 +658,9 @@ void Server::remove_user(const String& nickname) {
           channel_list.find(user_chan_it->first);
       if (chan_it != channel_list.end()) {
         chan_it->second.remove_user(event_user_nick);
+        if (chan_it->second.get_user_num() == 0) {
+          channel_list.erase(chan_it->first);
+        }
       }
     }
 

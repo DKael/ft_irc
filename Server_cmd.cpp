@@ -212,6 +212,19 @@ bbb
 
   std::cout << "Connection close at " << recv_fd << '\n';
   event_user.set_have_to_disconnect(true);
+  std::map<String, int>::const_iterator user_chan_it =
+      event_user.get_channels().begin();
+  for (; user_chan_it != event_user.get_channels().end(); ++user_chan_it) {
+    std::map<String, Channel>::iterator chan_it =
+        channel_list.find(user_chan_it->first);
+    if (chan_it != channel_list.end()) {
+      chan_it->second.remove_user(event_user_nick);
+      if (chan_it->second.get_user_num() == 0) {
+        channel_list.erase(chan_it->first);
+      }
+    }
+  }
+  event_user.get_channels().clear();
   ft_sendd(tmp_pfd);
 }
 
@@ -485,6 +498,9 @@ void Server::cmd_kick(int recv_fd, const Message& msg) {
     send_msg_to_channel(chan, rpl.to_raw_msg());
     chan.remove_user(name_vec[i]);
     (*this)[(*this)[name_vec[i]]].part_channel(chan_name);
+  }
+  if (chan.get_user_num() == 0) {
+    channel_list.erase(chan_name);
   }
 }
 

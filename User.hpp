@@ -99,6 +99,8 @@ class User {
   int get_mode(void) const;
   const std::map<String, int>& get_invited_channels(void) const;
   const std::map<String, int>& get_channels(void) const;
+  std::map<String, int>& get_invited_channels(void);
+  std::map<String, int>& get_channels(void);
   String make_source(int mode);
 
   void push_front_msg(const String& msg);

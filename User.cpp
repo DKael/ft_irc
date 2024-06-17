@@ -125,6 +125,12 @@ const std::map<String, int>& User::get_invited_channels(void) const {
 
 const std::map<String, int>& User::get_channels(void) const { return channels; }
 
+std::map<String, int>& User::get_invited_channels(void) {
+  return invited_channels;
+}
+
+std::map<String, int>& User::get_channels(void) { return channels; }
+
 /*
 mode 1 : <nickname>!<user>@<host>
 mode 2 : <nickname>!<user>
