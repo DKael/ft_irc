@@ -538,14 +538,14 @@ Message rpl_471(const String& source, const String& user,
   return rpl;
 }
 
-Message rpl_472(const String& source, const String& user,
-                const String& modechar, const String& channel) {
+Message rpl_472(const String& source, const String& user, char modechar,
+                const String& channel) {
   Message rpl;
 
   rpl.set_source(source);
   rpl.set_numeric("472");
   rpl.push_back(user);
-  rpl.push_back(modechar);
+  rpl.push_back(String(1, modechar));
   rpl.push_back(":is unknown mode char for " + channel);
 
   return rpl;

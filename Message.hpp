@@ -227,8 +227,8 @@ Message rpl_462(const String& source, const String& user);
 Message rpl_464(const String& source, const String& user);
 Message rpl_471(const String& source, const String& user,
                 const String& channel);
-Message rpl_472(const String& source, const String& user,
-                const String& modechar, const String& channel);
+Message rpl_472(const String& source, const String& user, char modechar,
+                const String& channel);
 Message rpl_473(const String& source, const String& user,
                 const String& channel);
 Message rpl_475(const String& source, const String& user,

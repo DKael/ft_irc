@@ -1058,7 +1058,15 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
       event_user.push_back_msg(rpl_329(serv_name, event_user_nick, chan_name,
                                        ft_ltos(chan.get_created_time()))
                                    .to_raw_msg());
+      return;
     } else {
+      // 모드 설정자가 채널에 들어가 있는지 확인
+      if (chan.chk_user_join(event_user_nick) == false) {
+        event_user.push_back_msg(
+            rpl_442(serv_name, event_user_nick, chan_name).to_raw_msg());
+        return;
+      }
+
       const String& mode = msg[1];
       size_t param_idx = 2;
       bool set_mode = true;
@@ -1085,8 +1093,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
         } else {
           if (String(AVAILABLE_CHANNEL_MODES).find(mode[i]) == String::npos) {
             event_user.push_back_msg(
-                rpl_472(serv_name, event_user_nick,
-                        String(set_mode ? "+" : "-") + mode[i], chan_name)
+                rpl_472(serv_name, event_user_nick, mode[i], chan_name)
                     .to_raw_msg());
             continue;
           }
@@ -1094,13 +1101,21 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
             if (chan.is_operator(event_user_nick) == false) {
               event_user.push_back_msg(
                   rpl_482(serv_name, event_user_nick, chan_name).to_raw_msg());
-              return;
+              continue;
             }
             String target_nick;
             if (param_idx < msg.get_params_size()) {
               target_nick = msg[param_idx];
               ++param_idx;
             } else {
+              continue;
+            }
+            std::map<String, int>::iterator user_it =
+                nick_to_soc.find(target_nick);
+            if (user_it == nick_to_soc.end()) {
+              event_user.push_back_msg(
+                  rpl_401(serv_name, event_user_nick, target_nick)
+                      .to_raw_msg());
               continue;
             }
             if (chan.chk_user_join(target_nick) == false) {
