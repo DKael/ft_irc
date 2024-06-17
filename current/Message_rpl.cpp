@@ -221,17 +221,18 @@ Message rpl_341(const String& source, const String& user, const String& nick,
 }
 
 /*
-WHO #chan_a\r
+    WHO #chan_a\r
 
-:irc.example.net 352 ccc #chan_a ~test_user localhost irc.example.net ccc H :0 Hyungdo Kim\r
-:irc.example.net 352 ccc #chan_a ~test_user localhost irc.example.net test H@ :0 Hyungdo Kim\r
-:irc.example.net 315 ccc #chan_a :End of WHO list\r
+    :irc.example.net 352 ccc #chan_a ~test_user localhost irc.example.net ccc H :0 Hyungdo Kim\r
+    :irc.example.net 352 ccc #chan_a ~test_user localhost irc.example.net test H@ :0 Hyungdo Kim\r
+    :irc.example.net 315 ccc #chan_a :End of WHO list\r
 
-WHO kkk\r
+    WHO kkk\r
 
-:irc.example.net 352 ccc * ~test_user localhost irc.example.net kkk H :0 Hyungdo Kim\r
-:irc.example.net 315 ccc kkk :End of WHO list\r
+    :irc.example.net 352 ccc * ~test_user localhost irc.example.net kkk H :0 Hyungdo Kim\r
+    :irc.example.net 315 ccc kkk :End of WHO list\r
 */
+
 Message rpl_352(const String& source, const String& user, const String& channel,
                 const User& _u, const String& server, const String& flags,
                 int hopcount) {
@@ -285,6 +286,7 @@ Message rpl_366(const String& source, const String& user,
   rpl.push_back(user);
   rpl.push_back(channel);
   rpl.push_back(String(":End of NAMES list"));
+
   return rpl;
 }
 
@@ -614,6 +616,7 @@ Message rpl_501(const String& source, const String& user, const String& mode) {
 
   return rpl;
 }
+
 Message rpl_502(const String& source, const String& user) {
   Message rpl;
 

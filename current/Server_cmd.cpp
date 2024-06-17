@@ -463,22 +463,22 @@ void Server::cmd_pong(int recv_fd, const Message& msg) {
 
 void Server::cmd_quit(int recv_fd, const Message& msg) {
   /*
-zzz
+      zzz
 
-> quit
-< :irc.example.net NOTICE zzz :Connection statistics: client 0.0 kb, server 1.2 kb.\r
-< ERROR :Closing connection\r
+      > quit
+      < :irc.example.net NOTICE zzz :Connection statistics: client 0.0 kb, server 1.2 kb.\r
+      < ERROR :Closing connection\r
 
-> quit :quit message test
-< :irc.example.net NOTICE zzz :Connection statistics: client 0.1 kb, server 1.3 kb.\r
-< ERROR :"quit message test"\r
+      > quit :quit message test
+      < :irc.example.net NOTICE zzz :Connection statistics: client 0.1 kb, server 1.3 kb.\r
+      < ERROR :"quit message test"\r
 
-aaa
-< :zzz!~zzz@localhost QUIT :"quit message test"\r
+      aaa
+      < :zzz!~zzz@localhost QUIT :"quit message test"\r
 
-bbb
-< :zzz!~zzz@localhost QUIT :"quit message test"\r
-*/
+      bbb
+      < :zzz!~zzz@localhost QUIT :"quit message test"\r
+  */
 
   User& event_user = (*this)[recv_fd];
   const String& event_user_nick = event_user.get_nick_name();
@@ -525,29 +525,30 @@ bbb
 
 void Server::cmd_names(int recv_fd, const Message& msg) {
   /*
-  NAMES #chan_a,#chan_b
-  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
-  :irc.example.net 366 sss #chan_a :End of NAMES list
-  :irc.example.net 353 sss = #chan_b :@jjjj
-  :irc.example.net 366 sss #chan_b :End of NAMES list
+      NAMES #chan_a,#chan_b
+      :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
+      :irc.example.net 366 sss #chan_a :End of NAMES list
+      :irc.example.net 353 sss = #chan_b :@jjjj
+      :irc.example.net 366 sss #chan_b :End of NAMES list
 
-  NAMES
-  :irc.example.net 353 sss = #chan_b :@jjjj
-  :irc.example.net 353 sss = #chan_a :ccc @test
-  :irc.example.net 353 sss = #kick_test :ccc test
-  :irc.example.net 353 sss = #test :@ccc
-  :irc.example.net 353 sss = #chan :ccc @test
-  :irc.example.net 353 sss * * :sss
-  :irc.example.net 366 sss * :End of NAMES list
+      NAMES
+      :irc.example.net 353 sss = #chan_b :@jjjj
+      :irc.example.net 353 sss = #chan_a :ccc @test
+      :irc.example.net 353 sss = #kick_test :ccc test
+      :irc.example.net 353 sss = #test :@ccc
+      :irc.example.net 353 sss = #chan :ccc @test
+      :irc.example.net 353 sss * * :sss
+      :irc.example.net 366 sss * :End of NAMES list
 
-  NAMES
-  :irc.example.net 353 sss = #chan_b :@jjjj
-  :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
-  :irc.example.net 353 sss = #kick_test :ccc test
-  :irc.example.net 353 sss = #test :@ccc
-  :irc.example.net 353 sss = #chan :ccc @test
-  :irc.example.net 366 sss * :End of NAMES list
+      NAMES
+      :irc.example.net 353 sss = #chan_b :@jjjj
+      :irc.example.net 353 sss = #chan_a :sss kkk ccc @test
+      :irc.example.net 353 sss = #kick_test :ccc test
+      :irc.example.net 353 sss = #test :@ccc
+      :irc.example.net 353 sss = #chan :ccc @test
+      :irc.example.net 366 sss * :End of NAMES list
   */
+
   User& event_user = (*this)[recv_fd];
   const std::map<String, int>& event_user_chan = event_user.get_channels();
   const String& event_user_nick = event_user.get_nick_name();
@@ -971,7 +972,7 @@ void Server::cmd_list(int recv_fd, const Message& msg) {
         Channel& chan = chan_it->second;
 
         if (chan.chk_mode(CHAN_FLAG_S) == true) {
-          continue;
+          continue ;
         }
 
         event_user.push_back_msg(rpl_322(serv_name, event_user_nick, chan_name,
@@ -985,43 +986,6 @@ void Server::cmd_list(int recv_fd, const Message& msg) {
 }
 
 void Server::cmd_mode(int recv_fd, const Message& msg) {
-  /*
-  mode
-  :irc.example.net 461 zzz mode :Syntax error
-  mode aaa
-  :irc.example.net 401 zzz aaa :No such nick or channel name
-  mode bbb
-  :irc.example.net 502 zzz :Can't set/get mode for other users
-  mode bbb +z
-  :irc.example.net 502 zzz :Can't set/get mode for other users
-  mode zzz +z
-  :irc.example.net 501 zzz :Unknown mode "+z"
-  mode zzz -z
-  :irc.example.net 501 zzz :Unknown mode "-z"
-  mode zzz +1234567
-  :irc.example.net 501 zzz :Unknown mode "+1"
-  :irc.example.net 501 zzz :Unknown mode "+2"
-  :irc.example.net 501 zzz :Unknown mode "+3"
-  :irc.example.net 501 zzz :Unknown mode "+4"
-  :irc.example.net 501 zzz :Unknown mode "+5"
-  :irc.example.net 501 zzz :Unknown mode "+6"
-  :irc.example.net 501 zzz :Unknown mode "+7"
-  mode +i-i
-  :irc.example.net 401 zzz +i-i :No such nick or channel name
-  mode zzz +i-i
-  :zzz!~zzz@localhost MODE zzz :+i-i
-  mode zzz +ior
-  :irc.example.net 481 zzz :Permission denied
-  :zzz!~zzz@localhost MODE zzz :+ir
-  mode zzz +w-iro
-  :irc.example.net 484 zzz :Your connection is restricted
-  :zzz!~zzz@localhost MODE zzz :+w-i
-  mode zzz
-  :irc.example.net 221 zzz +rw
-
-  mode zzz +iii-ii+i
-  :zzz!~zzz@localhost MODE zzz :+i-i+i
-  */
   User& event_user = (*this)[recv_fd];
   const String& event_user_nick = event_user.get_nick_name();
 

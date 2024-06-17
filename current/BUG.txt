@@ -109,6 +109,11 @@ Irssi v1.4.5 - https://irssi.org
 
 User connection limit exceed!
 
+
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+
 13.
 /mode -l12312837
 
@@ -132,3 +137,25 @@ User connection limit exceed!
 :irc.example.net 472 dy 8 :is unknown mode char for #test\r
 :irc.example.net 472 dy 3 :is unknown mode char for #test\r
 :irc.example.net 472 dy 7 :is unknown mode char for #test\r
+
+
+
+14. 채널에 없는 유저에게 mode +o 를 하는것과 서버에 없는 유저에게 mode +o 하는 예외에 차이 주기
+	- 서버 자체에 등록이 안된 유저에게 오퍼레이터 권한을 줄 때,
+		> 2024/06/17 10:44:48.000822880  length=22 from=279 to=300
+		MODE #test +o dy_132\r
+		< 2024/06/17 10:44:48.000823189  length=62 from=2133 to=2194
+		:irc.example.net 401 dy dy_132 :No such nick or channel name\r
+
+	- 서버에는 등록되어 있지만 채널에 없는 유저에게 오퍼레이터 권한을 줄 때,
+		> 2024/06/17 10:46:17.000126715  length=20 from=323 to=342
+		MODE #test +o dy__\r
+		< 2024/06/17 10:46:17.000127003  length=65 from=2251 to=2315
+		:irc.example.net 441 dy dy__ #test :They aren't on that channel\r
+
+15. mode +k
+	broadcast가 정확히 동시에 이뤄지는지 확인
+
+16. nc 로도 되는지 확인할 것.
+nc localhost 8080 1234 후 반응이 없음
+authentication

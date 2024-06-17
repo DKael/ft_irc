@@ -7,12 +7,12 @@
             "request": "launch",
             "program": "${fileDirname}/ircserv",
             "args": [
-               "4000", "1234"
+               "8080", "1234"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "ircserv build",
             "setupCommands": [

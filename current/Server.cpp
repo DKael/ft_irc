@@ -305,6 +305,7 @@ int Server::send_msg_at_queue(int socket_fd) {
 
   while (to_send_num > 0) {
     const String& msg = tmp_user.get_front_msg();
+    std::cout << "\t\t\t\t\t" << msg << std::endl;
     msg_len = msg.length();
     idx = 0;
     error_flag = false;
@@ -357,7 +358,7 @@ void Server::revent_pollout(pollfd& p_val) {
 void Server::revent_pollin(pollfd& p_val) {
   User& event_user = (*this)[p_val.fd];
   std::vector<String> msg_list;
-
+ 
   try {
     read_msg_from_socket(p_val.fd, msg_list);
 
@@ -854,7 +855,7 @@ void Server::read_msg_from_socket(int socket_fd,
   }
   end_idx = read_buf.find_last_not_of("\r\n");
   if (end_idx == read_buf.length() - 1) {
-    event_user.remain_input = *(msg_list.end() + 1);
-    msg_list.erase(msg_list.end() + 1);
+    event_user.remain_input = *(msg_list.end() - 1);
+    msg_list.erase(msg_list.end() - 1);
   }
 }
