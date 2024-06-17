@@ -667,15 +667,21 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
       std::map<String, User&>::iterator chan_user_it =
           chan.get_user_list().begin();
       for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
+        User& tmp_user = chan_user_it->second;
+
         if (chan.is_operator(chan_user_it->first) == true) {
           event_user.push_back_msg(rpl_352(serv_name, event_user_nick,
-                                           chan_name, chan_user_it->second,
-                                           serv_name, "H@", 0)
+                                           chan_name, tmp_user.get_user_name(),
+                                           tmp_user.get_host_ip(), serv_name,
+                                           tmp_user.get_nick_name(), "H@", 0,
+                                           tmp_user.get_real_name())
                                        .to_raw_msg());
         } else {
           event_user.push_back_msg(rpl_352(serv_name, event_user_nick,
-                                           chan_name, chan_user_it->second,
-                                           serv_name, "H", 0)
+                                           chan_name, tmp_user.get_user_name(),
+                                           tmp_user.get_host_ip(), serv_name,
+                                           tmp_user.get_nick_name(), "H", 0,
+                                           tmp_user.get_real_name())
                                        .to_raw_msg());
         }
       }
@@ -684,10 +690,13 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
     const String& user_name = msg[0];
     std::map<String, int>::iterator user_it = nick_to_soc.find(user_name);
     if (user_it != nick_to_soc.end()) {
-      event_user.push_back_msg(rpl_352(serv_name, event_user_nick, "*",
-                                       (*this)[user_it->second], serv_name, "H",
-                                       0)
-                                   .to_raw_msg());
+      User& tmp_user = (*this)[user_it->second];
+
+      event_user.push_back_msg(
+          rpl_352(serv_name, event_user_nick, "*", tmp_user.get_user_name(),
+                  tmp_user.get_host_ip(), serv_name, tmp_user.get_nick_name(),
+                  "H", 0, tmp_user.get_real_name())
+              .to_raw_msg());
     }
   }
   event_user.push_back_msg(

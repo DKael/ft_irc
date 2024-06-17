@@ -58,8 +58,6 @@ NOTES:
 #include <string>
 #include <vector>
 
-#include "Channel.hpp"
-#include "User.hpp"
 #include "string_func.hpp"
 
 typedef std::string String;
@@ -200,8 +198,9 @@ Message rpl_333(const String& source, const String& user, const String& channel,
 Message rpl_341(const String& source, const String& user, const String& nick,
                 const String& channel);
 Message rpl_352(const String& source, const String& user, const String& channel,
-                const User& _u, const String& server, const String& flags,
-                int hopcount);
+                const String& username, const String& host,
+                const String& server, const String& nick, const String& flags,
+                int hopcount, const String& realname);
 Message rpl_353(const String& source, const String& user, const String& symbol,
                 const String& channel, const String& nicks);
 Message rpl_366(const String& source, const String& user,

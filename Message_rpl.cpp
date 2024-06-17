@@ -291,21 +291,22 @@ WHO kkk\r
 :irc.example.net 315 ccc kkk :End of WHO list\r
 */
 Message rpl_352(const String& source, const String& user, const String& channel,
-                const User& _u, const String& server, const String& flags,
-                int hopcount) {
+                const String& username, const String& host,
+                const String& server, const String& nick, const String& flags,
+                int hopcount, const String& realname) {
   Message rpl;
 
   rpl.set_source(source);
   rpl.set_numeric("352");
   rpl.push_back(user);
   rpl.push_back(channel);
-  rpl.push_back(_u.get_user_name());
-  rpl.push_back(_u.get_host_ip());
+  rpl.push_back(username);
+  rpl.push_back(host);
   rpl.push_back(server);
-  rpl.push_back(_u.get_nick_name());
+  rpl.push_back(nick);
   rpl.push_back(flags);
   rpl.push_back(":" + ft_itos(hopcount));
-  rpl.push_back(_u.get_real_name());
+  rpl.push_back(realname);
 
   return rpl;
 }
