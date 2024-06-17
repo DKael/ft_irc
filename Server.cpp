@@ -222,7 +222,6 @@ int Server::user_socket_init(void) {
     }
 
     int bufSize = SOCKET_BUFFER_SIZE;
-    socklen_t len = sizeof(bufSize);
     if (setsockopt(user_socket, SOL_SOCKET, SO_SNDBUF, &bufSize,
                    sizeof(bufSize)) == -1) {
       send(user_socket, "ERROR :socket setting error\r\n",
@@ -297,7 +296,7 @@ void Server::ft_sendd(pollfd& p_val) {
 
 int Server::send_msg_at_queue(int socket_fd) {
   User& tmp_user = (*this)[socket_fd];
-  std::size_t to_send_num = tmp_user.get_to_send_size();
+  size_t to_send_num = tmp_user.get_to_send_size();
   size_t msg_len;
   size_t idx;
   ssize_t bytes_sent;
@@ -312,7 +311,7 @@ int Server::send_msg_at_queue(int socket_fd) {
     while (idx < msg_len) {
       String msg_blk = msg.substr(idx, SOCKET_BUFFER_SIZE);
       bytes_sent = send_msg_block(socket_fd, msg_blk);
-      if (bytes_sent == msg_blk.length()) {
+      if (bytes_sent == static_cast<ssize_t>(msg_blk.length())) {
         idx += msg_blk.length();
       } else {
         error_flag = true;
@@ -329,7 +328,7 @@ int Server::send_msg_at_queue(int socket_fd) {
   return 0;
 }
 
-int Server::send_msg_block(int socket_fd, const String& blk) {
+ssize_t Server::send_msg_block(int socket_fd, const String& blk) {
   const char* c_blk = blk.c_str();
   size_t blk_len = blk.length();
   ssize_t bytes_sent = 0;
@@ -396,7 +395,7 @@ void Server::revent_pollin(pollfd& p_val) {
 void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
-  for (int j = 0; j < msg_list.size(); j++) {
+  for (size_t j = 0; j < msg_list.size(); j++) {
     Message msg(p_val.fd, msg_list[j]);
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -470,7 +469,7 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
 void Server::not_auth_user(pollfd& p_val, std::vector<String>& msg_list) {
   User& event_user = (*this)[p_val.fd];
 
-  for (int j = 0; j < msg_list.size(); j++) {
+  for (size_t j = 0; j < msg_list.size(); j++) {
     Message msg(p_val.fd, msg_list[j]);
 
     //////////////////////////////////////////////////////////////////////

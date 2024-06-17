@@ -42,8 +42,8 @@ void Message::map_init(void) {
 Message::Message() : raw_msg(""), socket_fd(-1) {}
 
 Message::Message(int _socket_fd, const String& _raw_msg)
-    : socket_fd(_socket_fd),
-      raw_msg(ft_strip(_raw_msg)),
+    : raw_msg(ft_strip(_raw_msg)),
+      socket_fd(_socket_fd),
       trailing_exist(false) {
   if (raw_msg.length() == 0) {
     set_cmd_type(NONE);

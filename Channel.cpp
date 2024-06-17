@@ -3,8 +3,8 @@
 Channel::Channel(const String& _channel_name)
     : channel_name(_channel_name),
       created_time(std::time(NULL)),
-      mode(0),
-      user_limit(INIT_USER_LIMIT) {
+      user_limit(INIT_USER_LIMIT),
+      mode(0) {
   if (_channel_name.length() == 0 ||
       String(CHANTYPES).find(_channel_name[0]) == String::npos) {
     throw channel_prefix_error();
@@ -106,7 +106,8 @@ void Channel::add_user(User& newuser) {
   if (it != user_list.end()) {
     return;
   }
-  if ((mode & CHAN_FLAG_L) && user_list.size() >= user_limit) {
+  if ((mode & CHAN_FLAG_L) &&
+      static_cast<int>(user_list.size()) >= user_limit) {
     /*
       ERR_CHANNELISFULL (471)
       "<user> <channel> :Cannot join channel (+l)"

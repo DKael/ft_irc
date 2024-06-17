@@ -86,7 +86,7 @@ class Server {
   void ft_send(pollfd& p_val);
   void ft_sendd(pollfd& p_val);
   int send_msg_at_queue(int socket_fd);
-  int send_msg_block(int socket_fd, const String& blk);
+  ssize_t send_msg_block(int socket_fd, const String& blk);
   void revent_pollout(pollfd& p_val);
   void revent_pollin(pollfd& p_val);
   void auth_user(pollfd& p_val, std::vector<String>& msg_list);
@@ -159,33 +159,6 @@ class Server {
   void cmd_part(int recv_fd, const Message& msg);
   void cmd_list(int recv_fd, const Message& msg);
   void cmd_whois(int recv_fd, const Message& msg);
-  //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // [DEBUG] PURPOSE ONLY
-  // user LIST
-
-  std::vector<User> getUserList(void) const {
-    std::vector<User> users;
-    for (std::map<int, User>::const_iterator it = user_list.begin();
-         it != user_list.end(); ++it) {
-      users.push_back(it->second);
-    }
-    return users;
-  }
-
-  void visualizeChannelList(void) {
-    std::map<String, Channel>::const_iterator it;
-
-    std::cout << RED << "[Channel Lists in the server] :: ";
-    for (it = channel_list.begin(); it != channel_list.end(); ++it) {
-      const String& chan_name = it->first;
-      const Channel& channel = it->second;
-
-      std::cout << chan_name << " => ";
-    }
-    std::cout << WHITE << std::endl;
-  }
 };
 
 #endif

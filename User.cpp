@@ -1,7 +1,8 @@
 #include "User.hpp"
 
 User::User(pollfd& _pfd, const sockaddr_in& _user_addr)
-    : pfd(_pfd),
+    : dummy("*"),
+      pfd(_pfd),
       user_socket(_pfd.fd),
       user_addr(_user_addr),
       created_time(std::time(NULL)),
@@ -15,11 +16,11 @@ User::User(pollfd& _pfd, const sockaddr_in& _user_addr)
       have_to_disconnect(false),
       have_to_ping_chk(false),
       last_ping(0),
-      mode(0),
-      dummy("*") {}
+      mode(0) {}
 
 User::User(const User& origin)
-    : pfd(origin.pfd),
+    : dummy("*"),
+      pfd(origin.pfd),
       user_socket(origin.user_socket),
       user_addr(origin.user_addr),
       created_time(origin.created_time),
@@ -36,8 +37,7 @@ User::User(const User& origin)
       to_send(origin.to_send),
       invited_channels(origin.invited_channels),
       channels(origin.channels),
-      mode(origin.mode),
-      dummy("*") {}
+      mode(origin.mode) {}
 
 User::~User() {}
 

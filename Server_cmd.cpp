@@ -549,7 +549,6 @@ void Server::cmd_names(int recv_fd, const Message& msg) {
   :irc.example.net 366 sss * :End of NAMES list
   */
   User& event_user = (*this)[recv_fd];
-  const std::map<String, int>& event_user_chan = event_user.get_channels();
   const String& event_user_nick = event_user.get_nick_name();
 
   // short parameter chk
@@ -1256,7 +1255,7 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
     } else {
       const String& mode = msg[1];
 
-      bool set_mode;
+      bool set_mode = false;
       if (msg[1][0] == '+') {
         set_mode = true;
       } else if (msg[1][0] == '-') {
@@ -1324,4 +1323,4 @@ void Server::cmd_mode(int recv_fd, const Message& msg) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void Server::cmd_whois(int recv_fd, const Message& msg) {}
+// void Server::cmd_whois(int recv_fd, const Message& msg) {}

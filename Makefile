@@ -18,7 +18,7 @@ OBJS = $(addprefix $(OBJDIR)/,$(SRCS:.cpp=.o))
 
 CXX = c++
 
-CFLAGS = -std=c++98#-Wall -Wextra -Werror #-fsanitize=address -g3 
+CFLAGS = -std=c++98 -Wall -Wextra -Werror #-fsanitize=address -g3 
 
 NAME = ircserv
 
