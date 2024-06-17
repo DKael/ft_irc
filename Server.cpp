@@ -295,7 +295,15 @@ void Server::ft_sendd(pollfd& p_val) {
 }
 
 int Server::send_msg_at_queue(int socket_fd) {
-  User& tmp_user = (*this)[socket_fd];
+  std::map<int, User>::iterator user_it = user_list.find(socket_fd);
+  if (user_it == user_list.end()) {
+    user_it = tmp_user_list.find(socket_fd);
+    if (user_it == tmp_user_list.end()) {
+      return 0;
+    }
+  }
+
+  User& tmp_user = user_it->second;
   size_t to_send_num = tmp_user.get_to_send_size();
   size_t msg_len;
   size_t idx;
@@ -596,6 +604,19 @@ void Server::remove_user(const int socket_fd) {
 
   it1 = user_list.find(socket_fd);
   if (it1 != user_list.end()) {
+    User& event_user = (*this)[socket_fd];
+    const String& event_user_nick = event_user.get_nick_name();
+
+    std::map<String, int>::const_iterator user_chan_it =
+        event_user.get_channels().begin();
+    for (; user_chan_it != event_user.get_channels().end(); ++user_chan_it) {
+      std::map<String, Channel>::iterator chan_it =
+          channel_list.find(user_chan_it->first);
+      if (chan_it != channel_list.end()) {
+        chan_it->second.remove_user(event_user_nick);
+      }
+    }
+
     tmp = (it1->second).get_nick_name();
     user_list.erase(it1);
     it2 = nick_to_soc.find(tmp);
@@ -624,6 +645,19 @@ void Server::remove_user(const String& nickname) {
 
   it1 = nick_to_soc.find(nickname);
   if (it1 != nick_to_soc.end()) {
+    User& event_user = (*this)[it1->second];
+    const String& event_user_nick = event_user.get_nick_name();
+
+    std::map<String, int>::const_iterator user_chan_it =
+        event_user.get_channels().begin();
+    for (; user_chan_it != event_user.get_channels().end(); ++user_chan_it) {
+      std::map<String, Channel>::iterator chan_it =
+          channel_list.find(user_chan_it->first);
+      if (chan_it != channel_list.end()) {
+        chan_it->second.remove_user(event_user_nick);
+      }
+    }
+
     tmp = it1->second;
     nick_to_soc.erase(it1);
     it2 = user_list.find(tmp);
