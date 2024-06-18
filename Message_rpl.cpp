@@ -613,7 +613,7 @@ Message rpl_461(const String& source, const String& user,
   rpl.set_numeric("461");
   rpl.push_back(user);
   rpl.push_back(command);
-  rpl.push_back(":Not enough parameters");
+  rpl.push_back(":Syntax error");
 
   return rpl;
 }

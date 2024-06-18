@@ -111,7 +111,7 @@ Message::Message(int _socket_fd, const String& _raw_msg)
   }
 
   // check trailing before get parameters
-  idx2 = raw_msg.rfind(" :");
+  idx2 = raw_msg.find(" :", pos);
   if (idx2 != String::npos) {
     // trailing exist
     tmp_trailing = raw_msg.substr(idx2 + 2);
