@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "string_func.hpp"
+#include "string_func_bot.hpp"
 
 typedef std::string String;
 

@@ -1,7 +1,7 @@
 #include "Message_bot.hpp"
 
-std::map<Command, std::string> Message::etos;
-std::map<std::string, Command> Message::stoe;
+std::map<Command, String> Message::etos;
+std::map<String, Command> Message::stoe;
 
 void Message::map_init(void) {
   static bool flag = false;
@@ -41,8 +41,10 @@ void Message::map_init(void) {
 
 Message::Message() : raw_msg(""), socket_fd(-1) {}
 
-Message::Message(int _socket_fd, const std::string& _raw_msg)
-    : raw_msg(ft_strip(_raw_msg)), socket_fd(_socket_fd) {
+Message::Message(int _socket_fd, const String& _raw_msg)
+    : raw_msg(ft_strip(_raw_msg)),
+      socket_fd(_socket_fd),
+      trailing_exist(false) {
   if (raw_msg.length() == 0) {
     set_cmd_type(NONE);
     numeric = "421";
@@ -52,52 +54,48 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
   std::size_t idx1 = 0;
   std::size_t idx2 = 0;
   std::size_t pos = 0;
-  std::string tmp_trailing;
-  std::string tmp_type;
+  String tmp_trailing;
+  String tmp_type;
 
   // check source
   if (raw_msg[0] == ':') {
     // source exist
     pos = raw_msg.find_first_of(' ');
-    if (pos == std::string::npos) {
+    if (pos == String::npos) {
       set_cmd_type(ERROR);
       params.push_back(":Prefix without command");
       return;
     }
     source = raw_msg.substr(1, pos - 1);
-    if (source.find_first_of("\0\n\t\v\f\r") != std::string::npos) {
+    if (source.find_first_of("\0\n\t\v\f\r") != String::npos) {
       set_cmd_type(ERROR);
-      params.push_back(std::string(":Invalid prefix \"") + source +
-                       std::string("\""));
+      params.push_back(String(":Invalid prefix \"") + source + String("\""));
       return;
     }
   }
 
   // get command
   pos = raw_msg.find_first_not_of(' ', pos);
-  if (pos == std::string::npos) {
+  if (pos == String::npos) {
     set_cmd_type(ERROR);
     params.push_back(":Prefix without command");
     return;
   }
   idx1 = pos;
   pos = raw_msg.find_first_of(' ', pos);
-  if (pos == std::string::npos) {
+  if (pos == String::npos) {
     tmp_type = raw_msg.substr(idx1);
   } else {
     tmp_type = raw_msg.substr(idx1, pos - idx1);
   }
-  if (tmp_type.find_first_not_of("0123456789") != std::string::npos) {
+  if (tmp_type.find_first_not_of("0123456789") != String::npos) {
     // type cmd
     cmd = tmp_type;
     raw_cmd = cmd;
     ft_upper(cmd);
-    std::map<std::string, Command>::iterator it = stoe.find(cmd);
+    std::map<String, Command>::const_iterator it = stoe.find(cmd);
     if (it != stoe.end()) {
       cmd_type = stoe.at(cmd);
-      if (pos == std::string::npos) {
-        return;
-      }
     } else {
       set_cmd_type(NONE);
       numeric = "421";
@@ -108,37 +106,41 @@ Message::Message(int _socket_fd, const std::string& _raw_msg)
     // type numeric
     numeric = tmp_type;
   }
+  if (pos == String::npos) {
+    return;
+  }
 
   // check trailing before get parameters
   idx2 = raw_msg.rfind(" :");
-  if (idx2 != std::string::npos) {
+  if (idx2 != String::npos) {
     // trailing exist
     tmp_trailing = raw_msg.substr(idx2 + 2);
+    trailing_exist = true;
   } else {
     idx2 = raw_msg.length();
   }
 
   // get parameters
   idx1 = pos;
-  std::string params_str = raw_msg.substr(idx1, idx2 - idx1);
+  String params_str = raw_msg.substr(idx1, idx2 - idx1);
   ft_split(params_str, " ", params);
   for (std::size_t i = 0; i < params.size(); i++) {
-    if (params[i].find_first_of("\0\n\t\v\f\r") != std::string::npos) {
+    if (params[i].find_first_of("\0\n\t\v\f\r") != String::npos) {
       set_cmd_type(ERROR);
       params.push_back(":Invalid parameter");
       return;
     }
   }
 
-  if (tmp_trailing.length() != 0) {
+  if (trailing_exist == true) {
     params.push_back(tmp_trailing);
   }
   return;
 }
 
-void Message::set_source(const std::string& input) { source = input; }
+void Message::set_source(const String& input) { source = input; }
 
-void Message::set_cmd(const std::string& input) {
+void Message::set_cmd(const String& input) {
   cmd = input;
   cmd_type = stoe[cmd];
 }
@@ -148,42 +150,54 @@ void Message::set_cmd_type(const Command input) {
   cmd = etos[cmd_type];
 }
 
-void Message::push_back(const std::string& input) { params.push_back(input); }
+void Message::push_back(const String& input) { params.push_back(input); }
 
 void Message::clear(void) { params.clear(); }
 
-void Message::set_numeric(const std::string& input) { numeric = input; }
+void Message::set_numeric(const String& input) { numeric = input; }
 
-const std::string& Message::get_raw_msg(void) const { return raw_msg; }
+void Message::set_trailing_exist(bool input) { trailing_exist = input; }
+
+const String& Message::get_raw_msg(void) const { return raw_msg; }
 
 int Message::get_socket_fd(void) const { return socket_fd; }
 
-const std::string& Message::get_source(void) const { return source; }
+const String& Message::get_source(void) const { return source; }
 
-const std::string& Message::get_raw_cmd(void) const { return raw_cmd; }
+const String& Message::get_raw_cmd(void) const { return raw_cmd; }
 
-const std::string& Message::get_cmd(void) const { return cmd; }
+const String& Message::get_cmd(void) const { return cmd; }
 
 Command Message::get_cmd_type(void) const { return cmd_type; }
 
-const std::vector<std::string>& Message::get_params(void) const {
-  return params;
-}
+const std::vector<String>& Message::get_params(void) const { return params; }
+
+std::vector<String>& Message::get_params(void) { return params; }
 
 std::size_t Message::get_params_size(void) const { return params.size(); }
 
-const std::string& Message::operator[](const int idx) const {
-  if (0UL <= idx && idx < static_cast<int>(params.size())) {
+String& Message::operator[](const int idx) {
+  if (0 <= idx && idx < static_cast<int>(params.size())) {
     return params[idx];
   } else {
     throw std::out_of_range("params vector out of range");
   }
 }
 
-const std::string& Message::get_numeric(void) const { return numeric; }
+const String& Message::operator[](const int idx) const {
+  if (0 <= idx && idx < static_cast<int>(params.size())) {
+    return params[idx];
+  } else {
+    throw std::out_of_range("params vector out of range");
+  }
+}
 
-std::string Message::to_raw_msg(void) {
-  std::string raw_msg = "";
+const String& Message::get_numeric(void) const { return numeric; }
+
+bool Message::get_trailing_exist(void) const { return trailing_exist; }
+
+String Message::to_raw_msg(void) {
+  String raw_msg = "";
   std::size_t param_cnt = params.size();
   std::size_t idx = 0;
 
@@ -207,6 +221,8 @@ std::string Message::to_raw_msg(void) {
   return raw_msg;
 }
 
+#ifdef DEBUG
+
 std::ostream& operator<<(std::ostream& out, Message msg) {
   std::size_t i = 0;
 
@@ -228,68 +244,4 @@ std::ostream& operator<<(std::ostream& out, Message msg) {
   return out;
 }
 
-Message Message::rpl_432(const std::string& source, const std::string& client,
-                         const std::string& nick) {
-  Message rpl;
-
-  rpl.source = source;
-  rpl.set_numeric("432");
-  rpl.push_back(client);
-  rpl.push_back(nick);
-  rpl.push_back(":Erroneous nickname");
-  return rpl;
-}
-
-Message Message::rpl_433(const std::string& source, const std::string& client,
-                         const std::string& nick) {
-  Message rpl;
-
-  rpl.source = source;
-  rpl.set_numeric("433");
-  rpl.push_back(client);
-  rpl.push_back(nick);
-  rpl.push_back(":Nickname is already in use");
-  return rpl;
-}
-
-Message Message::rpl_451(const std::string& source, const std::string& client) {
-  Message rpl;
-
-  rpl.source = source;
-  rpl.set_numeric("451");
-  rpl.push_back(client);
-  rpl.push_back(":Connection not registered");
-  return rpl;
-}
-
-Message Message::rpl_461(const std::string& source, const std::string& client,
-                         const std::string& cmd) {
-  Message rpl;
-
-  rpl.source = source;
-  rpl.set_numeric("461");
-  rpl.push_back(client);
-  rpl.push_back(cmd);
-  rpl.push_back(":Not enough parameters");
-  return rpl;
-}
-
-Message Message::rpl_462(const std::string& source, const std::string& client) {
-  Message rpl;
-
-  rpl.source = source;
-  rpl.set_numeric("462");
-  rpl.push_back(client);
-  rpl.push_back(":Connection already registered");
-  return rpl;
-}
-
-Message Message::rpl_464(const std::string& source, const std::string& client) {
-  Message rpl;
-
-  rpl.source = source;
-  rpl.set_numeric("464");
-  rpl.push_back(client);
-  rpl.push_back(":Password incorrect");
-  return rpl;
-}
+#endif

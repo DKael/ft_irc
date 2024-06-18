@@ -1,187 +1,314 @@
 #include "Channel.hpp"
 
-Channel::Channel(std::string channelName)
-    : channel_name(channelName),
-      client_limit(50)  // 추후 논의 후 구체적인 값 결정할것
-{}
+Channel::Channel(const String& _channel_name)
+    : channel_name(_channel_name),
+      created_time(std::time(NULL)),
+      user_limit(INIT_USER_LIMIT),
+      mode(0) {
+  if (_channel_name.length() == 0 ||
+      String(CHANTYPES).find(_channel_name[0]) == String::npos) {
+    throw channel_prefix_error();
+  }
+  if (_channel_name[0] == REGULAR_CHANNEL_PREFIX) {
+    channel_type = REGULAR_CHANNEL;
+  } else if (_channel_name[0] == LOCAL_CHANNEL_PREFIX) {
+    channel_type = LOCAL_CHANNEL;
+  }
+}
 
 Channel::Channel(const Channel& other)
-    : channel_name(other.channel_name), client_limit(other.client_limit) {}
+    : channel_name(other.channel_name),
+      channel_type(other.channel_type),
+      created_time(other.created_time),
+      pwd(other.pwd),
+      user_limit(other.user_limit),
+      topic(other.topic),
+      topic_set_nick(other.topic_set_nick),
+      topic_set_time(other.topic_set_time),
+      user_list(other.user_list),
+      operator_list(other.operator_list),
+      mode(other.mode) {}
 
 Channel::~Channel() {}
 
-void Channel::addClient(User& newClient) {
-  if (channel_client_list.size() >= get_channel_capacity_limit()) {
+// GETTER && SETTER
+const String& Channel::get_channel_name(void) const { return channel_name; }
+
+char Channel::get_channel_type(void) const { return channel_type; }
+
+const String& Channel::get_password(void) const { return pwd; };
+
+time_t Channel::get_created_time(void) const { return created_time; }
+
+int Channel::get_user_limit(void) const { return user_limit; }
+
+const String& Channel::get_topic(void) const { return topic; };
+
+const String& Channel::get_topic_set_nick(void) const { return topic_set_nick; }
+
+std::time_t Channel::get_topic_set_time(void) const { return topic_set_time; }
+
+int Channel::get_mode(void) const { return mode; }
+
+size_t Channel::get_user_num(void) const { return user_list.size(); }
+
+std::map<String, User*>& Channel::get_user_list(void) { return user_list; }
+
+std::map<String, User*>& Channel::get_operator_list(void) {
+  return operator_list;
+}
+
+const std::map<String, User*>& Channel::get_user_list(void) const {
+  return user_list;
+};
+
+const std::map<String, User*>& Channel::get_operator_list(void) const {
+  return operator_list;
+};
+
+String Channel::get_user_list_str(bool is_joined) const {
+  String nicks = "";
+  std::map<String, User*>::const_reverse_iterator cit1 = user_list.rbegin();
+  std::map<String, User*>::const_iterator cit2;
+
+  for (; cit1 != user_list.rend(); ++cit1) {
+    if (cit1->second->chk_mode(USER_FLAG_I) == true && is_joined == false) {
+      continue;
+    }
+    cit2 = operator_list.find(cit1->first);
+    if (cit2 != operator_list.end()) {
+      nicks += (OPERATOR_PREFIX + cit1->first);
+    } else {
+      nicks += cit1->first;
+    }
+    nicks += " ";
+  }
+  nicks.erase(nicks.length() - 1);
+  return nicks;
+}
+
+void Channel::set_password(const String& _pwd) { pwd = _pwd; }
+
+void Channel::set_user_limit(int _user_limit) { user_limit = _user_limit; }
+
+void Channel::set_topic(const String& _topic) { topic = _topic; }
+
+void Channel::set_topic_set_nick(const String& _nick) {
+  topic_set_nick = _nick;
+}
+void Channel::set_topic_set_time(std::time_t _t) { topic_set_time = _t; }
+
+// METHOD FUNCTIONS
+void Channel::add_user(User& newuser) {
+  std::map<String, User*>::iterator it =
+      user_list.find(newuser.get_nick_name());
+
+  if (it != user_list.end()) {
+    return;
+  }
+  if ((mode & CHAN_FLAG_L) &&
+      static_cast<int>(user_list.size()) >= user_limit) {
     /*
-            ERR_CHANNELISFULL (471)
-            "<client> <channel> :Cannot join channel (+l)"
-            Returned to indicate that a JOIN command failed because the client
-       limit mode has been set and the maximum number of users are already
-       joined to the channel. The text used in the last param of this message
-       may vary.
+      ERR_CHANNELISFULL (471)
+      "<user> <channel> :Cannot join channel (+l)"
+      Returned to indicate that a JOIN command failed because the user
+      limit mode has been set and the maximum number of users are already
+      joined to the channel. The text used in the last param of this message
+      may vary.
     */
-    throw(channel_client_capacity_error());
+    throw(channel_user_capacity_error());
   }
-  // channel_client_list.insert(std::make_pair(newClient.get_nick_name(),
-  // newClient));
-  channel_client_list.insert(
-      std::pair<std::string, User&>(newClient.get_nick_name(), newClient));
-  // ops.insert(std::pair<int, std::string>(newClient.get_user_socket(),
-  // newClient.get_nick_name()));
+  user_list.insert(std::pair<String, User*>(newuser.get_nick_name(), &newuser));
 }
 
-// void	Channel::addOperator(User& Client) {
-// 	ops.push_back(Client);
-// }
+void Channel::add_operator(User& user) {
+  std::map<String, User*>::iterator it =
+      operator_list.find(user.get_nick_name());
 
-void Channel::addOperator(User& Client) {
-  ops.insert(std::pair<int, std::string>(Client.get_user_socket(),
-                                         Client.get_nick_name()));
-}
-
-int Channel::get_channel_capacity_limit(void) const { return client_limit; }
-
-bool Channel::get_invite_mode_setting(void) const { return invite_only; };
-
-std::string Channel::get_password(void) const { return pwd; };
-
-std::string Channel::get_topic(void) const { return topic; };
-
-std::map<std::string, User&>& Channel::get_channel_client_list(void) {
-  return channel_client_list;
-};
-const std::map<std::string, User&>& Channel::get_channel_banned_list(
-    void) const {
-  return channel_banned_list;
-};
-// const std::vector<User>& Channel::get_channel_operator_list(void) const{
-// return ops; };
-const std::map<int, std::string>& Channel::get_channel_operator_list(
-    void) const {
-  return ops;
-};
-
-const std::string& Channel::get_channel_name(void) const {
-  return channel_name;
-}
-
-// [DEBUG]
-void Channel::visualizeClientList(void) {
-  std::map<std::string, User&>::const_iterator it;
-  std::cout << "Visualizng Channel Client lists for Channel :: "
-            << this->get_channel_name() << std::endl;
-  std::cout << YELLOW;
-  for (it = channel_client_list.begin(); it != channel_client_list.end();
-       ++it) {
-    const std::string& nickName = it->first;
-    const User& user = it->second;
-    std::cout << nickName << std::endl;
+  if (it != operator_list.end()) {
+    return;
   }
-  std::cout << WHITE;
+  operator_list.insert(std::pair<String, User*>(user.get_nick_name(), &user));
 }
 
-void Channel::visualizeBannedClientList(void) {
-  std::map<std::string, User&>::const_iterator it;
+bool Channel::is_operator(const String& nickname) const {
+  std::map<String, User*>::const_iterator cit = operator_list.find(nickname);
 
-  for (it = channel_banned_list.begin(); it != channel_banned_list.end();
-       ++it) {
-    const std::string& nickName = it->first;
-    const User& user = it->second;
-
-    std::cout << nickName << std::endl;
+  if (cit != operator_list.end()) {
+    return true;
+  } else {
+    return false;
   }
 }
 
-// [OVERLOADING] operator<<
+void Channel::remove_user(const String& nickname) {
+  std::map<String, User*>::iterator it = user_list.find(nickname);
+
+  if (it != user_list.end()) {
+    remove_operator(nickname);
+    user_list.erase(it);
+  }
+}
+
+void Channel::remove_operator(const String& nickname) {
+  std::map<String, User*>::iterator it = operator_list.find(nickname);
+
+  if (it != operator_list.end()) {
+    operator_list.erase(it);
+  }
+}
+
+bool Channel::chk_user_join(const String& nickname) const {
+  std::map<String, User*>::const_iterator cit = user_list.find(nickname);
+
+  if (cit != user_list.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void Channel::change_user_nickname(const String& old_nick,
+                                   const String& new_nick) {
+  std::map<String, User*>::iterator it = user_list.find(old_nick);
+
+  if (it != user_list.end()) {
+    User& tmp_user = *(it->second);
+
+    user_list.erase(it);
+    user_list.insert(std::pair<String, User*>(new_nick, &tmp_user));
+
+    it = operator_list.find(old_nick);
+    if (it != operator_list.end()) {
+      operator_list.erase(it);
+      operator_list.insert(std::pair<String, User*>(new_nick, &tmp_user));
+    }
+  }
+}
+
+// 채널 모드 세팅
+void Channel::set_mode(int flag) { mode |= flag; }
+
+void Channel::unset_mode(int flag) { mode &= ~flag; }
+
+// 채널 모드 확인
+bool Channel::chk_mode(int flag) const { return mode & flag; }
+
+void Channel::set_mode(char flag) {
+  if (flag == CHAN_FLAG_K_CHAR) {
+    mode |= CHAN_FLAG_K;
+  }
+  if (flag == CHAN_FLAG_L_CHAR) {
+    mode |= CHAN_FLAG_L;
+  }
+  if (flag == CHAN_FLAG_I_CHAR) {
+    mode |= CHAN_FLAG_I;
+  }
+  if (flag == CHAN_FLAG_S_CHAR) {
+    mode |= CHAN_FLAG_S;
+  }
+  if (flag == CHAN_FLAG_T_CHAR) {
+    mode |= CHAN_FLAG_T;
+  }
+}
+void Channel::unset_mode(char flag) {
+  if (flag == CHAN_FLAG_K_CHAR) {
+    mode &= ~CHAN_FLAG_K;
+  }
+  if (flag == CHAN_FLAG_L_CHAR) {
+    mode &= ~CHAN_FLAG_L;
+  }
+  if (flag == CHAN_FLAG_I_CHAR) {
+    mode &= ~CHAN_FLAG_I;
+  }
+  if (flag == CHAN_FLAG_S_CHAR) {
+    mode &= ~CHAN_FLAG_S;
+  }
+  if (flag == CHAN_FLAG_T_CHAR) {
+    mode &= ~CHAN_FLAG_T;
+  }
+}
+bool Channel::chk_mode(char flag) const {
+  if (flag == CHAN_FLAG_K_CHAR) {
+    return mode & CHAN_FLAG_K;
+  }
+  if (flag == CHAN_FLAG_L_CHAR) {
+    return mode & CHAN_FLAG_L;
+  }
+  if (flag == CHAN_FLAG_I_CHAR) {
+    return mode & CHAN_FLAG_I;
+  }
+  if (flag == CHAN_FLAG_S_CHAR) {
+    return mode & CHAN_FLAG_S;
+  }
+  if (flag == CHAN_FLAG_T_CHAR) {
+    return mode & CHAN_FLAG_T;
+  }
+  return false;
+}
+
+String Channel::make_mode_str(void) {
+  String mode_str = "";
+
+  if (mode & CHAN_FLAG_I) {
+    mode_str += "i";
+  }
+  if (mode & CHAN_FLAG_S) {
+    mode_str += "s";
+  }
+  if (mode & CHAN_FLAG_K) {
+    mode_str += "k";
+  }
+  if (mode & CHAN_FLAG_T) {
+    mode_str += "t";
+  }
+  if (mode & CHAN_FLAG_L) {
+    mode_str += "l";
+  }
+
+  return mode_str;
+}
+
+bool is_channel_name(const String& name) {
+  if (name[0] == REGULAR_CHANNEL_PREFIX || name[0] == LOCAL_CHANNEL_PREFIX) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+#ifdef DEBUG
 std::ostream& operator<<(std::ostream& out, Channel& channel) {
-  out << BLUE << "[channel name] :: " << channel.get_channel_name() << std::endl
-      << "[client limit] :: " << channel.get_channel_capacity_limit()
-      << std::endl
+  out << BLUE << "[channel name] :: " << channel.get_channel_name() << '\n'
+      << "[user limit] :: " << channel.get_user_limit() << '\n'
       << "[invite mode] :: ";
-  if (channel.get_invite_mode_setting() == true)
+  if (channel.chk_mode(CHAN_FLAG_I) == true)
     out << "ON" << std::endl;
   else
     out << "OFF" << std::endl;
-  out << channel.get_password() << std::endl;
+  out << channel.get_password() << '\n';
 
-  const std::map<std::string, User&>& clientList =
-      channel.get_channel_client_list();
-  const std::map<std::string, User&>& bannedList =
-      channel.get_channel_banned_list();
-  // const std::vector<User>operators = channel.get3_channel_operator_list();
-  const std::map<int, std::string> operators =
-      channel.get_channel_operator_list();
+  const std::map<String, User*>& userList = channel.get_user_list();
+  const std::map<String, User*>& operators = channel.get_operator_list();
+  std::map<String, User*>::const_iterator cit;
 
-  std::map<std::string, User&>::const_iterator cit;
-
-  out << "=============== Client List ===============" << std::endl;
   int i = 1;
-  for (cit = clientList.begin(); cit != clientList.end(); ++cit) {
-    const std::string& nickName = cit->first;
+  out << "=============== user List ===============" << std::endl;
+  for (cit = userList.begin(); cit != userList.end(); ++cit, ++i) {
+    const String& nickName = cit->first;
     // const User& user = cit->second;
     out << i << ". " << nickName << std::endl;
-    i++;
   }
   out << "\n";
-  out << "=============== Banned List ===============";
-  std::map<std::string, User&>::const_iterator cit2;
-  i = 1;
-  out << "\n";
-  for (cit2 = bannedList.begin(); cit2 != bannedList.end(); ++cit2) {
-    const std::string& nickName = cit2->first;
-    // const User& user = cit2->second;
-    out << i << ". " << nickName << std::endl;
-    i++;
-  }
-  out << "\n";
-
   out << "=============== Operators =================";
   i = 1;
   out << "\n";
-  for (std::map<int, std::string>::const_iterator it = operators.begin();
-       it != operators.end(); ++it) {
-    const std::string& nickName = it->second;
+  for (cit = operators.begin(); cit != operators.end(); ++cit, ++i) {
+    const String& nickName = cit->first;
     out << i << ". " << nickName << std::endl;
-    i++;
   }
   out << std::endl << WHITE;
 
   return out;
 }
-
-// [ADD]
-bool Channel::isOperator(User& user) {
-  std::map<int, std::string>::iterator it;
-  std::string nickName = user.get_nick_name();
-  std::string candidate;
-
-  for (it = ops.begin(); it != ops.end(); ++it) {
-    candidate = it->second;
-    if (candidate == nickName) return true;
-  }
-  return false;
-}
-
-void Channel::removeOperator(User& user) {
-  int fd = user.get_user_socket();
-
-  std::map<int, std::string>::iterator it = ops.find(fd);
-
-  if (it != ops.end()) {
-    std::map<int, std::string>::iterator nextIt = std::next(it);
-    ops.erase(it);
-    it = nextIt;
-  }
-}
-
-bool Channel::foundClient(std::string nickName) {
-  std::map<std::string, User&>::iterator it;
-
-  for (it = channel_client_list.begin(); it != channel_client_list.end();
-       ++it) {
-    std::string candidate;
-    candidate = it->second.get_nick_name();
-    if (candidate == nickName) return true;
-  }
-  return false;
-}
+#endif

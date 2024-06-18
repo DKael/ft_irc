@@ -1,39 +1,55 @@
+# List of source files
 SRCS =	main_bot.cpp \
 		Bot.cpp \
 		Message_bot.cpp \
-		../string_func.cpp \
-		../util.cpp \
+		Message_rpl_bot.cpp \
+		string_func_bot.cpp \
+		util_bot.cpp
 
-OBJS = 	${SRCS:.cpp=.o}
 
-TOTAL_OBJS = ${OBJS}
+
+# Create a variable for the object directory
+OBJDIR = obj
+
+# Generate a list of object files with the obj/ prefix
+OBJS = $(addprefix $(OBJDIR)/,$(SRCS:.cpp=.o))
 
 CXX = c++
 
-CXXFLAGS = -std=c++98 #-Wall -Wextra -Werror #-fsanitize=address -g3 
+CXXFLAGS = -std=c++98 -Wall -Wextra -Werror #-fsanitize=address -g3 
 
 NAME = bot
 
-${NAME} : ${TOTAL_OBJS}
-	${CXX} ${CXXFLAGS} ${TOTAL_OBJS} -o $@
+DEBUG_FLAG = 0
 
-%.o :%.cpp
-	${CXX} ${CXXFLAGS} -c -I. $< -o $@
+$(NAME): $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
 
-all : ${NAME}
+# Create the obj/ directory if it doesn't exist
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+# Update the pattern rule to place .o files in the obj/ directory
+ifeq ($(DEBUG_FLAG),1)
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c -D DEBUG -I. $< -o $@
+else 
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c -I. $< -o $@
+endif
+
+all: $(NAME)
+
+debug:
+	make DEBUG_FLAG=1
 
 clean:
-	rm -f ${OBJS}
+	rm -rf $(OBJDIR)
 
 fclean:
 	make clean
-	rm -rf ${NAME}
+	rm -f $(NAME)
 
-re: 
-	make fclean
-	make all
+re: fclean all
 
-bonus:
-	@make WITH_BONUS=1
-
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re debug

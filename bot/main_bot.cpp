@@ -2,11 +2,13 @@
 
 Bot* g_bot_ptr;
 
-void on_sigint(int sig) {
+void on_sig(int sig) {
   signal(sig, SIG_IGN);
 
-  ::send(g_bot_ptr->get_bot_sock(), "QUIT :leaving\r\n", 15, MSG_EOF);
-  ::close(g_bot_ptr->get_bot_sock());
+  if (sig != SIGPIPE) {
+    send(g_bot_ptr->get_bot_sock(), "QUIT :leaving\r\n", 15, O_NONBLOCK);
+  }
+  close(g_bot_ptr->get_bot_sock());
   exit(130);
 }
 
@@ -22,7 +24,10 @@ int main(int argc, char** argv) {
     Bot bot(argv);
 
     g_bot_ptr = &bot;
-    signal(SIGINT, on_sigint);
+    signal(SIGINT, on_sig);
+    signal(SIGTERM, on_sig);
+    signal(SIGPIPE, on_sig);
+
     Message::map_init();
     timeval t;
     gettimeofday(&t, NULL);

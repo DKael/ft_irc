@@ -7,16 +7,20 @@
 #include <unistd.h>
 
 #include <ctime>
+#include <cstring>
+#include <csignal>
 #include <fstream>
 #include <iostream>
-#include <queue>
+#include <list>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include "../string_func.hpp"
-#include "../util.hpp"
 #include "Message_bot.hpp"
+#include "string_func_bot.hpp"
+#include "util_bot.hpp"
+
+#define SOCKET_BUFFER_SIZE 8192
 
 #define NUMERIC_001 1 << 0
 #define NUMERIC_002 1 << 1
@@ -26,18 +30,20 @@
 #define PING_INTERVAL 20
 #define PONG_TIMEOUT 20
 
+typedef std::string String;
+
 class Bot {
  private:
-  std::string ipv4;
+  String ipv4;
   int port;
   int bot_sock;
   sockaddr_in bot_addr;
-  std::string password;
-  std::string nickname;
-  std::string serv_name;
+  String password;
+  String nickname;
+  String serv_name;
 
-  std::vector<std::string> menu;
-  std::queue<std::string> to_send;
+  std::vector<String> menu;
+  std::list<String> to_send;
   bool remain_msg;
 
   // not use
@@ -46,20 +52,24 @@ class Bot {
   Bot& operator=(const Bot& origin);
 
  public:
+  String remain_input;
+
   Bot(char** argv);
 
   void connect_to_serv(void);
   void step_auth(void);
   void step_listen(void);
 
-  const std::string& get_ipv4(void);
   int get_port(void);
   int get_bot_sock(void);
+  const String& get_ipv4(void);
   const sockaddr_in& get_bot_adr(void);
-  const std::string& get_password(void);
-  const std::string& get_nickname(void);
+  const String& get_password(void);
+  const String& get_nickname(void);
 
-  void send_msg_at_queue(void);
+  int send_msg_at_queue(void);
+  ssize_t send_msg_block(int socket_fd, const String& blk);
+  void read_msg_from_socket(std::vector<String>& msg_list);
 };
 
 #endif

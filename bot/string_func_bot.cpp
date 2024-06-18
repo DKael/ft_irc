@@ -1,4 +1,4 @@
-#include "string_func.hpp"
+#include "string_func_bot.hpp"
 
 String ft_itos(int input) {
   std::stringstream ss_tmp;
