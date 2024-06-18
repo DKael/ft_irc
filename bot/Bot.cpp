@@ -50,10 +50,9 @@ Bot::Bot(char** argv) : remain_msg(false) {
 }
 
 void Bot::connect_to_serv(void) {
-  bot_sock = ::socket(PF_INET, SOCK_STREAM, 0);
+  bot_sock = socket(PF_INET, SOCK_STREAM, 0);
   if (bot_sock == -1) {
     perror("socket() error");
-    std::cerr << "errno : " << errno << '\n';
     throw std::exception();
   }
 
@@ -62,17 +61,15 @@ void Bot::connect_to_serv(void) {
   bot_addr.sin_addr.s_addr = inet_addr(ipv4.c_str());
   bot_addr.sin_port = htons(port);
 
-  if (::connect(bot_sock, (sockaddr*)&bot_addr, sizeof(bot_addr)) == -1) {
+  if (connect(bot_sock, (sockaddr*)&bot_addr, sizeof(bot_addr)) == -1) {
     perror("connect() error");
-    std::cerr << "errno : " << errno << '\n';
     throw std::exception();
   }
   int bufSize = SOCKET_BUFFER_SIZE;
-  socklen_t len = sizeof(bufSize);
   if (setsockopt(bot_sock, SOL_SOCKET, SO_SNDBUF, &bufSize, sizeof(bufSize)) ==
       -1) {
     perror("setsockopt() error");
-    std::cerr << "errno : " << errno << '\n';
+    send(bot_sock, "QUIT :leaving\r\n", 15, O_NONBLOCK);
     close(bot_sock);
     throw std::exception();
   }
@@ -294,8 +291,7 @@ void Bot::read_msg_from_socket(std::vector<String>& msg_list) {
   size_t end_idx;
 
   while (--repeat_cnt >= 0) {
-    read_cnt =
-        ::recv(bot_sock, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
+    read_cnt = recv(bot_sock, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
     read_block[read_cnt] = '\0';
     read_buf += read_block;
     if (read_cnt < SOCKET_BUFFER_SIZE - 1) {

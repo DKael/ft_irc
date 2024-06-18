@@ -62,8 +62,6 @@ NOTES:
 
 typedef std::string String;
 
-class Channel;
-
 enum Command {
   CAP = 0,
   AUTHENTICATE,

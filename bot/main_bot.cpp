@@ -5,7 +5,7 @@ Bot* g_bot_ptr;
 void on_sigint(int sig) {
   signal(sig, SIG_IGN);
 
-  send(g_bot_ptr->get_bot_sock(), "QUIT :leaving\r\n", 15, MSG_EOF);
+  send(g_bot_ptr->get_bot_sock(), "QUIT :leaving\r\n", 15, O_NONBLOCK);
   close(g_bot_ptr->get_bot_sock());
   exit(130);
 }

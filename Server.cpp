@@ -142,8 +142,8 @@ void Server::server_listen(void) {
 
   while (true) {
     tmp_user_timeout_chk();
-    user_ping_chk();
     event_cnt = poll(observe_fd, MAX_USER, POLL_TIMEOUT * 1000);
+    user_ping_chk();
     if (event_cnt == 0) {
       continue;
     } else if (event_cnt < 0) {
@@ -212,7 +212,7 @@ int Server::user_socket_init(void) {
               << "\n\n";
 #endif
 
-    if (::fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
+    if (fcntl(user_socket, F_SETFL, O_NONBLOCK) == -1) {
       // error_handling
       perror("fcntl() error");
       send(user_socket, "ERROR :socket setting error\r\n",
@@ -597,7 +597,7 @@ void Server::move_tmp_user_to_user_list(int socket_fd) {
   tmp_user_list.erase(socket_fd);
 }
 
-void Server::remove_user(const int socket_fd) {
+void Server::remove_user(int socket_fd) {
   std::map<int, User>::iterator it1;
   std::map<String, int>::iterator it2;
   String tmp;

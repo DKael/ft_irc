@@ -14,9 +14,9 @@
 #include <string>
 #include <vector>
 
-#include "../string_func.hpp"
-#include "../util.hpp"
 #include "Message_bot.hpp"
+#include "string_func_bot.hpp"
+#include "util_bot.hpp"
 
 #define SOCKET_BUFFER_SIZE 8192
 

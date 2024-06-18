@@ -90,7 +90,7 @@ class Server {
 
   void add_tmp_user(pollfd& pfd, const sockaddr_in& addr);
   void move_tmp_user_to_user_list(int socket_fd);
-  void remove_user(const int socket_fd);
+  void remove_user(int socket_fd);
   void remove_user(const String& nickname);
   void change_nickname(const String& old_nick, const String& new_nick);
   void tmp_user_timeout_chk(void);
