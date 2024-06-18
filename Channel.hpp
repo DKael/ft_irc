@@ -62,8 +62,8 @@ class Channel {
   String topic;
   String topic_set_nick;
   std::time_t topic_set_time;
-  std::map<String, User&> user_list;
-  std::map<String, User&> operator_list;
+  std::map<String, User*> user_list;
+  std::map<String, User*> operator_list;
   /* <MODE>
     i : set / unset Invite only channel
     t : set / unset the restrictions of the TOPIC command to channel operators
@@ -93,10 +93,10 @@ class Channel {
   std::time_t get_topic_set_time(void) const;
   int get_mode(void) const;
   size_t get_user_num(void) const;
-  std::map<String, User&>& get_user_list(void);
-  std::map<String, User&>& get_operator_list(void);
-  const std::map<String, User&>& get_user_list(void) const;
-  const std::map<String, User&>& get_operator_list(void) const;
+  std::map<String, User*>& get_user_list(void);
+  std::map<String, User*>& get_operator_list(void);
+  const std::map<String, User*>& get_user_list(void) const;
+  const std::map<String, User*>& get_operator_list(void) const;
 
   String get_user_list_str(bool is_joined) const;
 

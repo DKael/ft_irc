@@ -52,27 +52,27 @@ int Channel::get_mode(void) const { return mode; }
 
 size_t Channel::get_user_num(void) const { return user_list.size(); }
 
-std::map<String, User&>& Channel::get_user_list(void) { return user_list; }
+std::map<String, User*>& Channel::get_user_list(void) { return user_list; }
 
-std::map<String, User&>& Channel::get_operator_list(void) {
+std::map<String, User*>& Channel::get_operator_list(void) {
   return operator_list;
 }
 
-const std::map<String, User&>& Channel::get_user_list(void) const {
+const std::map<String, User*>& Channel::get_user_list(void) const {
   return user_list;
 };
 
-const std::map<String, User&>& Channel::get_operator_list(void) const {
+const std::map<String, User*>& Channel::get_operator_list(void) const {
   return operator_list;
 };
 
 String Channel::get_user_list_str(bool is_joined) const {
   String nicks = "";
-  std::map<String, User&>::const_reverse_iterator cit1 = user_list.rbegin();
-  std::map<String, User&>::const_iterator cit2;
+  std::map<String, User*>::const_reverse_iterator cit1 = user_list.rbegin();
+  std::map<String, User*>::const_iterator cit2;
 
   for (; cit1 != user_list.rend(); ++cit1) {
-    if (cit1->second.chk_mode(USER_FLAG_I) == true && is_joined == false) {
+    if (cit1->second->chk_mode(USER_FLAG_I) == true && is_joined == false) {
       continue;
     }
     cit2 = operator_list.find(cit1->first);
@@ -100,7 +100,7 @@ void Channel::set_topic_set_time(std::time_t _t) { topic_set_time = _t; }
 
 // METHOD FUNCTIONS
 void Channel::add_user(User& newuser) {
-  std::map<String, User&>::iterator it =
+  std::map<String, User*>::iterator it =
       user_list.find(newuser.get_nick_name());
 
   if (it != user_list.end()) {
@@ -118,21 +118,21 @@ void Channel::add_user(User& newuser) {
     */
     throw(channel_user_capacity_error());
   }
-  user_list.insert(std::pair<String, User&>(newuser.get_nick_name(), newuser));
+  user_list.insert(std::pair<String, User*>(newuser.get_nick_name(), &newuser));
 }
 
 void Channel::add_operator(User& user) {
-  std::map<String, User&>::iterator it =
+  std::map<String, User*>::iterator it =
       operator_list.find(user.get_nick_name());
 
   if (it != operator_list.end()) {
     return;
   }
-  operator_list.insert(std::pair<String, User&>(user.get_nick_name(), user));
+  operator_list.insert(std::pair<String, User*>(user.get_nick_name(), &user));
 }
 
 bool Channel::is_operator(const String& nickname) const {
-  std::map<String, User&>::const_iterator cit = operator_list.find(nickname);
+  std::map<String, User*>::const_iterator cit = operator_list.find(nickname);
 
   if (cit != operator_list.end()) {
     return true;
@@ -142,7 +142,7 @@ bool Channel::is_operator(const String& nickname) const {
 }
 
 void Channel::remove_user(const String& nickname) {
-  std::map<String, User&>::iterator it = user_list.find(nickname);
+  std::map<String, User*>::iterator it = user_list.find(nickname);
 
   if (it != user_list.end()) {
     remove_operator(nickname);
@@ -151,7 +151,7 @@ void Channel::remove_user(const String& nickname) {
 }
 
 void Channel::remove_operator(const String& nickname) {
-  std::map<String, User&>::iterator it = operator_list.find(nickname);
+  std::map<String, User*>::iterator it = operator_list.find(nickname);
 
   if (it != operator_list.end()) {
     operator_list.erase(it);
@@ -159,7 +159,7 @@ void Channel::remove_operator(const String& nickname) {
 }
 
 bool Channel::chk_user_join(const String& nickname) const {
-  std::map<String, User&>::const_iterator cit = user_list.find(nickname);
+  std::map<String, User*>::const_iterator cit = user_list.find(nickname);
 
   if (cit != user_list.end()) {
     return true;
@@ -170,18 +170,18 @@ bool Channel::chk_user_join(const String& nickname) const {
 
 void Channel::change_user_nickname(const String& old_nick,
                                    const String& new_nick) {
-  std::map<String, User&>::iterator it = user_list.find(old_nick);
+  std::map<String, User*>::iterator it = user_list.find(old_nick);
 
   if (it != user_list.end()) {
-    User& tmp_user = it->second;
+    User& tmp_user = *(it->second);
 
     user_list.erase(it);
-    user_list.insert(std::pair<String, User&>(new_nick, tmp_user));
+    user_list.insert(std::pair<String, User*>(new_nick, &tmp_user));
 
     it = operator_list.find(old_nick);
     if (it != operator_list.end()) {
       operator_list.erase(it);
-      operator_list.insert(std::pair<String, User&>(new_nick, tmp_user));
+      operator_list.insert(std::pair<String, User*>(new_nick, &tmp_user));
     }
   }
 }
@@ -288,9 +288,9 @@ std::ostream& operator<<(std::ostream& out, Channel& channel) {
     out << "OFF" << std::endl;
   out << channel.get_password() << '\n';
 
-  const std::map<String, User&>& userList = channel.get_user_list();
-  const std::map<String, User&>& operators = channel.get_operator_list();
-  std::map<String, User&>::const_iterator cit;
+  const std::map<String, User*>& userList = channel.get_user_list();
+  const std::map<String, User*>& operators = channel.get_operator_list();
+  std::map<String, User*>::const_iterator cit;
 
   int i = 1;
   out << "=============== user List ===============" << std::endl;

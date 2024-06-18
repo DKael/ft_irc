@@ -74,6 +74,7 @@
 		"queue": "cpp",
 		"stack": "cpp",
 		"filesystem": "cpp",
-		"execution": "cpp"
+		"execution": "cpp",
+		"csignal": "cpp"
 	}
 }

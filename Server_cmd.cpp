@@ -681,10 +681,10 @@ void Server::cmd_who(int recv_fd, const Message& msg) {
     std::map<String, Channel>::iterator chan_it = channel_list.find(chan_name);
     if (chan_it != channel_list.end()) {
       Channel& chan = chan_it->second;
-      std::map<String, User&>::iterator chan_user_it =
+      std::map<String, User*>::iterator chan_user_it =
           chan.get_user_list().begin();
       for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
-        User& tmp_user = chan_user_it->second;
+        User& tmp_user = *(chan_user_it->second);
 
         if (chan.is_operator(chan_user_it->first) == true) {
           event_user.push_back_msg(rpl_352(serv_name, event_user_nick,

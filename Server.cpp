@@ -195,7 +195,7 @@ int Server::user_socket_init(void) {
              "ERROR :Connection refused, too many connections from your IP "
              "address\r\n",
              strlen("ERROR :Connection refused, too many connections from "
-                         "your IP address\r\n"),
+                    "your IP address\r\n"),
              MSG_DONTWAIT);
         close(user_socket);
         return -1;
@@ -864,21 +864,21 @@ bool Server::chk_channel_exist(const String& chan_name) const {
 }
 
 void Server::send_msg_to_channel(Channel& chan, const String& msg) {
-  std::map<String, User&>::iterator chan_user_it = chan.get_user_list().begin();
+  std::map<String, User*>::iterator chan_user_it = chan.get_user_list().begin();
   for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
-    chan_user_it->second.push_back_msg(msg);
-    ft_send(chan_user_it->second.get_pfd());
+    chan_user_it->second->push_back_msg(msg);
+    ft_send(chan_user_it->second->get_pfd());
   }
 }
 
 void Server::send_msg_to_channel_except_sender(Channel& chan,
                                                const String& sender,
                                                const String& msg) {
-  std::map<String, User&>::iterator chan_user_it = chan.get_user_list().begin();
+  std::map<String, User*>::iterator chan_user_it = chan.get_user_list().begin();
   for (; chan_user_it != chan.get_user_list().end(); ++chan_user_it) {
     if (chan_user_it->first != sender) {
-      chan_user_it->second.push_back_msg(msg);
-      ft_send(chan_user_it->second.get_pfd());
+      chan_user_it->second->push_back_msg(msg);
+      ft_send(chan_user_it->second->get_pfd());
     }
   }
 }
