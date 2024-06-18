@@ -57,7 +57,7 @@ void Bot::connect_to_serv(void) {
     throw std::exception();
   }
 
-  std::memset(&bot_addr, 0, sizeof(bot_addr));
+  memset(&bot_addr, 0, sizeof(bot_addr));
   bot_addr.sin_family = AF_INET;
   bot_addr.sin_addr.s_addr = inet_addr(ipv4.c_str());
   bot_addr.sin_port = htons(port);

@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 #include <ctime>
+#include <cstring>
+#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <list>

@@ -16,7 +16,7 @@ Server::Server(const char* _port, const char* _password)
   if (fcntl(serv_socket, F_SETFL, O_NONBLOCK) == -1) {
     throw socket_setting_error();
   }
-  std::memset(&serv_addr, 0, sizeof(serv_addr));
+  memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   serv_addr.sin_port = htons(port);
@@ -179,7 +179,7 @@ int Server::user_socket_init(void) {
 
   while (connection_limit != 0) {
     user_addr_len = sizeof(user_addr);
-    std::memset(&user_addr, 0, user_addr_len);
+    memset(&user_addr, 0, user_addr_len);
     user_socket = ::accept(serv_socket, (sockaddr*)&user_addr, &user_addr_len);
     if (user_socket == -1) {
       return 0;
@@ -194,7 +194,7 @@ int Server::user_socket_init(void) {
         send(user_socket,
              "ERROR :Connection refused, too many connections from your IP "
              "address\r\n",
-             std::strlen("ERROR :Connection refused, too many connections from "
+             strlen("ERROR :Connection refused, too many connections from "
                          "your IP address\r\n"),
              MSG_DONTWAIT);
         close(user_socket);
@@ -216,7 +216,7 @@ int Server::user_socket_init(void) {
       // error_handling
       perror("fcntl() error");
       send(user_socket, "ERROR :socket setting error\r\n",
-           std::strlen("ERROR :socket setting error\r\n"), MSG_DONTWAIT);
+           strlen("ERROR :socket setting error\r\n"), MSG_DONTWAIT);
       close(user_socket);
       return -1;
     }
@@ -225,7 +225,7 @@ int Server::user_socket_init(void) {
     if (setsockopt(user_socket, SOL_SOCKET, SO_SNDBUF, &bufSize,
                    sizeof(bufSize)) == -1) {
       send(user_socket, "ERROR :socket setting error\r\n",
-           std::strlen("ERROR :socket setting error\r\n"), MSG_DONTWAIT);
+           strlen("ERROR :socket setting error\r\n"), MSG_DONTWAIT);
       perror("setsockopt() error");
       close(user_socket);
       return -1;
@@ -239,7 +239,7 @@ int Server::user_socket_init(void) {
       // 용도로 사용하는 것도 방법일 듯
       std::cerr << "User connection limit exceed!\n";
       send(user_socket, "ERROR :Too many users on server\r\n",
-           std::strlen("ERROR :Too many users on server\r\n"), MSG_DONTWAIT);
+           strlen("ERROR :Too many users on server\r\n"), MSG_DONTWAIT);
       close(user_socket);
       return -1;
     }
