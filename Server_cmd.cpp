@@ -391,7 +391,7 @@ void Server::cmd_join(int recv_fd, const Message& msg) {
 
         event_user.push_back_msg(
             rpl_366(serv_name, event_user_nick, chan_name_vec[i]).to_raw_msg());
-      } catch (const channel_user_capacity_error e) {
+      } catch (const channel_user_capacity_error& e) {
         event_user.push_back_msg(
             rpl_471(serv_name, event_user_nick, chan_name).to_raw_msg());
         continue;

@@ -8,6 +8,8 @@
 #include <unistd.h>
 
 #include <ctime>
+#include <cerrno>
+#include <cstdio>
 #include <csignal>
 #include <cstring>
 #include <iostream>
