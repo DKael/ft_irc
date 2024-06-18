@@ -2,12 +2,12 @@
 
 Server::Server(const char* _port, const char* _password)
     : port(std::atoi(_port)),
-      str_port(_port),
+      str_port(ft_itos(port)),
       serv_name(SERVER_NAME),
       serv_version(SERVER_VERSION),
       created_time(std::time(NULL)),
       serv_info("Server Info Text"),
-      password(_password),
+      password(ft_strip(_password)),
       enable_ident_protocol(false) {
   serv_socket = socket(PF_INET, SOCK_STREAM, 0);
   if (serv_socket == -1) {
@@ -304,6 +304,11 @@ int Server::send_msg_at_queue(int socket_fd) {
   }
 
   User& tmp_user = user_it->second;
+
+  if (tmp_user.get_already_disconnected() == true) {
+    return 0;
+  }
+
   size_t to_send_num = tmp_user.get_to_send_size();
   size_t msg_len;
   size_t idx;
@@ -369,7 +374,7 @@ void Server::revent_pollin(pollfd& p_val) {
     read_msg_from_socket(p_val.fd, msg_list);
 
     if (msg_list.size() == 0) {
-      if (event_user.get_have_to_disconnect() == true) {
+      if (event_user.get_already_disconnected() == true) {
         std::cout << "Connection close at " << p_val.fd << '\n';
         connection_fin(p_val);
       }
@@ -519,9 +524,9 @@ void Server::not_auth_user(pollfd& p_val, std::vector<String>& msg_list) {
     if (event_user.get_nick_init_chk() == OK &&
         event_user.get_user_init_chk() == OK) {
       if (event_user.get_password_chk() != OK) {
-        event_user.set_have_to_disconnect(true);
         event_user.push_back_msg(
             rpl_464(serv_name, event_user.get_nick_name()).to_raw_msg());
+        event_user.set_have_to_disconnect(true);
         ft_sendd(p_val);
       } else {
         auth_complete(p_val);
@@ -790,15 +795,17 @@ void Server::read_msg_from_socket(int socket_fd,
 
   while (--repeat_cnt >= 0) {
     read_cnt =
-        ::recv(socket_fd, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
+        recv(socket_fd, read_block, SOCKET_BUFFER_SIZE - 1, MSG_DONTWAIT);
     read_block[read_cnt] = '\0';
     read_buf += read_block;
     if (read_cnt < SOCKET_BUFFER_SIZE - 1) {
       break;
     }
   }
-  if (read_cnt == 0 && read_buf.length() == 0) {
-    event_user.set_have_to_disconnect(true);
+  if (read_cnt == 0) {
+    event_user.set_already_disconnected(true);
+  }
+  if (read_buf.length() == 0) {
     return;
   }
 
@@ -808,7 +815,8 @@ void Server::read_msg_from_socket(int socket_fd,
     return;
   }
 
-  ft_split(read_buf, "\r\n", msg_list);
+  ft_split(read_buf.substr(front_pos, back_pos - front_pos + 1), "\r\n",
+           msg_list);
   if (event_user.remain_input.length() != 0) {
     msg_list[0] = event_user.remain_input + msg_list[0];
     event_user.remain_input = "";

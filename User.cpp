@@ -14,6 +14,7 @@ User::User(pollfd& _pfd, const sockaddr_in& _user_addr)
       password_chk(NOT_YET),
       is_authenticated(NOT_YET),
       have_to_disconnect(false),
+      already_disconnected(false),
       have_to_ping_chk(false),
       last_ping(0),
       mode(0) {}
@@ -32,6 +33,7 @@ User::User(const User& origin)
       password_chk(origin.password_chk),
       is_authenticated(origin.is_authenticated),
       have_to_disconnect(origin.have_to_disconnect),
+      already_disconnected(origin.already_disconnected),
       have_to_ping_chk(origin.have_to_ping_chk),
       last_ping(origin.last_ping),
       to_send(origin.to_send),
@@ -60,6 +62,10 @@ void User::set_is_authenticated(const chk_status input) {
 }
 
 void User::set_have_to_disconnect(bool input) { have_to_disconnect = input; }
+
+void User::set_already_disconnected(bool input) {
+  already_disconnected = input;
+}
 
 void User::set_have_to_ping_chk(bool input) { have_to_ping_chk = input; }
 
@@ -112,6 +118,8 @@ chk_status User::get_password_chk(void) const { return password_chk; }
 chk_status User::get_is_authenticated(void) const { return is_authenticated; }
 
 bool User::get_have_to_disconnect(void) const { return have_to_disconnect; }
+
+bool User::get_already_disconnected(void) const { return already_disconnected; }
 
 bool User::get_have_to_ping_chk(void) const { return have_to_ping_chk; }
 

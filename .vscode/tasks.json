@@ -28,8 +28,6 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${fileDirname}/*.cpp",
-                "${fileDirname}/../string_func.cpp",
-                "${fileDirname}/../util.cpp",
                 "-o",
                 "${fileDirname}/bot"
             ],

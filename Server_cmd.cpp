@@ -210,8 +210,6 @@ bbb
   rpl.push_back(trailing);
   event_user.push_back_msg(rpl.to_raw_msg());
 
-  std::cout << "Connection close at " << recv_fd << '\n';
-  event_user.set_have_to_disconnect(true);
   std::map<String, int>::const_iterator user_chan_it =
       event_user.get_channels().begin();
   for (; user_chan_it != event_user.get_channels().end(); ++user_chan_it) {
@@ -224,6 +222,9 @@ bbb
       }
     }
   }
+
+  std::cout << "Connection close at " << recv_fd << '\n';
+  event_user.set_have_to_disconnect(true);
   event_user.get_channels().clear();
   ft_sendd(tmp_pfd);
 }

@@ -46,6 +46,7 @@ class User {
   chk_status password_chk;
   chk_status is_authenticated;
   bool have_to_disconnect;
+  bool already_disconnected;
   bool have_to_ping_chk;
   std::time_t last_ping;
   std::list<String> to_send;
@@ -75,6 +76,7 @@ class User {
   void set_password_chk(const chk_status input);
   void set_is_authenticated(const chk_status input);
   void set_have_to_disconnect(bool input);
+  void set_already_disconnected(bool input);
   void set_have_to_ping_chk(bool input);
   void set_last_ping(std::time_t input);
   void change_nickname(const String& new_nick);
@@ -94,6 +96,7 @@ class User {
   chk_status get_password_chk(void) const;
   chk_status get_is_authenticated(void) const;
   bool get_have_to_disconnect(void) const;
+  bool get_already_disconnected(void) const;
   bool get_have_to_ping_chk(void) const;
   std::time_t get_last_ping(void) const;
   int get_mode(void) const;

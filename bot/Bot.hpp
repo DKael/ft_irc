@@ -9,7 +9,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
-#include <queue>
+#include <list>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -28,6 +28,8 @@
 #define PING_INTERVAL 20
 #define PONG_TIMEOUT 20
 
+typedef std::string String;
+
 class Bot {
  private:
   String ipv4;
@@ -39,7 +41,7 @@ class Bot {
   String serv_name;
 
   std::vector<String> menu;
-  std::queue<String> to_send;
+  std::list<String> to_send;
   bool remain_msg;
 
   // not use
@@ -56,14 +58,15 @@ class Bot {
   void step_auth(void);
   void step_listen(void);
 
-  const String& get_ipv4(void);
   int get_port(void);
   int get_bot_sock(void);
+  const String& get_ipv4(void);
   const sockaddr_in& get_bot_adr(void);
   const String& get_password(void);
   const String& get_nickname(void);
 
-  void send_msg_at_queue(void);
+  int send_msg_at_queue(void);
+  ssize_t send_msg_block(int socket_fd, const String& blk);
   void read_msg_from_socket(std::vector<String>& msg_list);
 };
 

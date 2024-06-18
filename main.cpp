@@ -7,7 +7,7 @@
 
 Server* g_server_ptr;
 
-void on_sigint(int sig) {
+void on_sig(int sig) {
   signal(sig, SIG_IGN);
 
   g_server_ptr->server_quit();
@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
   } else if (port_chk(argv[1]) == false) {
     std::cerr << "Port range error!\n";
     return 1;
-  } else if (ft_strip(String(argv[2])).length() == 0) {
+  } else if (ft_strip(argv[2]).length() == 0) {
     std::cerr << "Empty password!";
     return 1;
   }
@@ -30,7 +30,9 @@ int main(int argc, char** argv) {
     Server serv(argv[1], argv[2]);
     Message::map_init();
     g_server_ptr = &serv;
-    signal(SIGINT, on_sigint);
+    signal(SIGINT, on_sig);
+    signal(SIGTERM, on_sig);
+    signal(SIGPIPE, SIG_IGN);
 
     serv.server_listen();
 

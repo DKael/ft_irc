@@ -1,8 +1,10 @@
 # List of source files
 SRCS =	main_bot.cpp \
-		Message_rpl_bot.cpp \
+		Bot.cpp \
 		Message_bot.cpp \
-		string_func_bot.cpp
+		Message_rpl_bot.cpp \
+		string_func_bot.cpp \
+		util_bot.cpp
 
 
 
@@ -16,7 +18,7 @@ CXX = c++
 
 CFLAGS = -std=c++98 -Wall -Wextra -Werror #-fsanitize=address -g3 
 
-NAME = ircserv
+NAME = bot
 
 DEBUG_FLAG = 0
 

@@ -20,6 +20,7 @@ typedef std::string String;
 String ft_itos(int input);
 String ft_ltos(long input);
 String ft_strip(const String& origin);
+String ft_strip(const char* origin);
 String make_random_string(std::size_t len, const String comp = STR_COMP);
 String& ft_upper(String& origin);
 String ft_upper(const String& origin);
