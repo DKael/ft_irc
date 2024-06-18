@@ -449,7 +449,7 @@ void Server::auth_user(pollfd& p_val, std::vector<String>& msg_list) {
     } else if (cmd_type == QUIT) {
       cmd_quit(p_val.fd, msg);
       msg_list.clear();
-      break;
+      return;
     } else if (cmd_type == WHO) {
       cmd_who(p_val.fd, msg);
     } else if (cmd_type == KICK) {
