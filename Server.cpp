@@ -642,7 +642,7 @@ void Server::remove_user(int socket_fd) {
     close(socket_fd);
     return;
   } else {
-    throw std::invalid_argument("Subsription error!");
+    throw std::invalid_argument("Subscription error!");
   }
 }
 
@@ -686,7 +686,7 @@ void Server::remove_user(const String& nickname) {
     ::close(tmp);
     return;
   } else {
-    throw std::invalid_argument("Subsription error!");
+    throw std::invalid_argument("Subscription error!");
   }
 }
 
@@ -710,7 +710,7 @@ void Server::change_nickname(const String& old_nick, const String& new_nick) {
     (*this)[tmp_fd].set_nick_name(new_nick);
     return;
   } else {
-    throw std::invalid_argument("Subsription error!");
+    throw std::invalid_argument("Subscription error!");
   }
 }
 
@@ -815,8 +815,7 @@ void Server::read_msg_from_socket(int socket_fd,
     return;
   }
 
-  ft_split(read_buf.substr(front_pos, back_pos - front_pos + 1), "\r\n",
-           msg_list);
+  ft_split(read_buf, "\r\n", msg_list);
   if (event_user.remain_input.length() != 0) {
     msg_list[0] = event_user.remain_input + msg_list[0];
     event_user.remain_input = "";
@@ -834,7 +833,7 @@ User& Server::operator[](int socket_fd) {
   } else if (tmp_user_list.find(socket_fd) != tmp_user_list.end()) {
     return tmp_user_list.at(socket_fd);
   } else {
-    throw std::invalid_argument("Subsription error!");
+    throw std::invalid_argument("Subscription error!");
   }
 }
 
@@ -844,7 +843,7 @@ int Server::operator[](const String& nickname) {
   } else if (tmp_nick_to_soc.find(nickname) != tmp_nick_to_soc.end()) {
     return tmp_nick_to_soc.at(nickname);
   } else {
-    throw std::invalid_argument("Subsription error!");
+    throw std::invalid_argument("Subscription error!");
   }
 }
 
